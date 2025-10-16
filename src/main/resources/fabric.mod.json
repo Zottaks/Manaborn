@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "manaborn",
+  "version": "${version}",
+  "name": "Manaborn",
+  "description": "A magic mod with spells, mana, and mystic power.",
+  "authors": ["Zottaks"],
+
+
+  "contact": {
+    "homepage": "https://fabricmc.net/",
+    "sources": "https://github.com/FabricMC/fabric-example-mod"
+  },
+  "license": "CC0-1.0",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.manaborn.ManabornMod"
+    ]
+  },
+  "mixins": [
+    "modid.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "another-mod": "*"
+  }
+}
