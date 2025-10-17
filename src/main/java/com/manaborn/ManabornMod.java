@@ -20,6 +20,7 @@ public class ManabornMod implements ModInitializer {
 		RegistryKey<Item> staffKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "magic_staff"));
 		MAGIC_STAFF = Registry.register(Registries.ITEM, staffKey, new MagicStaffItem(new Item.Settings().maxCount(1).registryKey(staffKey)));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(MAGIC_STAFF));
+
 		System.out.println("✨ Manaborn loaded — awaken your inner magic!");
 	}
 }

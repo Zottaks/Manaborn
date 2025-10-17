@@ -16,6 +16,9 @@
   "entrypoints": {
     "main": [
       "com.manaborn.ManabornMod"
+    ],
+    "client": [
+      "com.manaborn.client.ManabornClient"
     ]
   },
   "mixins": [
