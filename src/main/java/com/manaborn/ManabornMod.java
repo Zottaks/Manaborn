@@ -14,7 +14,8 @@ public class ManabornMod implements ModInitializer {
 	public static final String MOD_ID = "manaborn";
 
 	public static Item MAGIC_STAFF;
-
+	
+	// Lev: тут происходят инициализации
 	@Override
 	public void onInitialize() {
 		RegistryKey<Item> staffKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "magic_staff"));
