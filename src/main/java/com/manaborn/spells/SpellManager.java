@@ -17,17 +17,17 @@ import com.manaborn.entities.IceShardEntity;
 
 public class SpellManager {
     private static final String SPELL_NBT_KEY = "selectedSpell";
-    
+
     public static void castSpell(World world, PlayerEntity user, Hand hand) {
         ItemStack stack = user.getStackInHand(hand);
         SpellType selectedSpell = getSelectedSpell(stack);
-        
+
         if (!world.isClient()) {
             ServerPlayerEntity serverPlayer = (ServerPlayerEntity) user;
             if (!ManaManager.tryConsume(serverPlayer, selectedSpell.getManaCost())) {
                 return;
             }
-            
+
             switch (selectedSpell) {
                 case FIREBALL:
                     castFireball(world, user);
@@ -37,25 +37,26 @@ public class SpellManager {
                     break;
             }
         }
-        
+
         user.incrementStat(Stats.USED.getOrCreateStat(stack.getItem()));
         user.getItemCooldownManager().set(stack, 100);
     }
-    
+
     private static void castFireball(World world, PlayerEntity user) {
         SmallFireballEntity fireball = new SmallFireballEntity(world, user, user.getRotationVector());
         fireball.setPos(user.getX(), user.getEyeY() - 0.1, user.getZ());
         world.spawnEntity(fireball);
         world.playSound(null, user.getBlockPos(), SoundEvents.ITEM_FIRECHARGE_USE, SoundCategory.PLAYERS, 1.0f, 1.0f);
     }
-    
+
     private static void castIceShard(World world, PlayerEntity user) {
         IceShardEntity iceShard = new IceShardEntity(world, user);
         iceShard.setVelocity(user, user.getPitch(), user.getYaw(), 0.0f, 2.0f, 1.0f);
         world.spawnEntity(iceShard);
-        world.playSound(null, user.getBlockPos(), SoundEvents.ENTITY_SNOWBALL_THROW, SoundCategory.PLAYERS, 1.0f, 1.2f);
+        world.playSound(null, user.getBlockPos(), SoundEvents.ENTITY_SNOW_GOLEM_SHOOT, SoundCategory.PLAYERS, 1.0f,
+                1.2f);
     }
-    
+
     public static SpellType getSelectedSpell(ItemStack stack) {
         NbtComponent customData = stack.get(DataComponentTypes.CUSTOM_DATA);
         if (customData == null) {
@@ -65,14 +66,14 @@ public class SpellManager {
         String spellId = nbt.getString(SPELL_NBT_KEY).orElse("fireball");
         return SpellType.fromId(spellId);
     }
-    
+
     public static void setSelectedSpell(ItemStack stack, SpellType spell) {
         NbtComponent customData = stack.getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT);
         NbtCompound nbt = customData.copyNbt();
         nbt.putString(SPELL_NBT_KEY, spell.getId());
         stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
     }
-    
+
     public static void cycleSpell(ItemStack stack) {
         SpellType current = getSelectedSpell(stack);
         SpellType[] spells = SpellType.values();
