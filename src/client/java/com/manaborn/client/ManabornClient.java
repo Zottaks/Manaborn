@@ -4,14 +4,20 @@ import com.manaborn.client.state.ClientManaState;
 import com.manaborn.network.ManaSyncS2CPacket;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.minecraft.util.Identifier;
 
 public class ManabornClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
-		HudRenderCallback.EVENT.register(new ManaHudOverlay());
-		HudRenderCallback.EVENT.register(new SpellHudOverlay());
+		// Регистрируем HUD элемент для отображения маны перед чатом
+		HudElementRegistry.attachElementBefore(
+				VanillaHudElements.CHAT,
+				Identifier.of("manaborn", "mana_display"),
+				ManaHudOverlay::render);
+
 		ClientPlayNetworking.registerGlobalReceiver(ManaSyncS2CPacket.ID, (payload, context) -> {
 			context.client().execute(() -> ClientManaState.set(payload.mana(), payload.maxMana()));
 		});
@@ -23,5 +29,3 @@ public class ManabornClient implements ClientModInitializer {
 		});
 	}
 }
-
-

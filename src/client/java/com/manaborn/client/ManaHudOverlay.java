@@ -1,13 +1,23 @@
 package com.manaborn.client;
 
 import com.manaborn.client.state.ClientManaState;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderTickCounter;
 
-public final class ManaHudOverlay implements HudRenderCallback {
-	@Override
-	public void onHudRender(DrawContext drawContext, net.minecraft.client.render.RenderTickCounter tickCounter) {
+/**
+ * Отображение маны на HUD
+ * Использует новый HudElementRegistry API вместо устаревшего HudRenderCallback
+ */
+public final class ManaHudOverlay {
+	
+	/**
+	 * Метод рендеринга маны на HUD
+	 * 
+	 * @param drawContext Контекст для рисования
+	 * @param tickCounter Счетчик тиков для анимаций
+	 */
+	public static void render(DrawContext drawContext, RenderTickCounter tickCounter) {
 		MinecraftClient client = MinecraftClient.getInstance();
 		if (client == null || client.player == null || client.options.hudHidden) return;
 
