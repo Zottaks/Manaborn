@@ -11,6 +11,7 @@ public class ManabornClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		HudRenderCallback.EVENT.register(new ManaHudOverlay());
+		HudRenderCallback.EVENT.register(new SpellHudOverlay());
 		ClientPlayNetworking.registerGlobalReceiver(ManaSyncS2CPacket.ID, (payload, context) -> {
 			context.client().execute(() -> ClientManaState.set(payload.mana(), payload.maxMana()));
 		});
