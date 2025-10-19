@@ -21,8 +21,15 @@ public final class ClientManaState {
 	}
 
 	public static void set(int current, int max) {
+		int oldMana = mana;
 		mana = Math.max(0, Math.min(max, current));
 		maxMana = Math.max(0, max);
+		
+		// Если мана уменьшилась (потратили на сервере), сбрасываем задержку регенерации
+		if (mana < oldMana) {
+			lastSpendDelayTicks = REGEN_DELAY_TICKS;
+			regenTickCounter = 0;
+		}
 	}
 
 	public static void spend(int amount) {

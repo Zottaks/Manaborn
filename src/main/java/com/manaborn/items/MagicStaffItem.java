@@ -13,51 +13,22 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
 
 public class MagicStaffItem extends Item {
-    private static final String LOG_FILE = "manaborn_debug.txt";
-    
     public MagicStaffItem(Settings settings) {
         super(settings);
-    }
-    
-    /**
-     * Логирование в файл для отладки
-     */
-    private void log(String message) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(LOG_FILE, true))) {
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS"));
-            writer.println("[" + timestamp + "] " + message);
-            writer.flush();
-        } catch (IOException e) {
-            System.err.println("Ошибка записи в лог: " + e.getMessage());
-        }
     }
 
     @Override
     public ActionResult use(World world, PlayerEntity user, Hand hand) {
         ItemStack stack = user.getStackInHand(hand);
         
-        // ЛОГИРОВАНИЕ для отладки
-        String logMessage = "use() вызван. Sneaking: " + user.isSneaking() + 
-                           ", Cooldown: " + user.getItemCooldownManager().isCoolingDown(stack) +
-                           ", Side: " + (world.isClient() ? "CLIENT" : "SERVER");
-        log(logMessage);
-        System.out.println("[MagicStaff] " + logMessage);
-        
         if (user.isSneaking()) {
             // Shift + ПКМ для смены заклинания (ВСЕГДА доступно, даже на кулдауне)
-            log("Попытка смены заклинания (Shift + ПКМ)");
             if (!world.isClient()) {
                 SpellManager.cycleSpell(stack);
                 SpellType selected = SpellManager.getSelectedSpell(stack);
-                log("Заклинание сменено на: " + selected.getDisplayName());
                 
                 // Сообщение с цветом заклинания
                 Text message = Text.literal("Выбрано заклинание: ")
@@ -69,12 +40,9 @@ public class MagicStaffItem extends Item {
         } else {
             // Проверяем кулдаун перед кастом заклинания
             if (user.getItemCooldownManager().isCoolingDown(stack)) {
-                log("ЗАБЛОКИРОВАНО КУЛДАУНОМ!");
-                System.out.println("[MagicStaff] Заблокировано кулдауном!");
                 return ActionResult.PASS;
             }
             
-            log("Каст заклинания");
             // Обычное использование для каста заклинания
             SpellManager.castSpell(world, user, hand);
             return ActionResult.SUCCESS;
