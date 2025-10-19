@@ -9,7 +9,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.render.entity.ArrowEntityRenderer;
+import net.minecraft.client.render.entity.FlyingItemEntityRenderer;
 import net.minecraft.util.Identifier;
 
 public class ManabornClient implements ClientModInitializer {
@@ -46,12 +46,13 @@ public class ManabornClient implements ClientModInitializer {
 	/**
 	 * Регистрирует рендерер для сущности ледяного осколка
 	 * 
+	 * Используем FlyingItemEntityRenderer для отображения снежка.
 	 * EntityRendererRegistry помечен как deprecated в Fabric API,
 	 * но остается рабочим и официальным способом для версии 1.21.10.
 	 * Новый API для регистрации рендереров планируется в будущих версиях.
 	 */
 	@SuppressWarnings("deprecation")
 	private void registerIceShardRenderer() {
-		EntityRendererRegistry.register(ManabornMod.ICE_SHARD_ENTITY, ArrowEntityRenderer::new);
+		EntityRendererRegistry.register(ManabornMod.ICE_SHARD_ENTITY, FlyingItemEntityRenderer::new);
 	}
 }
