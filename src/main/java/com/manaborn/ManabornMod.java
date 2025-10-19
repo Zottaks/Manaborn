@@ -9,8 +9,6 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
-import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.item.Item;
@@ -35,10 +33,11 @@ public class ManabornMod implements ModInitializer {
 		
 		// Регистрация сущности ледяного осколка
 		RegistryKey<EntityType<?>> iceShardKey = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Identifier.of(MOD_ID, "ice_shard"));
-		ICE_SHARD_ENTITY = Registry.register(Registries.ENTITY_TYPE, 
+		ICE_SHARD_ENTITY = Registry.register(
+			Registries.ENTITY_TYPE,
 			iceShardKey,
-			FabricEntityTypeBuilder.<IceShardEntity>create(SpawnGroup.MISC, IceShardEntity::new)
-				.dimensions(EntityDimensions.fixed(0.5f, 0.5f))
+			EntityType.Builder.<IceShardEntity>create(IceShardEntity::new, SpawnGroup.MISC)
+				.dimensions(0.5f, 0.5f)
 				.build(iceShardKey)
 		);
 		

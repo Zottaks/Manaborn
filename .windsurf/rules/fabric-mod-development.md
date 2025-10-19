@@ -326,3 +326,46 @@ tasks.withType(JavaCompile).configureEach {
 
 **Последнее обновление**: Октябрь 2025
 **Версия правил**: 1.0
+
+## 🔄 Обновление: Deprecated API в Fabric 1.21.10
+
+### EntityRendererRegistry (Deprecated но рабочий)
+
+**Статус**: Deprecated в Fabric API, но всё ещё официальный способ для 1.21.10
+
+**Правильное использование**:
+```java
+/**
+ * Регистрирует рендерер для кастомной сущности
+ * 
+ * EntityRendererRegistry помечен как deprecated,
+ * но остается рабочим способом для Fabric 1.21.10
+ */
+@SuppressWarnings("deprecation")
+private void registerCustomEntityRenderer() {
+    EntityRendererRegistry.register(
+        ModEntities.CUSTOM_ENTITY, 
+        CustomEntityRenderer::new
+    );
+}
+```
+
+**Для сущностей-снарядов (стрелы, снежки и т.д.)**:
+```java
+@SuppressWarnings("deprecation")
+private void registerProjectileRenderer() {
+    EntityRendererRegistry.register(
+        ModEntities.ICE_SHARD, 
+        ArrowEntityRenderer::new  // Для стрел
+    );
+}
+```
+
+**Важно**: 
+- Без регистрации рендерера игра **крашится** при попытке отрисовать сущность
+- `@SuppressWarnings("deprecation")` подавляет предупреждение линтера
+- Новый API для регистрации рендереров планируется в будущих версиях Fabric
+
+---
+
+**Дата обновления**: 19 октября 2025

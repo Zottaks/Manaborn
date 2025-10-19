@@ -1,16 +1,26 @@
 package com.manaborn.client;
 
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import com.manaborn.spells.SpellManager;
 import com.manaborn.spells.SpellType;
 
-public final class SpellHudOverlay implements HudRenderCallback {
-    @Override
-    public void onHudRender(DrawContext drawContext, net.minecraft.client.render.RenderTickCounter tickCounter) {
+/**
+ * Отображение выбранного заклинания на HUD
+ * Использует новый HudElementRegistry API вместо устаревшего HudRenderCallback
+ */
+public final class SpellHudOverlay {
+    
+    /**
+     * Метод рендеринга информации о заклинании на HUD
+     * 
+     * @param drawContext Контекст для рисования
+     * @param tickCounter Счетчик тиков для анимаций
+     */
+    public static void render(DrawContext drawContext, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.player == null || client.options.hudHidden) return;
 
