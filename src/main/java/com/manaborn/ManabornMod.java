@@ -41,9 +41,11 @@ public class ManabornMod implements ModInitializer {
 				.build(iceShardKey)
 		);
 		
+		// Регистрация Mana Wand
 		RegistryKey<Item> wandKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "mana_wand"));
 		MANA_WAND = Registry.register(Registries.ITEM, wandKey, new MagicStaffItem(new Item.Settings().maxCount(1).registryKey(wandKey)));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(MANA_WAND));
+		System.out.println(" [DEBUG] Mana Wand зарегистрирована с ID: " + wandKey.getValue());
 
 		// Тик сервера: регенерация маны
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
