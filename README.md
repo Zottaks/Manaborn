@@ -1,9 +1,257 @@
-# Fabric Example Mod
+# ✨ Manaborn
 
-## Setup
+**Manaborn** — магический мод для Minecraft, добавляющий систему маны и заклинаний.
 
-For setup instructions please see the [fabric documentation page](https://docs.fabricmc.net/develop/getting-started/setting-up-a-development-environment) that relates to the IDE that you are using.
+![Minecraft](https://img.shields.io/badge/Minecraft-1.21.10-green?style=flat-square)
+![Fabric Loader](https://img.shields.io/badge/Fabric%20Loader-0.17.2-blue?style=flat-square)
+![Fabric API](https://img.shields.io/badge/Fabric%20API-0.134.1-blue?style=flat-square)
+![Java](https://img.shields.io/badge/Java-21-orange?style=flat-square)
 
-## License
+---
 
-This template is available under the CC0 license. Feel free to learn from it and incorporate it in your own projects.
+## 📖 Описание
+
+Manaborn добавляет в игру полноценную систему магии с маной, магическими посохами и различными заклинаниями. Игроки получают доступ к 100 единицам маны, которая автоматически восстанавливается со временем.
+
+### ✨ Основные возможности
+
+- **Система маны**: 100 единиц максимум с автоматической регенерацией
+- **Магический посох**: универсальный инструмент для сотворения заклинаний
+- **Множество заклинаний**: огненные шары, ледяные осколки и многое другое
+- **HUD интерфейс**: визуальное отображение маны и активного заклинания
+- **Система кулдаунов**: балансировка использования заклинаний
+
+---
+
+## 🎮 Геймплей
+
+### Система маны
+
+- **Максимум**: 100 единиц маны
+- **Регенерация**: 20 маны за 5 секунд (1 мана каждые 5 тиков)
+- **Задержка**: 2 секунды после использования заклинания перед началом регенерации
+- **Отображение**: визуальные пузырьки в правом нижнем углу экрана
+
+### Магический посох (Mana Wand)
+
+Универсальный магический инструмент для сотворения заклинаний.
+
+**Управление:**
+- **ПКМ** — использовать активное заклинание
+- **Shift + ПКМ** — переключить заклинание
+
+**Особенности:**
+- Кулдаун 5 секунд после использования
+- Отображение активного заклинания в названии предмета
+- Подробные подсказки (tooltip) с информацией о заклинаниях
+
+### Заклинания
+
+#### 🔥 Огненный шар (Fireball)
+- **Стоимость**: 20 маны
+- **Эффект**: запускает огненный снаряд, поджигающий врагов
+- **Звук**: звук использования огненного заряда
+
+#### ❄️ Ледяной осколок (Ice Shard)
+- **Стоимость**: 35 маны
+- **Эффект**: запускает ледяной снаряд, замедляющий врагов
+- **Дебафф**: Замедление III на 5 секунд
+- **Звук**: звук выстрела снежного голема
+
+---
+
+## 🛠️ Технические детали
+
+### Архитектура
+
+Проект следует принципам разделения клиента и сервера:
+
+```
+src/
+├── main/java/com/manaborn/          # Серверная логика
+│   ├── ManabornMod.java             # Главный класс мода
+│   ├── items/                       # Предметы
+│   │   └── MagicStaffItem.java      # Магический посох
+│   ├── mana/                        # Система маны
+│   │   └── ManaManager.java         # Управление маной
+│   ├── spells/                      # Система заклинаний
+│   │   ├── SpellManager.java        # Логика заклинаний
+│   │   └── SpellType.java           # Типы заклинаний
+│   ├── entities/                    # Кастомные сущности
+│   │   └── IceShardEntity.java      # Ледяной осколок
+│   └── network/                     # Сетевые пакеты
+│       └── ManaSyncS2CPacket.java   # Синхронизация маны
+│
+└── client/java/com/manaborn/client/ # Клиентская логика
+    ├── ManabornClient.java          # Клиентская инициализация
+    ├── ManaHudOverlay.java          # HUD отображение маны
+    ├── SpellHudOverlay.java         # HUD отображение заклинаний
+    └── state/
+        └── ClientManaState.java     # Клиентское состояние маны
+```
+
+### Ключевые компоненты
+
+#### ManaManager
+- Управление маной игроков на сервере
+- Автоматическая регенерация
+- Синхронизация с клиентом через пакеты
+
+#### SpellManager
+- Обработка каста заклинаний
+- Проверка стоимости маны
+- Переключение между заклинаниями
+
+#### IceShardEntity
+- Кастомная сущность-снаряд
+- Применяет эффект замедления при попадании
+- Наследуется от `SnowballEntity`
+
+#### HUD Overlays
+- Использует современный API `HudElementRegistry`
+- Визуальное отображение маны (пузырьки)
+- Отображение активного заклинания
+
+### Сетевая синхронизация
+
+Мод использует систему `CustomPayload` для синхронизации данных:
+
+```java
+public record ManaSyncS2CPacket(int mana, int maxMana) implements CustomPayload
+```
+
+Синхронизация происходит:
+- При входе игрока на сервер
+- После использования заклинания
+- При регенерации маны
+
+---
+
+## 📦 Установка
+
+### Для игроков
+
+1. Установите [Fabric Loader](https://fabricmc.net/use/) версии 0.17.2 или выше
+2. Установите [Fabric API](https://modrinth.com/mod/fabric-api) версии 0.134.1+1.21.10 или выше
+3. Скачайте файл мода `manaborn-1.0.0.jar`
+4. Поместите файл в папку `mods` вашего клиента/сервера Minecraft
+5. Запустите игру с профилем Fabric
+
+### Для разработчиков
+
+#### Требования
+- Java 21 или выше
+- Minecraft 1.21.10
+- Fabric Loader 0.17.2
+- Fabric API 0.134.1+1.21.10
+
+#### Настройка окружения
+
+1. Клонируйте репозиторий:
+```bash
+git clone https://github.com/Zottaks/Manaborn.git
+cd Manaborn
+```
+
+2. Импортируйте проект в IDE (IntelliJ IDEA или Eclipse)
+
+3. Выполните Gradle задачи для настройки:
+```bash
+./gradlew genSources
+```
+
+#### Запуск
+
+```bash
+# Запуск клиента
+./gradlew runClient
+
+# Запуск сервера
+./gradlew runServer
+
+# Сборка мода
+./gradlew build
+```
+
+Собранный JAR файл будет находиться в `build/libs/`
+
+---
+
+## 🔧 Конфигурация
+
+### Настройка маны
+
+В файле `ManaManager.java`:
+
+```java
+public static final int MAX_MANA = 100;              // Максимальная мана
+private static final int REGEN_UNIT_PER_5S = 20;     // Регенерация за 5 секунд
+private static final int REGEN_DELAY_TICKS = 40;     // Задержка перед регеном (2 сек)
+```
+
+### Добавление новых заклинаний
+
+1. Добавьте новый тип в `SpellType.java`:
+```java
+NEW_SPELL("Название", стоимость_маны, "id", Formatting.COLOR)
+```
+
+2. Реализуйте логику в `SpellManager.java`:
+```java
+case NEW_SPELL:
+    castNewSpell(world, user);
+    break;
+```
+
+3. Создайте метод каста:
+```java
+private static void castNewSpell(World world, PlayerEntity user) {
+    // Ваша логика заклинания
+}
+```
+
+---
+
+## 🤝 Вклад в проект
+
+Приветствуются любые предложения и улучшения!
+
+1. Форкните репозиторий
+2. Создайте ветку для вашей функции (`git checkout -b feature/AmazingFeature`)
+3. Закоммитьте изменения (`git commit -m 'Add some AmazingFeature'`)
+4. Запушьте в ветку (`git push origin feature/AmazingFeature`)
+5. Откройте Pull Request
+
+---
+
+## 📝 Лицензия
+
+Этот проект распространяется под лицензией **CC0-1.0** (Creative Commons Zero).
+
+Вы можете свободно использовать, изменять и распространять этот код в своих проектах.
+
+---
+
+## 📚 Ресурсы
+
+- [Fabric Wiki](https://fabricmc.net/wiki/) — документация по Fabric
+- [Fabric Documentation](https://docs.fabricmc.net/) — современная документация
+- [Minecraft Wiki](https://minecraft.wiki/) — информация о Minecraft
+
+---
+
+## 👤 Автор
+
+**Zottaks**
+
+---
+
+## 🙏 Благодарности
+
+- Команде Fabric за отличный mod loader
+- Сообществу Minecraft за вдохновение
+- Всем контрибьюторам проекта
+
+---
+
+**✨ Пробудите свою внутреннюю магию с Manaborn!**
