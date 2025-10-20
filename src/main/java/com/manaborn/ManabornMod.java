@@ -1,6 +1,7 @@
 package com.manaborn;
 
 import com.manaborn.items.MagicStaffItem;
+import com.manaborn.items.ManaPotionItem;
 import com.manaborn.mana.ManaManager;
 import com.manaborn.network.ManaSyncS2CPacket;
 import com.manaborn.entities.IceShardEntity;
@@ -23,6 +24,7 @@ public class ManabornMod implements ModInitializer {
 	public static final String MOD_ID = "manaborn";
 
 	public static Item MANA_WAND;
+	public static Item MANA_POTION;
 	public static EntityType<IceShardEntity> ICE_SHARD_ENTITY;
 	
 	// Lev: тут происходят инициализации
@@ -46,6 +48,12 @@ public class ManabornMod implements ModInitializer {
 		MANA_WAND = Registry.register(Registries.ITEM, wandKey, new MagicStaffItem(new Item.Settings().maxCount(1).registryKey(wandKey)));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(MANA_WAND));
 		System.out.println(" [DEBUG] Mana Wand зарегистрирована с ID: " + wandKey.getValue());
+		
+		// Регистрация Mana Crystal
+		RegistryKey<Item> potionKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "mana_potion"));
+		MANA_POTION = Registry.register(Registries.ITEM, potionKey, new ManaPotionItem(new Item.Settings().maxCount(16).registryKey(potionKey)));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.FOOD_AND_DRINK).register(entries -> entries.add(MANA_POTION));
+		System.out.println(" [DEBUG] Mana Crystal зарегистрирован с ID: " + potionKey.getValue());
 
 		// Тик сервера: регенерация маны
 		ServerTickEvents.END_SERVER_TICK.register(server -> {

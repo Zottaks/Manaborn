@@ -1,0 +1,17 @@
+{
+	"type": "minecraft:crafting_shaped",
+	"category": "misc",
+	"pattern": [
+		"LLL",
+		"LBL",
+		"LLL"
+	],
+	"key": {
+		"L": "minecraft:lapis_lazuli",
+		"B": "minecraft:glass_bottle"
+	},
+	"result": {
+		"id": "manaborn:mana_potion",
+		"count": 3
+	}
+}
