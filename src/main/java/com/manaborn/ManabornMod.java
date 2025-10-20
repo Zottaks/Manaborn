@@ -22,7 +22,7 @@ import net.minecraft.util.Identifier;
 public class ManabornMod implements ModInitializer {
 	public static final String MOD_ID = "manaborn";
 
-	public static Item MAGIC_STAFF;
+	public static Item MANA_WAND;
 	public static EntityType<IceShardEntity> ICE_SHARD_ENTITY;
 	
 	// Lev: тут происходят инициализации
@@ -41,9 +41,9 @@ public class ManabornMod implements ModInitializer {
 				.build(iceShardKey)
 		);
 		
-		RegistryKey<Item> staffKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "magic_staff"));
-		MAGIC_STAFF = Registry.register(Registries.ITEM, staffKey, new MagicStaffItem(new Item.Settings().maxCount(1).registryKey(staffKey)));
-		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(MAGIC_STAFF));
+		RegistryKey<Item> wandKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "mana_wand"));
+		MANA_WAND = Registry.register(Registries.ITEM, wandKey, new MagicStaffItem(new Item.Settings().maxCount(1).registryKey(wandKey)));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(MANA_WAND));
 
 		// Тик сервера: регенерация маны
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
