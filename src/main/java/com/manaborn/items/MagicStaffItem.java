@@ -51,7 +51,7 @@ public class MagicStaffItem extends Item {
     
     @Override
     public boolean hasGlint(ItemStack stack) {
-        return true; // Волшебная палочка всегда светится
+        return false; // Отключаем постоянный эффект зачарования
     }
     
     /**
