@@ -1,6 +1,8 @@
 {
   "item.manaborn.mana_wand": "Mana Wand",
-  "item.manaborn.mana_potion": "Mana Crystal"
+  "item.manaborn.mana_potion": "Mana Crystal",
+  "item.manaborn.magic_dust": "Magic Dust",
+  "block.manaborn.magic_ore": "Magic Ore"
 }
 
 

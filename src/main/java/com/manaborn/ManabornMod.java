@@ -2,6 +2,8 @@ package com.manaborn;
 
 import com.manaborn.items.MagicStaffItem;
 import com.manaborn.items.ManaPotionItem;
+import com.manaborn.items.MagicDustItem;
+import com.manaborn.blocks.MagicOreBlock;
 import com.manaborn.mana.ManaManager;
 import com.manaborn.network.ManaSyncS2CPacket;
 import com.manaborn.entities.IceShardEntity;
@@ -12,8 +14,12 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
+import net.minecraft.block.Block;
+import net.minecraft.block.AbstractBlock;
+import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
+import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
@@ -25,6 +31,8 @@ public class ManabornMod implements ModInitializer {
 
 	public static Item MANA_WAND;
 	public static Item MANA_POTION;
+	public static Item MAGIC_DUST;
+	public static Block MAGIC_ORE;
 	public static EntityType<IceShardEntity> ICE_SHARD_ENTITY;
 	
 	// Lev: тут происходят инициализации
@@ -54,6 +62,30 @@ public class ManabornMod implements ModInitializer {
 		MANA_POTION = Registry.register(Registries.ITEM, potionKey, new ManaPotionItem(new Item.Settings().maxCount(16).registryKey(potionKey)));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.FOOD_AND_DRINK).register(entries -> entries.add(MANA_POTION));
 		System.out.println(" [DEBUG] Mana Crystal зарегистрирован с ID: " + potionKey.getValue());
+		
+		// Регистрация Magic Dust
+		RegistryKey<Item> dustKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "magic_dust"));
+		MAGIC_DUST = Registry.register(Registries.ITEM, dustKey, new MagicDustItem(new Item.Settings().maxCount(64).registryKey(dustKey)));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(entries -> entries.add(MAGIC_DUST));
+		System.out.println(" [DEBUG] Magic Dust зарегистрирована с ID: " + dustKey.getValue());
+		
+		// Регистрация Magic Ore Block
+		RegistryKey<Block> oreBlockKey = RegistryKey.of(Registries.BLOCK.getKey(), Identifier.of(MOD_ID, "magic_ore"));
+		MAGIC_ORE = Registry.register(
+			Registries.BLOCK,
+			oreBlockKey,
+			new MagicOreBlock(AbstractBlock.Settings.create()
+				.strength(3.0f, 3.0f) // Прочность как у железной руды
+				.requiresTool() // Требуется кирка
+				.sounds(BlockSoundGroup.STONE)
+				.registryKey(oreBlockKey))
+		);
+		
+		// Регистрация предмета блока
+		RegistryKey<Item> oreItemKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "magic_ore"));
+		Registry.register(Registries.ITEM, oreItemKey, new BlockItem(MAGIC_ORE, new Item.Settings().registryKey(oreItemKey)));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.BUILDING_BLOCKS).register(entries -> entries.add(MAGIC_ORE));
+		System.out.println(" [DEBUG] Magic Ore зарегистрирована с ID: " + oreBlockKey.getValue());
 
 		// Тик сервера: регенерация маны
 		ServerTickEvents.END_SERVER_TICK.register(server -> {

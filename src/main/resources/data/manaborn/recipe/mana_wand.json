@@ -8,7 +8,7 @@
 	],
 	"key": {
 		"S": "minecraft:stick",
-		"A": "minecraft:amethyst_shard"
+		"A": "manaborn:magic_dust"
 	},
 	"result": {
 		"id": "manaborn:mana_wand",
