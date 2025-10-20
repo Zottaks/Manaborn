@@ -78,6 +78,7 @@ public class ManabornMod implements ModInitializer {
 				.strength(3.0f, 3.0f) // Прочность как у железной руды
 				.requiresTool() // Требуется кирка
 				.sounds(BlockSoundGroup.STONE)
+				.luminance(state -> 7) // Небольшое свечение (уровень 7)
 				.registryKey(oreBlockKey))
 		);
 		
