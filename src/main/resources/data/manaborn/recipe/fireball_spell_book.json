@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "DFD",
+    "DBD",
+    "DDD"
+  ],
+  "key": {
+    "D": "manaborn:magic_dust",
+    "F": "minecraft:fire_charge",
+    "B": "minecraft:book"
+  },
+  "result": {
+    "id": "manaborn:fireball_spell_book",
+    "count": 1
+  }
+}

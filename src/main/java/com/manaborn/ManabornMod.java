@@ -3,9 +3,13 @@ package com.manaborn;
 import com.manaborn.items.MagicStaffItem;
 import com.manaborn.items.ManaPotionItem;
 import com.manaborn.items.MagicDustItem;
+import com.manaborn.items.SpellBookItem;
 import com.manaborn.blocks.MagicOreBlock;
 import com.manaborn.mana.ManaManager;
 import com.manaborn.network.ManaSyncS2CPacket;
+import com.manaborn.network.LearnedSpellsSyncS2CPacket;
+import com.manaborn.spells.LearnedSpellsManager;
+import com.manaborn.spells.SpellType;
 import com.manaborn.entities.IceShardEntity;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -33,13 +37,15 @@ public class ManabornMod implements ModInitializer {
 	public static Item MANA_POTION;
 	public static Item MAGIC_DUST;
 	public static Block MAGIC_ORE;
+	public static Item FIREBALL_SPELL_BOOK;
 	public static EntityType<IceShardEntity> ICE_SHARD_ENTITY;
 	
 	// Lev: тут происходят инициализации
 	@Override
 	public void onInitialize() {
-		// Регистрация типа S2C пакета
+		// Регистрация типов S2C пакетов
 		PayloadTypeRegistry.playS2C().register(ManaSyncS2CPacket.ID, ManaSyncS2CPacket.CODEC);
+		PayloadTypeRegistry.playS2C().register(LearnedSpellsSyncS2CPacket.ID, LearnedSpellsSyncS2CPacket.CODEC);
 		
 		// Регистрация сущности ледяного осколка
 		RegistryKey<EntityType<?>> iceShardKey = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Identifier.of(MOD_ID, "ice_shard"));
@@ -68,6 +74,12 @@ public class ManabornMod implements ModInitializer {
 		MAGIC_DUST = Registry.register(Registries.ITEM, dustKey, new MagicDustItem(new Item.Settings().maxCount(64).registryKey(dustKey)));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(entries -> entries.add(MAGIC_DUST));
 		System.out.println(" [DEBUG] Magic Dust зарегистрирована с ID: " + dustKey.getValue());
+		
+		// Регистрация Fireball Spell Book
+		RegistryKey<Item> fireballBookKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "fireball_spell_book"));
+		FIREBALL_SPELL_BOOK = Registry.register(Registries.ITEM, fireballBookKey, new SpellBookItem(new Item.Settings().maxCount(1).registryKey(fireballBookKey), SpellType.FIREBALL));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(FIREBALL_SPELL_BOOK));
+		System.out.println(" [DEBUG] Fireball Spell Book зарегистрирована с ID: " + fireballBookKey.getValue());
 		
 		// Регистрация Magic Ore Block
 		RegistryKey<Block> oreBlockKey = RegistryKey.of(Registries.BLOCK.getKey(), Identifier.of(MOD_ID, "magic_ore"));
@@ -98,6 +110,10 @@ public class ManabornMod implements ModInitializer {
 			ServerPlayerEntity player = handler.player;
 			ManaManager.ensureInitialized(player);
 			ManaManager.sendSync(player);
+			
+			// Инициализация и синхронизация изученных заклинаний
+			LearnedSpellsManager.ensureInitialized(player);
+			LearnedSpellsManager.sendSync(player);
 		});
 
 		System.out.println("✨ Manaborn loaded — awaken your inner magic!");

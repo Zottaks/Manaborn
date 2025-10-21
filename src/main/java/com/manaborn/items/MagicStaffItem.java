@@ -27,7 +27,7 @@ public class MagicStaffItem extends Item {
         if (user.isSneaking()) {
             // Shift + ПКМ для смены заклинания (ВСЕГДА доступно, даже на кулдауне)
             if (!world.isClient()) {
-                SpellManager.cycleSpell(stack);
+                SpellManager.cycleLearnedSpell(stack, (net.minecraft.server.network.ServerPlayerEntity) user);
                 SpellType selected = SpellManager.getSelectedSpell(stack);
                 
                 // Сообщение с цветом заклинания
@@ -61,6 +61,11 @@ public class MagicStaffItem extends Item {
     public Text getName(ItemStack stack) {
         SpellType selectedSpell = SpellManager.getSelectedSpell(stack);
         
+        if (selectedSpell == null) {
+            return Text.literal("Магический посох")
+                .append(Text.literal(" [Нет заклинания]").formatted(Formatting.DARK_GRAY));
+        }
+        
         return Text.literal("Магический посох ")
             .append(Text.literal("[" + selectedSpell.getDisplayName() + "]").formatted(selectedSpell.getColor()));
     }
@@ -83,11 +88,17 @@ public class MagicStaffItem extends Item {
         tooltip.accept(Text.literal(""));
         
         // Информация о выбранном заклинании
-        tooltip.accept(Text.literal("Активное заклинание:").formatted(Formatting.GOLD));
-        tooltip.accept(Text.literal("  " + selectedSpell.getDisplayName())
-            .formatted(selectedSpell.getColor()));
-        tooltip.accept(Text.literal("  Стоимость: " + selectedSpell.getManaCost() + " маны")
-            .formatted(Formatting.AQUA));
+        if (selectedSpell != null) {
+            tooltip.accept(Text.literal("Активное заклинание:").formatted(Formatting.GOLD));
+            tooltip.accept(Text.literal("  " + selectedSpell.getDisplayName())
+                .formatted(selectedSpell.getColor()));
+            tooltip.accept(Text.literal("  Стоимость: " + selectedSpell.getManaCost() + " маны")
+                .formatted(Formatting.AQUA));
+        } else {
+            tooltip.accept(Text.literal("Активное заклинание:").formatted(Formatting.GOLD));
+            tooltip.accept(Text.literal("  Нет")
+                .formatted(Formatting.DARK_GRAY, Formatting.ITALIC));
+        }
         
         // Пустая строка
         tooltip.accept(Text.literal(""));
@@ -110,14 +121,38 @@ public class MagicStaffItem extends Item {
         // Пустая строка
         tooltip.accept(Text.literal(""));
         
-        // Доступные заклинания
-        tooltip.accept(Text.literal("Доступные заклинания:").formatted(Formatting.LIGHT_PURPLE));
-        for (SpellType spell : SpellType.values()) {
-            String prefix = spell == selectedSpell ? "  ► " : "  • ";
-            tooltip.accept(Text.literal(prefix + spell.getDisplayName())
-                .formatted(spell.getColor())
-                .append(Text.literal(" (" + spell.getManaCost() + " маны)")
-                    .formatted(Formatting.DARK_GRAY)));
+        // Изученные заклинания (только на клиенте)
+        // Используем рефлексию для безопасного доступа к клиентскому классу
+        try {
+            Class<?> clientStateClass = Class.forName("com.manaborn.client.state.ClientLearnedSpellsState");
+            java.lang.reflect.Method getLearnedSpellsMethod = clientStateClass.getMethod("getLearnedSpells");
+            @SuppressWarnings("unchecked")
+            java.util.Set<SpellType> learnedSpells = (java.util.Set<SpellType>) getLearnedSpellsMethod.invoke(null);
+            
+            if (!learnedSpells.isEmpty()) {
+                tooltip.accept(Text.literal("Изученные заклинания:").formatted(Formatting.LIGHT_PURPLE));
+                for (SpellType spell : learnedSpells) {
+                    boolean isSelected = selectedSpell != null && spell == selectedSpell;
+                    String prefix = isSelected ? "  ► " : "  • ";
+                    tooltip.accept(Text.literal(prefix + spell.getDisplayName())
+                        .formatted(spell.getColor())
+                        .append(Text.literal(" (" + spell.getManaCost() + " маны)")
+                            .formatted(Formatting.DARK_GRAY)));
+                }
+            } else {
+                tooltip.accept(Text.literal("Нет изученных заклинаний!").formatted(Formatting.RED, Formatting.ITALIC));
+                tooltip.accept(Text.literal("Найдите книги заклинаний.").formatted(Formatting.GRAY, Formatting.ITALIC));
+            }
+        } catch (Exception e) {
+            // На сервере или если класс не найден - показываем все заклинания
+            tooltip.accept(Text.literal("Доступные заклинания:").formatted(Formatting.LIGHT_PURPLE));
+            for (SpellType spell : SpellType.values()) {
+                String prefix = spell == selectedSpell ? "  ► " : "  • ";
+                tooltip.accept(Text.literal(prefix + spell.getDisplayName())
+                    .formatted(spell.getColor())
+                    .append(Text.literal(" (" + spell.getManaCost() + " маны)")
+                        .formatted(Formatting.DARK_GRAY)));
+            }
         }
     }
 }

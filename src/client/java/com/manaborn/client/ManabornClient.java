@@ -1,7 +1,9 @@
 package com.manaborn.client;
 
 import com.manaborn.client.state.ClientManaState;
+import com.manaborn.client.state.ClientLearnedSpellsState;
 import com.manaborn.network.ManaSyncS2CPacket;
+import com.manaborn.network.LearnedSpellsSyncS2CPacket;
 import com.manaborn.ManabornMod;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -32,8 +34,14 @@ public class ManabornClient implements ClientModInitializer {
 				Identifier.of("manaborn", "spell_display"),
 				SpellHudOverlay::render);
 
+		// Обработчик пакета синхронизации маны
 		ClientPlayNetworking.registerGlobalReceiver(ManaSyncS2CPacket.ID, (payload, context) -> {
 			context.client().execute(() -> ClientManaState.set(payload.mana(), payload.maxMana()));
+		});
+		
+		// Обработчик пакета синхронизации изученных заклинаний
+		ClientPlayNetworking.registerGlobalReceiver(LearnedSpellsSyncS2CPacket.ID, (payload, context) -> {
+			context.client().execute(() -> ClientLearnedSpellsState.setLearnedSpells(payload.spellIds()));
 		});
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
