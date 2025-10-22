@@ -76,11 +76,6 @@ public class SpellBookItem extends Item {
     }
     
     @Override
-    public boolean hasGlint(ItemStack stack) {
-        return true; // Книга светится как зачарованный предмет
-    }
-    
-    @Override
     public Text getName(ItemStack stack) {
         return Text.literal("Книга заклинания: ")
             .formatted(Formatting.LIGHT_PURPLE)

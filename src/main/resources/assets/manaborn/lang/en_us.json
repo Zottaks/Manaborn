@@ -3,7 +3,9 @@
   "item.manaborn.mana_potion": "Mana Crystal",
   "item.manaborn.magic_dust": "Magic Dust",
   "block.manaborn.magic_ore": "Magic Ore",
-  "item.manaborn.fireball_spell_book": "Spell Book: Fireball"
+  "item.manaborn.fireball_spell_book": "Spell Book: Fireball",
+  "item.manaborn.ice_shard_spell_book": "Spell Book: Ice Shard",
+  "item.manaborn.fire_wall_spell_book": "Spell Book: Fire Wall"
 }
 
 

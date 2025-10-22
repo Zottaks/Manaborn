@@ -4,7 +4,8 @@ import net.minecraft.util.Formatting;
 
 public enum SpellType {
     FIREBALL("Огненный шар", 20, "fireball", Formatting.RED),
-    ICE_SHARD("Ледяной осколок", 35, "ice_shard", Formatting.AQUA);
+    ICE_SHARD("Ледяной осколок", 35, "ice_shard", Formatting.AQUA),
+    FIRE_WALL("Стена огня", 50, "fire_wall", Formatting.GOLD);
     
     private final String displayName;
     private final int manaCost;

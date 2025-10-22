@@ -91,6 +91,9 @@ public final class SpellHudOverlay {
             case ICE_SHARD:
                 renderIceShardStyle(drawContext, x, y, width, height, time, client, alpha);
                 break;
+            case FIRE_WALL:
+                renderFireWallStyle(drawContext, x, y, width, height, time, client, alpha);
+                break;
         }
         
         // Применяем прозрачность к тексту
@@ -289,5 +292,49 @@ public final class SpellHudOverlay {
         int b = (int) (b1 + (b2 - b1) * ratio);
         
         return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+    
+    /**
+     * Рендерит UI в стиле стены огня
+     * Золотисто-оранжевые цвета с эффектом вертикальных языков пламени
+     */
+    private static void renderFireWallStyle(DrawContext ctx, int x, int y, int width, int height, float time, MinecraftClient client, float alpha) {
+        // Анимация пульсации
+        float pulse = (float) Math.sin(time * Math.PI * 2) * 0.3f + 0.7f;
+        
+        // Цвета огненной стены с прозрачностью
+        int alphaValue = (int) (alpha * 192);
+        int darkOrange = (alphaValue << 24) | 0x442200;    // Темно-оранжевый фон
+        int orange = ((int)(alpha * 255) << 24) | 0xFF6600; // Оранжевый
+        int gold = ((int)(alpha * 255) << 24) | 0xFFAA00;   // Золотой
+        int brightGold = ((int)(alpha * 255) << 24) | 0xFFDD00; // Яркое золото
+        
+        // Основной фон с градиентом
+        drawGradientRect(ctx, x, y, x + width, y + height, darkOrange, orange);
+        
+        // Внешняя рамка (золотая пульсация)
+        int outerBorder = blendColors(gold, brightGold, pulse);
+        ctx.fill(x - 2, y - 2, x + width + 2, y - 1, outerBorder);
+        ctx.fill(x - 2, y + height + 1, x + width + 2, y + height + 2, outerBorder);
+        ctx.fill(x - 2, y - 1, x - 1, y + height + 1, outerBorder);
+        ctx.fill(x + width + 1, y - 1, x + width + 2, y + height + 1, outerBorder);
+        
+        // Внутренняя рамка (оранжевая)
+        ctx.fill(x - 1, y - 1, x + width + 1, y, ((int)(alpha * 255) << 24) | 0xFF8800);
+        ctx.fill(x - 1, y + height, x + width + 1, y + height + 1, ((int)(alpha * 255) << 24) | 0xFF8800);
+        ctx.fill(x - 1, y, x, y + height, ((int)(alpha * 255) << 24) | 0xFF8800);
+        ctx.fill(x + width, y, x + width + 1, y + height, ((int)(alpha * 255) << 24) | 0xFF8800);
+        
+        // Эффект "языков пламени" - вертикальные полосы
+        int flameCount = 6;
+        for (int i = 0; i < flameCount; i++) {
+            float flameTime = (time + i / (float) flameCount) % 1.0f;
+            int flameX = x + 10 + i * ((width - 20) / (flameCount - 1));
+            int flameHeight = (int) ((Math.sin(flameTime * Math.PI * 2 + i) * 0.5 + 0.5) * (height - 20));
+            int flameY = y + height - 10 - flameHeight;
+            
+            int flameColor = blendColors(orange, brightGold, flameTime);
+            ctx.fill(flameX, flameY, flameX + 3, y + height - 10, flameColor);
+        }
     }
 }
