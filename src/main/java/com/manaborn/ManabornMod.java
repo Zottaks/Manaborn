@@ -8,6 +8,7 @@ import com.manaborn.blocks.MagicOreBlock;
 import com.manaborn.mana.ManaManager;
 import com.manaborn.network.ManaSyncS2CPacket;
 import com.manaborn.network.LearnedSpellsSyncS2CPacket;
+import com.manaborn.network.RequestLearnedSpellsC2SPacket;
 import com.manaborn.spells.LearnedSpellsManager;
 import com.manaborn.spells.SpellType;
 import com.manaborn.entities.IceShardEntity;
@@ -16,6 +17,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.loot.v3.LootTableEvents;
 import net.minecraft.loot.LootPool;
 import net.minecraft.loot.entry.ItemEntry;
@@ -53,6 +55,17 @@ public class ManabornMod implements ModInitializer {
 		// Регистрация типов S2C пакетов
 		PayloadTypeRegistry.playS2C().register(ManaSyncS2CPacket.ID, ManaSyncS2CPacket.CODEC);
 		PayloadTypeRegistry.playS2C().register(LearnedSpellsSyncS2CPacket.ID, LearnedSpellsSyncS2CPacket.CODEC);
+		// Регистрация типа C2S пакета для запроса синхронизации изученных заклинаний
+		PayloadTypeRegistry.playC2S().register(RequestLearnedSpellsC2SPacket.ID, RequestLearnedSpellsC2SPacket.CODEC);
+
+		// Обработчик запроса с клиента — отправляем текущий список изученных заклинаний
+		ServerPlayNetworking.registerGlobalReceiver(RequestLearnedSpellsC2SPacket.ID, (payload, context) -> {
+			ServerPlayerEntity player = context.player();
+			if (player != null) {
+				LearnedSpellsManager.ensureInitialized(player);
+				LearnedSpellsManager.sendSync(player);
+			}
+		});
 		
 		// Регистрация сущности ледяного осколка
 		RegistryKey<EntityType<?>> iceShardKey = RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Identifier.of(MOD_ID, "ice_shard"));

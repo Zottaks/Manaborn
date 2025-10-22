@@ -2,8 +2,10 @@ package com.manaborn.client;
 
 import com.manaborn.client.state.ClientManaState;
 import com.manaborn.client.state.ClientLearnedSpellsState;
+import com.manaborn.client.ui.SpellTreeScreen;
 import com.manaborn.network.ManaSyncS2CPacket;
 import com.manaborn.network.LearnedSpellsSyncS2CPacket;
+import com.manaborn.network.RequestLearnedSpellsC2SPacket;
 import com.manaborn.ManabornMod;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -11,16 +13,23 @@ import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.render.entity.FlyingItemEntityRenderer;
 import net.minecraft.util.Identifier;
+import org.lwjgl.glfw.GLFW;
 
 public class ManabornClient implements ClientModInitializer {
-	@Override
-	public void onInitializeClient() {
-		// Регистрируем рендерер для ледяного осколка (КРИТИЧНО для предотвращения краша!)
-		// EntityRendererRegistry deprecated, но это всё ещё официальный способ для Fabric 1.21.10
-		// Новый API появится в будущих версиях Fabric API
-		registerIceShardRenderer();
+    private static boolean openMenuWasDown = false;
+
+    @Override
+    public void onInitializeClient() {
+        // Регистрация типа C2S пакета на клиенте (для кодирования при отправке)
+        PayloadTypeRegistry.playC2S().register(RequestLearnedSpellsC2SPacket.ID, RequestLearnedSpellsC2SPacket.CODEC);
+        // Регистрируем рендерер для ледяного осколка (КРИТИЧНО для предотвращения краша!)
+        // EntityRendererRegistry deprecated, но это всё ещё официальный способ для Fabric 1.21.10
+        // Новый API появится в будущих версиях Fabric API
+        registerIceShardRenderer();
 		
 		// Регистрируем HUD элемент для отображения маны перед чатом
 		HudElementRegistry.attachElementBefore(
@@ -34,28 +43,41 @@ public class ManabornClient implements ClientModInitializer {
 				Identifier.of("manaborn", "spell_display"),
 				SpellHudOverlay::render);
 
-		// Обработчик пакета синхронизации маны
-		ClientPlayNetworking.registerGlobalReceiver(ManaSyncS2CPacket.ID, (payload, context) -> {
-			context.client().execute(() -> ClientManaState.set(payload.mana(), payload.maxMana()));
-		});
-		
-		// Обработчик пакета синхронизации изученных заклинаний
-		ClientPlayNetworking.registerGlobalReceiver(LearnedSpellsSyncS2CPacket.ID, (payload, context) -> {
-			context.client().execute(() -> ClientLearnedSpellsState.setLearnedSpells(payload.spellIds()));
-		});
+        // Открытие меню заклинаний по клавише I (edge-detection)
 
-		ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			if (client.player != null) {
-				ClientManaState.clientTick();
-			}
-		});
-	}
+        // Обработчик пакета синхронизации маны
+        ClientPlayNetworking.registerGlobalReceiver(ManaSyncS2CPacket.ID, (payload, context) -> {
+            context.client().execute(() -> ClientManaState.set(payload.mana(), payload.maxMana()));
+        });
+        
+        // Обработчик пакета синхронизации изученных заклинаний
+        ClientPlayNetworking.registerGlobalReceiver(LearnedSpellsSyncS2CPacket.ID, (payload, context) -> {
+            context.client().execute(() -> ClientLearnedSpellsState.setLearnedSpells(payload.spellIds()));
+        });
+
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (client.player != null) {
+                ClientManaState.clientTick();
+            }
+            // Открытие меню заклинаний по клавише I
+            if (client.player != null) {
+                boolean isDown = InputUtil.isKeyPressed(client.getWindow(), GLFW.GLFW_KEY_I);
+                if (isDown && !openMenuWasDown && client.currentScreen == null) {
+                    // Перед открытием запрашиваем актуальные изученные заклинания у сервера
+                    ClientPlayNetworking.send(new RequestLearnedSpellsC2SPacket());
+                    client.setScreen(new SpellTreeScreen());
+                }
+                openMenuWasDown = isDown;
+            }
+        });
+    }
 	
 	/**
 	 * Регистрирует рендерер для сущности ледяного осколка
 	 * 
 	 * Используем FlyingItemEntityRenderer для отображения снежка.
-	 * EntityRendererRegistry помечен как deprecated в Fabric API,
+	 * EntityRendererRegistry deprecated, но это всё ещё официальный способ для Fabric 1.21.10
+	 * Новый API появится в будущих версиях Fabric API
 	 * но остается рабочим и официальным способом для версии 1.21.10.
 	 * Новый API для регистрации рендереров планируется в будущих версиях.
 	 */
