@@ -13,7 +13,6 @@ import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.render.entity.FlyingItemEntityRenderer;
 import net.minecraft.util.Identifier;
@@ -24,8 +23,6 @@ public class ManabornClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        // Регистрация типа C2S пакета на клиенте (для кодирования при отправке)
-        PayloadTypeRegistry.playC2S().register(RequestLearnedSpellsC2SPacket.ID, RequestLearnedSpellsC2SPacket.CODEC);
         // Регистрируем рендерер для ледяного осколка (КРИТИЧНО для предотвращения краша!)
         // EntityRendererRegistry deprecated, но это всё ещё официальный способ для Fabric 1.21.10
         // Новый API появится в будущих версиях Fabric API
