@@ -47,6 +47,7 @@ public class ManabornMod implements ModInitializer {
 	public static Item FIREBALL_SPELL_BOOK;
 	public static Item ICE_SHARD_SPELL_BOOK;
 	public static Item FIRE_WALL_SPELL_BOOK;
+	public static Item INNER_HEAT_SPELL_BOOK;
 	public static EntityType<IceShardEntity> ICE_SHARD_ENTITY;
 	
 	// Lev: тут происходят инициализации
@@ -112,6 +113,12 @@ public class ManabornMod implements ModInitializer {
 		FIRE_WALL_SPELL_BOOK = Registry.register(Registries.ITEM, fireWallBookKey, new SpellBookItem(new Item.Settings().maxCount(1).registryKey(fireWallBookKey), SpellType.FIRE_WALL));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(FIRE_WALL_SPELL_BOOK));
 		System.out.println(" [DEBUG] Fire Wall Spell Book зарегистрирована с ID: " + fireWallBookKey.getValue());
+
+		// Регистрация Inner Heat Spell Book
+		RegistryKey<Item> innerHeatBookKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "inner_heat_spell_book"));
+		INNER_HEAT_SPELL_BOOK = Registry.register(Registries.ITEM, innerHeatBookKey, new SpellBookItem(new Item.Settings().maxCount(1).registryKey(innerHeatBookKey), SpellType.INNER_HEAT));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(INNER_HEAT_SPELL_BOOK));
+		System.out.println(" [DEBUG] Inner Heat Spell Book зарегистрирована с ID: " + innerHeatBookKey.getValue());
 		
 		// Регистрация Magic Ore Block
 		RegistryKey<Block> oreBlockKey = RegistryKey.of(Registries.BLOCK.getKey(), Identifier.of(MOD_ID, "magic_ore"));

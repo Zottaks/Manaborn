@@ -26,6 +26,8 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 
 public class SpellManager {
     private static final String SPELL_NBT_KEY = "selectedSpell";
@@ -44,6 +46,36 @@ public class SpellManager {
             this.world = world;
             this.ticksRemaining = duration;
         }
+    }
+
+    private static void castInnerHeat(World world, PlayerEntity user) {
+        if (!(user instanceof ServerPlayerEntity serverPlayer)) return;
+        // Даем эффект скорости: 10 секунд, уровень 1 (Speed II будет amplifier=1, Speed I amplifier=0)
+        int duration = 200; // 10 секунд
+        int amplifier = 1; // Speed II
+        serverPlayer.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, duration, amplifier, false, true, true));
+
+        // Визуальные эффекты: частицы огня вокруг игрока
+        if (world instanceof ServerWorld serverWorld) {
+            double baseX = user.getX();
+            double baseY = user.getY();
+            double baseZ = user.getZ();
+            for (int i = 0; i < 30; i++) {
+                double offsetX = (world.random.nextDouble() - 0.5) * 0.8;
+                double offsetY = world.random.nextDouble() * 1.8;
+                double offsetZ = (world.random.nextDouble() - 0.5) * 0.8;
+                serverWorld.spawnParticles(ParticleTypes.FLAME,
+                        baseX + offsetX,
+                        baseY + offsetY,
+                        baseZ + offsetZ,
+                        1,
+                        0.0, 0.01, 0.0,
+                        0.01);
+            }
+        }
+
+        // Звук активации
+        world.playSound(null, user.getBlockPos(), SoundEvents.ITEM_FIRECHARGE_USE, SoundCategory.PLAYERS, 1.0f, 1.2f);
     }
 
     public static void castSpell(World world, PlayerEntity user, Hand hand) {
@@ -93,7 +125,11 @@ public class SpellManager {
                     break;
                 case FIRE_WALL:
                     castFireWall(world, user);
-                    cooldown = 100; // 5 секунд
+                    cooldown = 400; // 20 секунд
+                    break;
+                case INNER_HEAT:
+                    castInnerHeat(world, user);
+                    cooldown = 600; // 30 секунд
                     break;
                 default:
                     cooldown = 100;

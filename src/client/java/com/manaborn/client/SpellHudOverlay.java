@@ -94,6 +94,10 @@ public final class SpellHudOverlay {
             case FIRE_WALL:
                 renderFireWallStyle(drawContext, x, y, width, height, time, client, alpha);
                 break;
+            case INNER_HEAT:
+                // Внутренний жар: используем огненный стиль
+                renderFireballStyle(drawContext, x, y, width, height, time, client, alpha);
+                break;
         }
         
         // Применяем прозрачность к тексту

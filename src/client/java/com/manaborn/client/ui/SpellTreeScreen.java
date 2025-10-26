@@ -5,6 +5,7 @@ import com.manaborn.spells.SpellType;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
+import net.minecraft.client.gui.widget.ButtonWidget;
 
 import java.util.Arrays;
 import java.util.List;
@@ -17,6 +18,28 @@ public class SpellTreeScreen extends Screen {
     @Override
     protected void init() {
         super.init();
+        // Создаем кнопки вкладок
+        int w = this.width;
+        int pad = 10;
+        int boxTop = 32;
+        int tabBarY = boxTop + 8;
+        int tabWidth = 80;
+        int tabHeight = 14;
+        int tabsStartX = (w - (tabWidth * 2 + 8)) / 2;
+        int fireTabX = tabsStartX;
+        int iceTabX = tabsStartX + tabWidth + 8;
+
+        this.clearChildren();
+        this.addDrawableChild(
+            ButtonWidget.builder(Text.literal("Огонь"), b -> selectedTab = Tab.FIRE)
+                .dimensions(fireTabX, tabBarY, tabWidth, tabHeight)
+                .build()
+        );
+        this.addDrawableChild(
+            ButtonWidget.builder(Text.literal("Лед"), b -> selectedTab = Tab.ICE)
+                .dimensions(iceTabX, tabBarY, tabWidth, tabHeight)
+                .build()
+        );
     }
 
     @Override
@@ -58,29 +81,40 @@ public class SpellTreeScreen extends Screen {
         int dbgW = this.textRenderer.getWidth(dbg);
         context.drawTextWithShadow(this.textRenderer, dbg, w - 8 - dbgW, 8, 0xFFAAAAAA);
 
-        // Две школы: Огонь и Лед
-        int columnGap = 12;
-        int columnWidth = (boxRight - boxLeft - columnGap) / 2;
-        int leftColX = boxLeft + 8;
-        int rightColX = boxLeft + columnWidth + columnGap + 8;
-        int startY = boxTop + 12;
+        int tabBarY = boxTop + 8;
+        int tabWidth = 80;
+        int tabHeight = 14;
+        int tabsStartX = (w - (tabWidth * 2 + 8)) / 2;
+        int fireTabX = tabsStartX;
+        int iceTabX = tabsStartX + tabWidth + 8;
 
-        // Заголовки школ
-        context.drawTextWithShadow(this.textRenderer, "Огонь", leftColX, startY, 0xFFFFA54D);
-        context.drawTextWithShadow(this.textRenderer, "Лед", rightColX, startY, 0xFF7FDBFF);
+        int fireTabBg = selectedTab == Tab.FIRE ? 0xFF5A2A00 : 0xFF2A2A2A;
+        int iceTabBg = selectedTab == Tab.ICE ? 0xFF00334D : 0xFF2A2A2A;
 
-        int yFire = startY + 14;
-        int yIce = startY + 14;
+        context.fill(fireTabX, tabBarY, fireTabX + tabWidth, tabBarY + tabHeight, fireTabBg);
+        context.fill(iceTabX, tabBarY, iceTabX + tabWidth, tabBarY + tabHeight, iceTabBg);
 
-        // Ветки: показываем только изученные заклинания
-        List<SpellType> fireSpells = Arrays.asList(SpellType.FIREBALL, SpellType.FIRE_WALL);
+        String fireTitle = "Огонь";
+        String iceTitle = "Лед";
+        int fireTitleW = this.textRenderer.getWidth(fireTitle);
+        int iceTitleW = this.textRenderer.getWidth(iceTitle);
+        context.drawTextWithShadow(this.textRenderer, fireTitle, fireTabX + (tabWidth - fireTitleW) / 2, tabBarY + 3, 0xFFFFFFFF);
+        context.drawTextWithShadow(this.textRenderer, iceTitle, iceTabX + (tabWidth - iceTitleW) / 2, tabBarY + 3, 0xFFFFFFFF);
+
+        int listStartY = tabBarY + tabHeight + 8;
+        int listX = boxLeft + 16;
+
+        List<SpellType> fireSpells = Arrays.asList(SpellType.FIREBALL, SpellType.FIRE_WALL, SpellType.INNER_HEAT);
         List<SpellType> iceSpells = Arrays.asList(SpellType.ICE_SHARD);
 
-        boolean hasFire = renderBranch(context, fireSpells, leftColX, yFire);
-        boolean hasIce = renderBranch(context, iceSpells, rightColX, yIce);
+        boolean any;
+        if (selectedTab == Tab.FIRE) {
+            any = renderBranch(context, fireSpells, listX, listStartY);
+        } else {
+            any = renderBranch(context, iceSpells, listX, listStartY);
+        }
 
-        // Пустое состояние: ни одного изученного
-        if (!hasFire && !hasIce) {
+        if (!any) {
             String empty = "Нет изученных заклинаний";
             String tip = "Используйте книги заклинаний, чтобы изучать их";
             int ew = this.textRenderer.getWidth(empty);
@@ -98,21 +132,23 @@ public class SpellTreeScreen extends Screen {
         boolean any = false;
         for (SpellType spell : spells) {
             boolean learned = ClientLearnedSpellsState.hasLearned(spell);
-            if (learned) any = true;
+            if (!learned) {
+                continue; // Показываем только изученные
+            }
+            any = true;
 
-            int titleColor = learned ? 0xFFFFFFFF : 0xFFAAAAAA;
+            int titleColor = 0xFFFFFFFF;
             Text name = Text.literal("- ")
-                    .append(Text.literal(spell.getDisplayName()).formatted(spell.getColor()))
-                    .append(learned ? Text.empty() : Text.literal("  (не изучено)"));
+                    .append(Text.literal(spell.getDisplayName()).formatted(spell.getColor()));
             context.drawTextWithShadow(this.textRenderer, name, x, y, titleColor);
-            y += 10;
+            y += 12; // больше отступа под заголовок
 
             String desc = getDescription(spell);
-            int metaColor = learned ? 0xFFA0A0A0 : 0xFF808080;
+            int metaColor = 0xFFA0A0A0;
             context.drawText(this.textRenderer, Text.literal("Стоимость: " + spell.getManaCost() + " маны"), x + 12, y, metaColor, false);
-            y += 9;
-            context.drawText(this.textRenderer, Text.literal(desc).formatted(net.minecraft.util.Formatting.GRAY), x + 12, y, learned ? 0xFFC0C0C0 : 0xFF808080, false);
-            y += 12;
+            y += 11;
+            context.drawText(this.textRenderer, Text.literal(desc).formatted(net.minecraft.util.Formatting.GRAY), x + 12, y, 0xFFC0C0C0, false);
+            y += 14; // увеличенный нижний отступ, чтобы точно избежать наложений
         }
         return any;
     }
@@ -125,6 +161,8 @@ public class SpellTreeScreen extends Screen {
                 return "Быстрый ледяной осколок, поражающий цель на расстоянии.";
             case FIRE_WALL:
                 return "Создает стену огня, наносящую урон при соприкосновении.";
+            case INNER_HEAT:
+                return "Наполняет вас огненной энергией, временно увеличивая скорость.";
             default:
                 return "Заклинание.";
         }
@@ -134,4 +172,8 @@ public class SpellTreeScreen extends Screen {
     public boolean shouldPause() {
         return false;
     }
+
+    private enum Tab { FIRE, ICE }
+    private Tab selectedTab = Tab.FIRE;
+
 }
