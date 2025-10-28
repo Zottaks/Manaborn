@@ -47,24 +47,27 @@ public class SpellTreeScreen extends Screen {
         int w = this.width;
         int h = this.height;
 
-        // Полупрозрачная подложка на весь экран для контраста
         context.fill(0, 0, w, h, 0xB0000000);
 
-        // Область подложки
         int pad = 10;
         int boxTop = 32;
         int boxLeft = pad;
         int boxRight = w - pad;
         int boxBottom = h - pad;
-        context.fill(boxLeft, boxTop, boxRight, boxBottom, 0x80000000);
+
+        int bgTop = 0xA0151518;
+        int bgMid = 0xA01E1E23;
+        int bgBot = 0xA0151518;
+        int boxHeight = boxBottom - boxTop;
+        int thirds = Math.max(1, boxHeight / 3);
+        context.fill(boxLeft, boxTop, boxRight, boxTop + thirds, bgTop);
+        context.fill(boxLeft, boxTop + thirds, boxRight, boxTop + thirds * 2, bgMid);
+        context.fill(boxLeft, boxTop + thirds * 2, boxRight, boxBottom, bgBot);
+
         int borderColor = 0xFF3A3A3A;
-        // Top
         context.fill(boxLeft, boxTop, boxRight, boxTop + 1, borderColor);
-        // Bottom
         context.fill(boxLeft, boxBottom - 1, boxRight, boxBottom, borderColor);
-        // Left
         context.fill(boxLeft, boxTop, boxLeft + 1, boxBottom, borderColor);
-        // Right
         context.fill(boxRight - 1, boxTop, boxRight, boxBottom, borderColor);
 
         // Заголовок и подсказка поверх подложки
@@ -88,11 +91,22 @@ public class SpellTreeScreen extends Screen {
         int fireTabX = tabsStartX;
         int iceTabX = tabsStartX + tabWidth + 8;
 
-        int fireTabBg = selectedTab == Tab.FIRE ? 0xFF5A2A00 : 0xFF2A2A2A;
-        int iceTabBg = selectedTab == Tab.ICE ? 0xFF00334D : 0xFF2A2A2A;
+        int fireTabBg = selectedTab == Tab.FIRE ? 0xFF7A3A00 : 0xFF2A2A2A;
+        int iceTabBg = selectedTab == Tab.ICE ? 0xFF004A6A : 0xFF2A2A2A;
+        int selBorder = 0xFFFFFFFF;
+        int unselBorder = 0xFF4A4A4A;
 
         context.fill(fireTabX, tabBarY, fireTabX + tabWidth, tabBarY + tabHeight, fireTabBg);
         context.fill(iceTabX, tabBarY, iceTabX + tabWidth, tabBarY + tabHeight, iceTabBg);
+        int fb = selectedTab == Tab.FIRE ? selBorder : unselBorder;
+        int ib = selectedTab == Tab.ICE ? selBorder : unselBorder;
+        drawBorder(context, fireTabX, tabBarY, tabWidth, tabHeight, fb);
+        drawBorder(context, iceTabX, tabBarY, tabWidth, tabHeight, ib);
+        if (selectedTab == Tab.FIRE) {
+            context.fill(fireTabX, tabBarY + tabHeight, fireTabX + tabWidth, tabBarY + tabHeight + 2, 0xFFFFA64D);
+        } else if (selectedTab == Tab.ICE) {
+            context.fill(iceTabX, tabBarY + tabHeight, iceTabX + tabWidth, tabBarY + tabHeight + 2, 0xFF66D0FF);
+        }
 
         String fireTitle = "Огонь";
         String iceTitle = "Лед";
@@ -106,6 +120,39 @@ public class SpellTreeScreen extends Screen {
 
         List<SpellType> fireSpells = Arrays.asList(SpellType.FIREBALL, SpellType.FIRE_WALL, SpellType.INNER_HEAT);
         List<SpellType> iceSpells = Arrays.asList(SpellType.ICE_SHARD);
+
+        if (selectedTab == Tab.FIRE) {
+            int bannerTop = listStartY;
+            int bannerHeight = 26;
+            int bannerLeft = boxLeft + 8;
+            int bannerRight = boxRight - 8;
+            context.fill(bannerLeft, bannerTop, bannerRight, bannerTop + bannerHeight, 0x40201500);
+            context.fill(bannerLeft, bannerTop, bannerRight, bannerTop + 1, 0xFF7A3A00);
+            context.fill(bannerLeft, bannerTop + bannerHeight - 1, bannerRight, bannerTop + bannerHeight, 0xFF7A3A00);
+            int sw = this.textRenderer.getWidth("Магия огня");
+            context.drawTextWithShadow(this.textRenderer, "Магия огня", bannerLeft + 8, bannerTop + 9, 0xFFFFE0A0);
+            int fx = bannerLeft + 8 + sw + 8;
+            int fy = bannerTop + 6;
+            long t = System.currentTimeMillis() / 120;
+            for (int i = 0; i < 8; i++) {
+                int px = fx + i * 10;
+                int ph = 4 + (int) ((i + t) % 6);
+                int py = fy + 8 - ph;
+                int col = 0xFFCC6A1A;
+                context.fill(px, py, px + 4, py + ph, col);
+            }
+            listStartY = bannerTop + bannerHeight + 6;
+        } else {
+            int bannerTop = listStartY;
+            int bannerHeight = 26;
+            int bannerLeft = boxLeft + 8;
+            int bannerRight = boxRight - 8;
+            context.fill(bannerLeft, bannerTop, bannerRight, bannerTop + bannerHeight, 0x40203246);
+            context.fill(bannerLeft, bannerTop, bannerRight, bannerTop + 1, 0xFF1A6A8C);
+            context.fill(bannerLeft, bannerTop + bannerHeight - 1, bannerRight, bannerTop + bannerHeight, 0xFF1A6A8C);
+            context.drawTextWithShadow(this.textRenderer, "Магия льда", bannerLeft + 8, bannerTop + 9, 0xFFAEEBFF);
+            listStartY = bannerTop + bannerHeight + 6;
+        }
 
         boolean any;
         if (selectedTab == Tab.FIRE) {
@@ -130,25 +177,32 @@ public class SpellTreeScreen extends Screen {
     private boolean renderBranch(DrawContext context, List<SpellType> spells, int x, int startY) {
         int y = startY;
         boolean any = false;
+        int cardWidth = Math.max(200, context.getScaledWindowWidth() - (x + 32));
         for (SpellType spell : spells) {
             boolean learned = ClientLearnedSpellsState.hasLearned(spell);
             if (!learned) {
-                continue; // Показываем только изученные
+                continue;
             }
             any = true;
 
-            int titleColor = 0xFFFFFFFF;
-            Text name = Text.literal("- ")
-                    .append(Text.literal(spell.getDisplayName()).formatted(spell.getColor()));
-            context.drawTextWithShadow(this.textRenderer, name, x, y, titleColor);
-            y += 12; // больше отступа под заголовок
+            int cardHeight = 46;
+            int bg = 0xBF1E1E23;
+            int stroke = 0xFF3A3A3A;
+            int accent = (spell == SpellType.ICE_SHARD) ? 0xFF66D0FF : 0xFFFFA64D;
+            context.fill(x, y, x + cardWidth, y + cardHeight, bg);
+            drawBorder(context, x, y, cardWidth, cardHeight, stroke);
+            context.fill(x + 1, y + 1, x + 5, y + cardHeight - 1, accent);
+
+            Text name = Text.literal(spell.getDisplayName()).formatted(spell.getColor());
+            context.drawTextWithShadow(this.textRenderer, name, x + 10, y + 6, 0xFFFFFFFF);
+
+            String cost = "Стоимость: " + spell.getManaCost() + " маны";
+            context.drawText(this.textRenderer, Text.literal(cost), x + 10, y + 20, 0xFFCCCCCC, false);
 
             String desc = getDescription(spell);
-            int metaColor = 0xFFA0A0A0;
-            context.drawText(this.textRenderer, Text.literal("Стоимость: " + spell.getManaCost() + " маны"), x + 12, y, metaColor, false);
-            y += 11;
-            context.drawText(this.textRenderer, Text.literal(desc).formatted(net.minecraft.util.Formatting.GRAY), x + 12, y, 0xFFC0C0C0, false);
-            y += 14; // увеличенный нижний отступ, чтобы точно избежать наложений
+            context.drawText(this.textRenderer, Text.literal(desc).formatted(net.minecraft.util.Formatting.GRAY), x + 10, y + 31, 0xFFC0C0C0, false);
+
+            y += cardHeight + 6;
         }
         return any;
     }
@@ -166,6 +220,13 @@ public class SpellTreeScreen extends Screen {
             default:
                 return "Заклинание.";
         }
+    }
+
+    private void drawBorder(DrawContext context, int x, int y, int width, int height, int color) {
+        context.fill(x, y, x + width, y + 1, color);
+        context.fill(x, y + height - 1, x + width, y + height, color);
+        context.fill(x, y, x + 1, y + height, color);
+        context.fill(x + width - 1, y, x + width, y + height, color);
     }
 
     @Override

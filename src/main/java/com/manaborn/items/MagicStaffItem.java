@@ -38,11 +38,6 @@ public class MagicStaffItem extends Item {
             }
             return ActionResult.SUCCESS;
         } else {
-            // Проверяем кулдаун перед кастом заклинания
-            if (user.getItemCooldownManager().isCoolingDown(stack)) {
-                return ActionResult.PASS;
-            }
-            
             // Обычное использование для каста заклинания
             SpellManager.castSpell(world, user, hand);
             return ActionResult.SUCCESS;

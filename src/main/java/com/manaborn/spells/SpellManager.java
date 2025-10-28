@@ -31,6 +31,7 @@ import net.minecraft.entity.effect.StatusEffects;
 
 public class SpellManager {
     private static final String SPELL_NBT_KEY = "selectedSpell";
+    private static final String COOLDOWN_PREFIX = "cd_until_";
     
     // Хранилище активных стен огня: UUID стены -> данные о стене
     private static final Map<UUID, FireWallData> activeFireWalls = new HashMap<>();
@@ -108,7 +109,16 @@ public class SpellManager {
                 selectedSpell = learnedSpells.get(0);
                 setSelectedSpell(stack, selectedSpell);
             }
-            
+            // Пер-спелл кулдаун: проверяем до траты маны
+            if (isSpellOnCooldown(stack, world, selectedSpell)) {
+                long now = world.getTime();
+                long end = getSpellCooldownEnd(stack, selectedSpell);
+                long ticksLeft = Math.max(0, end - now);
+                double seconds = ticksLeft / 20.0;
+                serverPlayer.sendMessage(Text.literal(String.format("Кулдаун %.1fс", seconds)), true);
+                return;
+            }
+
             if (!ManaManager.tryConsume(serverPlayer, selectedSpell.getManaCost())) {
                 return;
             }
@@ -136,7 +146,7 @@ public class SpellManager {
             }
             
             user.incrementStat(Stats.USED.getOrCreateStat(stack.getItem()));
-            user.getItemCooldownManager().set(stack, cooldown);
+            setSpellCooldown(stack, world, selectedSpell, cooldown);
         } else {
             user.incrementStat(Stats.USED.getOrCreateStat(stack.getItem()));
         }
@@ -345,6 +355,30 @@ public class SpellManager {
         NbtCompound nbt = customData.copyNbt();
         nbt.putString(SPELL_NBT_KEY, spell.getId());
         stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
+    }
+
+    private static String cooldownKey(SpellType spell) {
+        return COOLDOWN_PREFIX + spell.getId();
+    }
+
+    private static long getSpellCooldownEnd(ItemStack stack, SpellType spell) {
+        NbtComponent customData = stack.get(DataComponentTypes.CUSTOM_DATA);
+        if (customData == null) return 0L;
+        NbtCompound nbt = customData.copyNbt();
+        return nbt.getLong(cooldownKey(spell)).orElse(0L);
+    }
+
+    private static void setSpellCooldown(ItemStack stack, World world, SpellType spell, int durationTicks) {
+        long endTick = world.getTime() + durationTicks;
+        NbtComponent customData = stack.getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT);
+        NbtCompound nbt = customData.copyNbt();
+        nbt.putLong(cooldownKey(spell), endTick);
+        stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
+    }
+
+    private static boolean isSpellOnCooldown(ItemStack stack, World world, SpellType spell) {
+        long end = getSpellCooldownEnd(stack, spell);
+        return world.getTime() < end;
     }
 
     public static void cycleSpell(ItemStack stack) {
