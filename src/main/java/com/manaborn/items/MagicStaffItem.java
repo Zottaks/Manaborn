@@ -65,7 +65,7 @@ public class MagicStaffItem extends Item {
             .append(Text.literal("[" + selectedSpell.getDisplayName() + "]").formatted(selectedSpell.getColor()));
     }
     
-    /** TEST
+    /** TEST TEST
      * Добавляем подробное описание предмета
      * 
      * Метод appendTooltip помечен как deprecated в Minecraft 1.21.10,
