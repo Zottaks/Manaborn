@@ -3,6 +3,7 @@ package com.manaborn.client;
 import com.manaborn.client.state.ClientManaState;
 import com.manaborn.client.state.ClientLearnedSpellsState;
 import com.manaborn.client.ui.SpellTreeScreen;
+import com.manaborn.client.ui.LearningAltarScreen;
 import com.manaborn.network.ManaSyncS2CPacket;
 import com.manaborn.network.LearnedSpellsSyncS2CPacket;
 import com.manaborn.network.RequestLearnedSpellsC2SPacket;
@@ -17,6 +18,7 @@ import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.render.entity.FlyingItemEntityRenderer;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
+import net.minecraft.client.gui.screen.ingame.HandledScreens;
 
 public class ManabornClient implements ClientModInitializer {
     private static boolean openMenuWasDown = false;
@@ -67,6 +69,9 @@ public class ManabornClient implements ClientModInitializer {
                 openMenuWasDown = isDown;
             }
         });
+
+        // Register client screen for Learning Altar
+        HandledScreens.register(ManabornMod.LEARNING_ALTAR_SH, LearningAltarScreen::new);
     }
 	
 	/**

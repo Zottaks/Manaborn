@@ -6,6 +6,9 @@ import com.manaborn.items.MagicDustItem;
 import com.manaborn.items.SpellBookItem;
 import com.manaborn.blocks.MagicOreBlock;
 import com.manaborn.mana.ManaManager;
+import com.manaborn.blocks.LearningAltarBlock;
+import com.manaborn.blocks.entity.LearningAltarBlockEntity;
+import com.manaborn.screen.LearningAltarScreenHandler;
 import com.manaborn.network.ManaSyncS2CPacket;
 import com.manaborn.network.LearnedSpellsSyncS2CPacket;
 import com.manaborn.network.RequestLearnedSpellsC2SPacket;
@@ -34,8 +37,13 @@ import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.screen.ScreenHandlerType;
+import net.minecraft.screen.ScreenHandlerType.Factory;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
+import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
+import net.minecraft.resource.featuretoggle.FeatureFlags;
 
 public class ManabornMod implements ModInitializer {
 	public static final String MOD_ID = "manaborn";
@@ -49,6 +57,9 @@ public class ManabornMod implements ModInitializer {
 	public static Item FIRE_WALL_SPELL_BOOK;
 	public static Item INNER_HEAT_SPELL_BOOK;
 	public static EntityType<IceShardEntity> ICE_SHARD_ENTITY;
+	public static Block LEARNING_ALTAR;
+	public static BlockEntityType<LearningAltarBlockEntity> LEARNING_ALTAR_BE;
+	public static ScreenHandlerType<LearningAltarScreenHandler> LEARNING_ALTAR_SH;
 	
 	// Lev: тут происходят инициализации
 	@Override
@@ -119,6 +130,35 @@ public class ManabornMod implements ModInitializer {
 		INNER_HEAT_SPELL_BOOK = Registry.register(Registries.ITEM, innerHeatBookKey, new SpellBookItem(new Item.Settings().maxCount(1).registryKey(innerHeatBookKey), SpellType.INNER_HEAT));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(INNER_HEAT_SPELL_BOOK));
 		System.out.println(" [DEBUG] Inner Heat Spell Book зарегистрирована с ID: " + innerHeatBookKey.getValue());
+
+		// Регистрация Learning Altar блока
+		RegistryKey<Block> altarBlockKey = RegistryKey.of(Registries.BLOCK.getKey(), Identifier.of(MOD_ID, "learning_altar"));
+		LEARNING_ALTAR = Registry.register(
+			Registries.BLOCK,
+			altarBlockKey,
+			new LearningAltarBlock(AbstractBlock.Settings.create()
+				.strength(2.0f, 3.0f)
+				.sounds(BlockSoundGroup.STONE)
+				.registryKey(altarBlockKey))
+		);
+		RegistryKey<Item> altarItemKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "learning_altar"));
+		Registry.register(Registries.ITEM, altarItemKey, new BlockItem(LEARNING_ALTAR, new Item.Settings().registryKey(altarItemKey)));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.BUILDING_BLOCKS).register(entries -> entries.add(LEARNING_ALTAR));
+
+		// Регистрация BlockEntityType для алтаря
+		LEARNING_ALTAR_BE = Registry.register(
+			Registries.BLOCK_ENTITY_TYPE,
+			RegistryKey.of(Registries.BLOCK_ENTITY_TYPE.getKey(), Identifier.of(MOD_ID, "learning_altar")),
+			FabricBlockEntityTypeBuilder.create(LearningAltarBlockEntity::new, LEARNING_ALTAR).build()
+		);
+
+		// Регистрация ScreenHandlerType для алтаря
+        Factory<LearningAltarScreenHandler> altarFactory = (syncId, inv) -> new LearningAltarScreenHandler(syncId, inv);
+        LEARNING_ALTAR_SH = Registry.register(
+            Registries.SCREEN_HANDLER,
+            Identifier.of(MOD_ID, "learning_altar"),
+            new ScreenHandlerType<>(altarFactory, FeatureFlags.VANILLA_FEATURES)
+        );
 		
 		// Регистрация Magic Ore Block
 		RegistryKey<Block> oreBlockKey = RegistryKey.of(Registries.BLOCK.getKey(), Identifier.of(MOD_ID, "magic_ore"));

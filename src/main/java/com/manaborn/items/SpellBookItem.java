@@ -34,16 +34,15 @@ public class SpellBookItem extends Item {
     
     @Override
     public ActionResult use(World world, PlayerEntity user, Hand hand) {
+        // Запрещаем прямое использование: подсказываем использовать Алтарь Изучения
         if (!world.isClient()) {
             user.sendMessage(
-                Text.literal("Используйте Алтарь Заклинаний для изучения этой книги.")
-                    .formatted(Formatting.YELLOW),
+                Text.literal("Используйте Алтарь Изучения для изучения этой книги.").formatted(Formatting.GRAY),
                 false
             );
-            world.playSound(null, user.getBlockPos(), SoundEvents.UI_BUTTON_CLICK,
-                SoundCategory.PLAYERS, 0.6f, 1.0f);
+            world.playSound(null, user.getBlockPos(), SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.PLAYERS, 0.8f, 1.0f);
         }
-        return ActionResult.SUCCESS;
+        return ActionResult.FAIL;
     }
     
     @Override
@@ -71,12 +70,8 @@ public class SpellBookItem extends Item {
         tooltip.accept(Text.literal("Стоимость: " + spell.getManaCost() + " маны").formatted(Formatting.AQUA));
         
         tooltip.accept(Text.literal(""));
-        tooltip.accept(Text.literal("Используйте Алтарь Заклинаний").formatted(Formatting.YELLOW)
-            .append(Text.literal(" для изучения").formatted(Formatting.GRAY)));
-        tooltip.accept(Text.literal("(книга тратится при успешном изучении)").formatted(Formatting.DARK_GRAY, Formatting.ITALIC));
-    }
-
-    public SpellType getSpell() {
-        return spell;
+        tooltip.accept(Text.literal("ПКМ").formatted(Formatting.YELLOW)
+            .append(Text.literal(" - Изучить заклинание").formatted(Formatting.GRAY)));
+        tooltip.accept(Text.literal("(книга исчезнет после изучения)").formatted(Formatting.DARK_GRAY, Formatting.ITALIC));
     }
 }
