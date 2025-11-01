@@ -52,6 +52,11 @@ public final class SpellHudOverlay {
         }
 
         SpellType selectedSpell = SpellManager.getSelectedSpell(staff);
+        if (selectedSpell == null) {
+            // Нечего отображать, если заклинание ещё не выбрано/не записано в NBT
+            lastSpell = null;
+            return;
+        }
         
         // Обновляем время при смене заклинания
         if (lastSpell != selectedSpell) {

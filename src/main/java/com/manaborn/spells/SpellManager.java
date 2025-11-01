@@ -249,25 +249,22 @@ public class SpellManager {
                 world.spawnEntity(cloud);
             }
         }
-        
-        // Регистрируем ТОНКУЮ зону урона вдоль стены
-        // Расширяем границы только вдоль стены, а не во все стороны
-        double damageThickness = 0.4; // Уменьшенная толщина зоны урона (было 0.6)
-        
-        // Добавляем толщину в направлении перпендикулярном стене
+        int totalClouds = (cloudsHorizontal * cloudsVertical) + ((cloudsHorizontal - 1) * (cloudsVertical - 1));
+        System.out.println("[Manaborn] FireWall created: " + totalClouds + " clouds in staggered pattern");
+
+        double damageThickness = 0.2;
         double thickMinX = minX - Math.abs(lookVec.x) * damageThickness;
         double thickMaxX = maxX + Math.abs(lookVec.x) * damageThickness;
         double thickMinZ = minZ - Math.abs(lookVec.z) * damageThickness;
         double thickMaxZ = maxZ + Math.abs(lookVec.z) * damageThickness;
-        
+        double forwardOffset = 0.6;
+        thickMinX += lookVec.x * forwardOffset;
+        thickMaxX += lookVec.x * forwardOffset;
+        thickMinZ += lookVec.z * forwardOffset;
+        thickMaxZ += lookVec.z * forwardOffset;
+
         Box wallBox = new Box(thickMinX, minY, thickMinZ, thickMaxX, maxY, thickMaxZ);
         activeFireWalls.put(wallId, new FireWallData(wallBox, serverWorld, 200));
-        
-        // Звук
-        world.playSound(null, user.getBlockPos(), SoundEvents.ITEM_FIRECHARGE_USE, SoundCategory.PLAYERS, 1.0f, 0.8f);
-        
-        int totalClouds = (cloudsHorizontal * cloudsVertical) + ((cloudsHorizontal - 1) * (cloudsVertical - 1));
-        System.out.println("[Manaborn] FireWall created: " + totalClouds + " clouds in staggered pattern");
     }
 
     /**
@@ -299,8 +296,8 @@ public class SpellManager {
                 );
                 
                 for (LivingEntity entity : entities) {
-                    // Поджигаем на 2 секунды
-                    entity.setOnFireFor(2);
+                    // Поджигаем на 5 секунд
+                    entity.setOnFireFor(5);
                     // Наносим урон огнём (1 HP каждые 0.5 секунды)
                     entity.damage(data.world, data.world.getDamageSources().inFire(), 1.0f);
                 }
@@ -311,6 +308,16 @@ public class SpellManager {
         for (UUID id : toRemove) {
             activeFireWalls.remove(id);
         }
+    }
+    
+    public static boolean intersectsFireWall(ServerWorld world, Box box) {
+        if (activeFireWalls.isEmpty()) return false;
+        for (FireWallData data : activeFireWalls.values()) {
+            if (data.world == world && data.boundingBox.intersects(box)) {
+                return true;
+            }
+        }
+        return false;
     }
     
     /**
