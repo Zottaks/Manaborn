@@ -29,7 +29,7 @@ import net.minecraft.sound.SoundEvents;
 public class LearningAltarBlockEntity extends BlockEntity implements Inventory, NamedScreenHandlerFactory {
     private final DefaultedList<ItemStack> items = DefaultedList.ofSize(2, ItemStack.EMPTY);
     private int progress = 0;
-    private final int maxProgress = 200;
+    private int maxProgress = 200;
     private boolean learning = false;
     private int reservedCost = 0;
     private @Nullable PlayerEntity lastInteracting;
@@ -155,6 +155,8 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
         player.addExperienceLevels(-cost);
         reservedCost = cost;
         learning = true;
+        // ensure maxProgress corresponds to current spell
+        maxProgress = getSpellDurationTicks(spell);
         progress = 0;
         effectTick = 0;
         // Start effects
@@ -192,6 +194,15 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
             return null;
         }
         return null;
+    }
+
+    private int getSpellDurationTicks(SpellType spell) {
+        return switch (spell) {
+            case FIREBALL -> 20 * 20;      // 20 seconds
+            case ICE_SHARD -> 45 * 20;     // 45 seconds
+            case FIRE_WALL -> 60 * 20;     // 60 seconds
+            case INNER_HEAT -> 120 * 20;   // 120 seconds
+        };
     }
 
     @Override
@@ -251,6 +262,8 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
             hasEnoughXp = false;
             return;
         }
+        // update per-spell duration dynamically for UI progress bar
+        this.maxProgress = getSpellDurationTicks(spell);
         requiredXp = getXpCost(spell);
         boolean notLearned = (player == null) || !LearnedSpellsManager.hasLearned(player.getUuid(), spell);
         canStart = notLearned;
