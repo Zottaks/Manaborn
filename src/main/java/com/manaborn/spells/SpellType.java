@@ -6,7 +6,8 @@ public enum SpellType {
     FIREBALL("Огненный шар", 20, "fireball", Formatting.RED),
     ICE_SHARD("Ледяной осколок", 35, "ice_shard", Formatting.AQUA),
     FIRE_WALL("Стена огня", 50, "fire_wall", Formatting.GOLD),
-    INNER_HEAT("Внутренний жар", 30, "inner_heat", Formatting.GOLD);
+    INNER_HEAT("Внутренний жар", 30, "inner_heat", Formatting.GOLD),
+    FROST_AURA("Аура Стужи", 40, "frost_aura", Formatting.AQUA);
     
     private final String displayName;
     private final int manaCost;
@@ -45,4 +46,3 @@ public enum SpellType {
         return FIREBALL; // по умолчанию
     }
 }
-

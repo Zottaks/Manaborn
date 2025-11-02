@@ -56,6 +56,7 @@ public class ManabornMod implements ModInitializer {
 	public static Item ICE_SHARD_SPELL_BOOK;
 	public static Item FIRE_WALL_SPELL_BOOK;
 	public static Item INNER_HEAT_SPELL_BOOK;
+	public static Item FROST_AURA_SPELL_BOOK;
 	public static EntityType<IceShardEntity> ICE_SHARD_ENTITY;
 	public static Block LEARNING_ALTAR;
 	public static BlockEntityType<LearningAltarBlockEntity> LEARNING_ALTAR_BE;
@@ -131,6 +132,12 @@ public class ManabornMod implements ModInitializer {
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(INNER_HEAT_SPELL_BOOK));
 		System.out.println(" [DEBUG] Inner Heat Spell Book зарегистрирована с ID: " + innerHeatBookKey.getValue());
 
+		// Регистрация Frost Aura Spell Book
+		RegistryKey<Item> frostAuraBookKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "frost_aura_spell_book"));
+		FROST_AURA_SPELL_BOOK = Registry.register(Registries.ITEM, frostAuraBookKey, new SpellBookItem(new Item.Settings().maxCount(1).registryKey(frostAuraBookKey), SpellType.FROST_AURA));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(FROST_AURA_SPELL_BOOK));
+		System.out.println(" [DEBUG] Frost Aura Spell Book зарегистрирована с ID: " + frostAuraBookKey.getValue());
+
 		// Регистрация Learning Altar блока
 		RegistryKey<Block> altarBlockKey = RegistryKey.of(Registries.BLOCK.getKey(), Identifier.of(MOD_ID, "learning_altar"));
 		LEARNING_ALTAR = Registry.register(
@@ -179,10 +186,11 @@ public class ManabornMod implements ModInitializer {
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.BUILDING_BLOCKS).register(entries -> entries.add(MAGIC_ORE));
 		System.out.println(" [DEBUG] Magic Ore зарегистрирована с ID: " + oreBlockKey.getValue());
 
-		// Тик сервера: регенерация маны и обработка стен огня
+		// Тик сервера: регенерация маны, обработка стен огня и ауры стужи
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			ManaManager.onServerTick(server.getPlayerManager().getPlayerList());
 			com.manaborn.spells.SpellManager.tickFireWalls();
+			com.manaborn.spells.SpellManager.tickFrostAuras(server.getPlayerManager().getPlayerList());
 		});
 
 		// Синхронизация при входе
@@ -205,7 +213,8 @@ public class ManabornMod implements ModInitializer {
 						.rolls(ConstantLootNumberProvider.create(1))
 						.with(ItemEntry.builder(FIREBALL_SPELL_BOOK).weight(5))
 						.with(ItemEntry.builder(ICE_SHARD_SPELL_BOOK).weight(5))
-						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(5)));
+						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(5))
+						.with(ItemEntry.builder(FROST_AURA_SPELL_BOOK).weight(5)));
 				}
 				
 				// Заброшенные шахты (3% шанс)
@@ -214,7 +223,8 @@ public class ManabornMod implements ModInitializer {
 						.rolls(ConstantLootNumberProvider.create(1))
 						.with(ItemEntry.builder(FIREBALL_SPELL_BOOK).weight(3))
 						.with(ItemEntry.builder(ICE_SHARD_SPELL_BOOK).weight(3))
-						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(3)));
+						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(3))
+						.with(ItemEntry.builder(FROST_AURA_SPELL_BOOK).weight(3)));
 				}
 				
 				// Библиотека крепости (15% шанс)
@@ -223,7 +233,8 @@ public class ManabornMod implements ModInitializer {
 						.rolls(ConstantLootNumberProvider.create(1))
 						.with(ItemEntry.builder(FIREBALL_SPELL_BOOK).weight(15))
 						.with(ItemEntry.builder(ICE_SHARD_SPELL_BOOK).weight(15))
-						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(15)));
+						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(15))
+						.with(ItemEntry.builder(FROST_AURA_SPELL_BOOK).weight(15)));
 				}
 				
 				// Деревня (дом картографа) (8% шанс)
@@ -232,7 +243,8 @@ public class ManabornMod implements ModInitializer {
 						.rolls(ConstantLootNumberProvider.create(1))
 						.with(ItemEntry.builder(FIREBALL_SPELL_BOOK).weight(8))
 						.with(ItemEntry.builder(ICE_SHARD_SPELL_BOOK).weight(8))
-						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(8)));
+						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(8))
+						.with(ItemEntry.builder(FROST_AURA_SPELL_BOOK).weight(8)));
 				}
 				
 				// Крепость Незера (10% шанс)
@@ -241,7 +253,8 @@ public class ManabornMod implements ModInitializer {
 						.rolls(ConstantLootNumberProvider.create(1))
 						.with(ItemEntry.builder(FIREBALL_SPELL_BOOK).weight(10))
 						.with(ItemEntry.builder(ICE_SHARD_SPELL_BOOK).weight(10))
-						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(10)));
+						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(10))
+						.with(ItemEntry.builder(FROST_AURA_SPELL_BOOK).weight(10)));
 				}
 				
 				// Город Энда (20% шанс)
@@ -250,7 +263,8 @@ public class ManabornMod implements ModInitializer {
 						.rolls(ConstantLootNumberProvider.create(1))
 						.with(ItemEntry.builder(FIREBALL_SPELL_BOOK).weight(20))
 						.with(ItemEntry.builder(ICE_SHARD_SPELL_BOOK).weight(20))
-						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(20)));
+						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(20))
+						.with(ItemEntry.builder(FROST_AURA_SPELL_BOOK).weight(20)));
 				}
 			}
 		});

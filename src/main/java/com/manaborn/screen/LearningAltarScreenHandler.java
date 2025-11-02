@@ -44,7 +44,8 @@ public class LearningAltarScreenHandler extends ScreenHandler {
                 return stack.getItem() == ManabornMod.FIREBALL_SPELL_BOOK
                         || stack.getItem() == ManabornMod.ICE_SHARD_SPELL_BOOK
                         || stack.getItem() == ManabornMod.FIRE_WALL_SPELL_BOOK
-                        || stack.getItem() == ManabornMod.INNER_HEAT_SPELL_BOOK;
+                        || stack.getItem() == ManabornMod.INNER_HEAT_SPELL_BOOK
+                        || stack.getItem() == ManabornMod.FROST_AURA_SPELL_BOOK;
             }
         });
 

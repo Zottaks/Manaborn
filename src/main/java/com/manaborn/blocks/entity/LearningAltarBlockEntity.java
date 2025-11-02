@@ -177,6 +177,7 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
             case ICE_SHARD -> 8;
             case FIRE_WALL -> 17;
             case INNER_HEAT -> 13;
+            case FROST_AURA -> 12;
         };
     }
 
@@ -190,6 +191,7 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
         if (item == ManabornMod.ICE_SHARD_SPELL_BOOK) return SpellType.ICE_SHARD;
         if (item == ManabornMod.FIRE_WALL_SPELL_BOOK) return SpellType.FIRE_WALL;
         if (item == ManabornMod.INNER_HEAT_SPELL_BOOK) return SpellType.INNER_HEAT;
+        if (item == ManabornMod.FROST_AURA_SPELL_BOOK) return SpellType.FROST_AURA;
         if (item instanceof SpellBookItem) {
             return null;
         }
@@ -202,6 +204,7 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
             case ICE_SHARD -> 45 * 20;     // 45 seconds
             case FIRE_WALL -> 60 * 20;     // 60 seconds
             case INNER_HEAT -> 120 * 20;   // 120 seconds
+            case FROST_AURA -> 75 * 20;    // 75 seconds
         };
     }
 

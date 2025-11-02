@@ -28,6 +28,8 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.mob.Monster;
+import net.minecraft.entity.damage.DamageSource;
 
 public class SpellManager {
     private static final String SPELL_NBT_KEY = "selectedSpell";
@@ -35,6 +37,9 @@ public class SpellManager {
     
     // Хранилище активных стен огня: UUID стены -> данные о стене
     private static final Map<UUID, FireWallData> activeFireWalls = new HashMap<>();
+    
+    // Активные ауры стужи: UUID игрока -> тики до конца
+    private static final Map<UUID, Integer> activeFrostAuras = new HashMap<>();
     
     // Данные о стене огня
     private static class FireWallData {
@@ -140,6 +145,10 @@ public class SpellManager {
                 case INNER_HEAT:
                     castInnerHeat(world, user);
                     cooldown = 600; // 30 секунд
+                    break;
+                case FROST_AURA:
+                    castFrostAura(world, user);
+                    cooldown = 1000; // 50 секунд
                     break;
                 default:
                     cooldown = 100;
@@ -310,6 +319,91 @@ public class SpellManager {
         }
     }
     
+    private static void castFrostAura(World world, PlayerEntity user) {
+        if (!(user instanceof ServerPlayerEntity serverPlayer)) return;
+        int duration = 400; // 20 секунд
+        activeFrostAuras.put(serverPlayer.getUuid(), duration);
+        world.playSound(null, user.getBlockPos(), SoundEvents.BLOCK_SNOW_HIT, SoundCategory.PLAYERS, 1.0f, 1.0f);
+        if (world instanceof ServerWorld serverWorld) {
+            spawnFrostParticles(serverWorld, user.getX(), user.getY() + 1.0, user.getZ(), 10);
+        }
+    }
+
+    private static void spawnFrostParticles(ServerWorld world, double x, double y, double z, int count) {
+        for (int i = 0; i < count; i++) {
+            double angle = world.random.nextDouble() * Math.PI * 2;
+            double radius = 1.5 + world.random.nextDouble() * 1.5;
+            double px = x + Math.cos(angle) * radius;
+            double pz = z + Math.sin(angle) * radius;
+            double py = y + world.random.nextDouble() * 1.0;
+            world.spawnParticles(ParticleTypes.SNOWFLAKE, px, py, pz, 1, 0.0, 0.01, 0.0, 0.0);
+        }
+    }
+
+    /**
+     * Обработка активных аур стужи. Вызывать каждый тик сервера.
+     */
+    public static void tickFrostAuras(List<ServerPlayerEntity> players) {
+        if (activeFrostAuras.isEmpty()) return;
+
+        List<UUID> toRemove = new ArrayList<>();
+
+        for (ServerPlayerEntity owner : players) {
+            Integer ticks = activeFrostAuras.get(owner.getUuid());
+            if (ticks == null) continue;
+
+            int remaining = ticks - 1;
+            if (remaining <= 0) {
+                toRemove.add(owner.getUuid());
+                continue;
+            }
+            activeFrostAuras.put(owner.getUuid(), remaining);
+
+            World ow = owner.getEntityWorld();
+            if (!(ow instanceof ServerWorld world)) {
+                continue;
+            }
+            // Сбиваем ауру, если по владельцу попали (получил урон)
+            DamageSource recent = owner.getRecentDamageSource();
+            if (recent != null) {
+                toRemove.add(owner.getUuid());
+                continue;
+            }
+
+            // Меньше частиц и не каждый тик, чтобы не мешали обзору
+            if (remaining % 5 == 0) {
+                spawnFrostParticles(world, owner.getX(), owner.getY() + 1.0, owner.getZ(), 6);
+            }
+
+            double radius = 4.0;
+            Box area = Box.of(new Vec3d(owner.getX(), owner.getY(), owner.getZ()), radius * 2, radius * 2, radius * 2);
+
+            List<LivingEntity> targets = world.getEntitiesByClass(
+                LivingEntity.class,
+                area,
+                e -> e != null && e.isAlive() && e != owner && (
+                    e instanceof Monster || (e instanceof ServerPlayerEntity)
+                ) && e.squaredDistanceTo(owner) <= radius * radius
+            );
+
+            for (LivingEntity target : targets) {
+                // Обновляем замедление каждый тик (Slowness II)
+                target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 20, 1, false, true, true));
+            }
+
+            // Раз в 2 секунды наносим урон 0.5 сердца (1.0f)
+            if (remaining % 40 == 0) {
+                for (LivingEntity target : targets) {
+                    target.damage(world, world.getDamageSources().magic(), 1.0f);
+                }
+            }
+        }
+
+        for (UUID id : toRemove) {
+            activeFrostAuras.remove(id);
+        }
+    }
+
     public static boolean intersectsFireWall(ServerWorld world, Box box) {
         if (activeFireWalls.isEmpty()) return false;
         for (FireWallData data : activeFireWalls.values()) {

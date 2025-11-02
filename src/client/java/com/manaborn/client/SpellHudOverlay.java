@@ -103,6 +103,10 @@ public final class SpellHudOverlay {
                 // Внутренний жар: используем огненный стиль
                 renderFireballStyle(drawContext, x, y, width, height, time, client, alpha);
                 break;
+            case FROST_AURA:
+                // Аура стужи: используем ледяной стиль
+                renderIceShardStyle(drawContext, x, y, width, height, time, client, alpha);
+                break;
         }
         
         // Применяем прозрачность к тексту
