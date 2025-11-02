@@ -20,7 +20,6 @@ public class SpellTreeScreen extends Screen {
         super.init();
         // Создаем кнопки вкладок
         int w = this.width;
-        int pad = 10;
         int boxTop = 32;
         int tabBarY = boxTop + 8;
         int tabWidth = 80;
@@ -31,15 +30,13 @@ public class SpellTreeScreen extends Screen {
 
         this.clearChildren();
         this.addDrawableChild(
-            ButtonWidget.builder(Text.literal("Огонь"), b -> selectedTab = Tab.FIRE)
-                .dimensions(fireTabX, tabBarY, tabWidth, tabHeight)
-                .build()
-        );
+                ButtonWidget.builder(Text.literal("Огонь"), b -> selectedTab = Tab.FIRE)
+                        .dimensions(fireTabX, tabBarY, tabWidth, tabHeight)
+                        .build());
         this.addDrawableChild(
-            ButtonWidget.builder(Text.literal("Лед"), b -> selectedTab = Tab.ICE)
-                .dimensions(iceTabX, tabBarY, tabWidth, tabHeight)
-                .build()
-        );
+                ButtonWidget.builder(Text.literal("Лед"), b -> selectedTab = Tab.ICE)
+                        .dimensions(iceTabX, tabBarY, tabWidth, tabHeight)
+                        .build());
     }
 
     @Override
@@ -112,8 +109,10 @@ public class SpellTreeScreen extends Screen {
         String iceTitle = "Лед";
         int fireTitleW = this.textRenderer.getWidth(fireTitle);
         int iceTitleW = this.textRenderer.getWidth(iceTitle);
-        context.drawTextWithShadow(this.textRenderer, fireTitle, fireTabX + (tabWidth - fireTitleW) / 2, tabBarY + 3, 0xFFFFFFFF);
-        context.drawTextWithShadow(this.textRenderer, iceTitle, iceTabX + (tabWidth - iceTitleW) / 2, tabBarY + 3, 0xFFFFFFFF);
+        context.drawTextWithShadow(this.textRenderer, fireTitle, fireTabX + (tabWidth - fireTitleW) / 2, tabBarY + 3,
+                0xFFFFFFFF);
+        context.drawTextWithShadow(this.textRenderer, iceTitle, iceTabX + (tabWidth - iceTitleW) / 2, tabBarY + 3,
+                0xFFFFFFFF);
 
         int listStartY = tabBarY + tabHeight + 8;
         int listX = boxLeft + 16;
@@ -200,7 +199,8 @@ public class SpellTreeScreen extends Screen {
             context.drawText(this.textRenderer, Text.literal(cost), x + 10, y + 20, 0xFFCCCCCC, false);
 
             String desc = getDescription(spell);
-            context.drawText(this.textRenderer, Text.literal(desc).formatted(net.minecraft.util.Formatting.GRAY), x + 10, y + 31, 0xFFC0C0C0, false);
+            context.drawText(this.textRenderer, Text.literal(desc).formatted(net.minecraft.util.Formatting.GRAY),
+                    x + 10, y + 31, 0xFFC0C0C0, false);
 
             y += cardHeight + 6;
         }
@@ -234,7 +234,10 @@ public class SpellTreeScreen extends Screen {
         return false;
     }
 
-    private enum Tab { FIRE, ICE }
+    private enum Tab {
+        FIRE, ICE
+    }
+
     private Tab selectedTab = Tab.FIRE;
 
 }

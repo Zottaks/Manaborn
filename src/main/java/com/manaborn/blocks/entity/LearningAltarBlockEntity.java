@@ -54,11 +54,14 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
 
         @Override
         public void set(int index, int value) {
-            if (index == 0) progress = value;
+            if (index == 0)
+                progress = value;
         }
 
         @Override
-        public int size() { return 6; }
+        public int size() {
+            return 6;
+        }
     };
 
     public LearningAltarBlockEntity(BlockPos pos, BlockState state) {
@@ -100,18 +103,23 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
     }
 
     private boolean canContinue() {
-        if (world == null || world.isClient()) return false;
+        if (world == null || world.isClient())
+            return false;
         ItemStack wand = items.get(0);
         ItemStack book = items.get(1);
-        if (wand.isEmpty() || book.isEmpty()) return false;
-        if (!isWand(wand.getItem())) return false;
+        if (wand.isEmpty() || book.isEmpty())
+            return false;
+        if (!isWand(wand.getItem()))
+            return false;
         SpellType spell = getSpellFromBook(book);
-        if (spell == null) return false;
+        if (spell == null)
+            return false;
         return true;
     }
 
     private void finishLearning() {
-        if (world == null || world.isClient()) return;
+        if (world == null || world.isClient())
+            return;
         ItemStack book = items.get(1);
         SpellType spell = getSpellFromBook(book);
         PlayerEntity player = lastInteracting;
@@ -141,17 +149,24 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
     }
 
     public void tryStartLearning(PlayerEntity player) {
-        if (world == null || world.isClient()) return;
-        if (learning) return;
+        if (world == null || world.isClient())
+            return;
+        if (learning)
+            return;
         ItemStack wand = items.get(0);
         ItemStack book = items.get(1);
-        if (wand.isEmpty() || book.isEmpty()) return;
-        if (!isWand(wand.getItem())) return;
+        if (wand.isEmpty() || book.isEmpty())
+            return;
+        if (!isWand(wand.getItem()))
+            return;
         SpellType spell = getSpellFromBook(book);
-        if (spell == null) return;
-        if (LearnedSpellsManager.hasLearned(player.getUuid(), spell)) return;
+        if (spell == null)
+            return;
+        if (LearnedSpellsManager.hasLearned(player.getUuid(), spell))
+            return;
         int cost = getXpCost(spell);
-        if (player.experienceLevel < cost) return;
+        if (player.experienceLevel < cost)
+            return;
         player.addExperienceLevels(-cost);
         reservedCost = cost;
         learning = true;
@@ -187,11 +202,16 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
 
     private @Nullable SpellType getSpellFromBook(ItemStack stack) {
         Item item = stack.getItem();
-        if (item == ManabornMod.FIREBALL_SPELL_BOOK) return SpellType.FIREBALL;
-        if (item == ManabornMod.ICE_SHARD_SPELL_BOOK) return SpellType.ICE_SHARD;
-        if (item == ManabornMod.FIRE_WALL_SPELL_BOOK) return SpellType.FIRE_WALL;
-        if (item == ManabornMod.INNER_HEAT_SPELL_BOOK) return SpellType.INNER_HEAT;
-        if (item == ManabornMod.FROST_AURA_SPELL_BOOK) return SpellType.FROST_AURA;
+        if (item == ManabornMod.FIREBALL_SPELL_BOOK)
+            return SpellType.FIREBALL;
+        if (item == ManabornMod.ICE_SHARD_SPELL_BOOK)
+            return SpellType.ICE_SHARD;
+        if (item == ManabornMod.FIRE_WALL_SPELL_BOOK)
+            return SpellType.FIRE_WALL;
+        if (item == ManabornMod.INNER_HEAT_SPELL_BOOK)
+            return SpellType.INNER_HEAT;
+        if (item == ManabornMod.FROST_AURA_SPELL_BOOK)
+            return SpellType.FROST_AURA;
         if (item instanceof SpellBookItem) {
             return null;
         }
@@ -200,27 +220,34 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
 
     private int getSpellDurationTicks(SpellType spell) {
         return switch (spell) {
-            case FIREBALL -> 20 * 20;      // 20 seconds
-            case ICE_SHARD -> 45 * 20;     // 45 seconds
-            case FIRE_WALL -> 60 * 20;     // 60 seconds
-            case INNER_HEAT -> 120 * 20;   // 120 seconds
-            case FROST_AURA -> 75 * 20;    // 75 seconds
+            case FIREBALL -> 20 * 20; // 20 seconds
+            case ICE_SHARD -> 45 * 20; // 45 seconds
+            case FIRE_WALL -> 60 * 20; // 60 seconds
+            case INNER_HEAT -> 120 * 20; // 120 seconds
+            case FROST_AURA -> 75 * 20; // 75 seconds
         };
     }
 
     @Override
-    public int size() { return items.size(); }
+    public int size() {
+        return items.size();
+    }
 
     @Override
-    public boolean isEmpty() { return items.stream().allMatch(ItemStack::isEmpty); }
+    public boolean isEmpty() {
+        return items.stream().allMatch(ItemStack::isEmpty);
+    }
 
     @Override
-    public ItemStack getStack(int slot) { return items.get(slot); }
+    public ItemStack getStack(int slot) {
+        return items.get(slot);
+    }
 
     @Override
     public ItemStack removeStack(int slot, int amount) {
         ItemStack result = Inventories.splitStack(items, slot, amount);
-        if (!result.isEmpty()) markDirty();
+        if (!result.isEmpty())
+            markDirty();
         return result;
     }
 
@@ -234,27 +261,37 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
     @Override
     public void setStack(int slot, ItemStack stack) {
         items.set(slot, stack);
-        if (stack.getCount() > stack.getMaxCount()) stack.setCount(stack.getMaxCount());
+        if (stack.getCount() > stack.getMaxCount())
+            stack.setCount(stack.getMaxCount());
         markDirty();
         updateComputedProps(lastInteracting);
     }
 
     @Override
-    public boolean canPlayerUse(PlayerEntity player) { return player.squaredDistanceTo(pos.getX()+0.5, pos.getY()+0.5, pos.getZ()+0.5) <= 64.0; }
+    public boolean canPlayerUse(PlayerEntity player) {
+        return player.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= 64.0;
+    }
 
     @Override
-    public void clear() { items.clear(); }
+    public void clear() {
+        items.clear();
+    }
 
     @Override
-    public Text getDisplayName() { return Text.translatable("block.manaborn.learning_altar"); }
+    public Text getDisplayName() {
+        return Text.translatable("block.manaborn.learning_altar");
+    }
 
     @Nullable
     @Override
-    public ScreenHandler createMenu(int syncId, net.minecraft.entity.player.PlayerInventory playerInventory, PlayerEntity player) {
+    public ScreenHandler createMenu(int syncId, net.minecraft.entity.player.PlayerInventory playerInventory,
+            PlayerEntity player) {
         return new LearningAltarScreenHandler(syncId, playerInventory, this, properties);
     }
 
-    public void setLastInteractingPlayer(PlayerEntity player) { this.lastInteracting = player; }
+    public void setLastInteractingPlayer(PlayerEntity player) {
+        this.lastInteracting = player;
+    }
 
     private void updateComputedProps(@Nullable PlayerEntity player) {
         SpellType spell = getSpellFromBook(items.get(1));

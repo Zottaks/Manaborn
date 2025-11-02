@@ -1,7 +1,6 @@
 package com.manaborn.blocks;
 
 import com.manaborn.blocks.entity.LearningAltarBlockEntity;
-import com.manaborn.ManabornMod;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
@@ -19,6 +18,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class LearningAltarBlock extends BlockWithEntity {
     public static final MapCodec<LearningAltarBlock> CODEC = createCodec(LearningAltarBlock::new);
+
     public LearningAltarBlock(Settings settings) {
         super(settings);
     }
@@ -41,8 +41,10 @@ public class LearningAltarBlock extends BlockWithEntity {
 
     @Nullable
     @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-        if (world.isClient()) return null;
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state,
+            BlockEntityType<T> type) {
+        if (world.isClient())
+            return null;
         return (w, p, s, be) -> {
             if (be instanceof LearningAltarBlockEntity altar) {
                 LearningAltarBlockEntity.serverTick(w, p, s, altar);
@@ -52,7 +54,8 @@ public class LearningAltarBlock extends BlockWithEntity {
 
     @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        if (world.isClient()) return ActionResult.SUCCESS;
+        if (world.isClient())
+            return ActionResult.SUCCESS;
         BlockEntity be = world.getBlockEntity(pos);
         if (be instanceof LearningAltarBlockEntity altar) {
             altar.setLastInteractingPlayer(player);
