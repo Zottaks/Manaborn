@@ -40,6 +40,8 @@ public class SpellManager {
     
     // Активные ауры стужи: UUID игрока -> тики до конца
     private static final Map<UUID, Integer> activeFrostAuras = new HashMap<>();
+    // Активные поглощающие барьеры: UUID игрока -> тики до конца
+    private static final Map<UUID, Integer> activeAbsorbingBarriers = new HashMap<>();
     
     // Данные о стене огня
     private static class FireWallData {
@@ -51,6 +53,104 @@ public class SpellManager {
             this.boundingBox = boundingBox;
             this.world = world;
             this.ticksRemaining = duration;
+        }
+    }
+
+    public static boolean hasAbsorbingBarrier(UUID playerId) {
+        return activeAbsorbingBarriers.containsKey(playerId);
+    }
+
+    public static void removeAbsorbingBarrier(ServerPlayerEntity owner) {
+        if (owner == null) return;
+        if (!activeAbsorbingBarriers.containsKey(owner.getUuid())) return;
+        activeAbsorbingBarriers.remove(owner.getUuid());
+
+        World w = owner.getEntityWorld();
+        if (w instanceof ServerWorld world) {
+            for (int i = 0; i < 16; i++) {
+                double a = world.random.nextDouble() * Math.PI * 2;
+                double r = 2.0 + world.random.nextDouble() * 0.8;
+                world.spawnParticles(ParticleTypes.SOUL, owner.getX() + Math.cos(a) * r, owner.getY() + 1.0, owner.getZ() + Math.sin(a) * r, 1, 0.05, 0.05, 0.05, 0.01);
+            }
+        }
+        w.playSound(null, owner.getBlockPos(), SoundEvents.BLOCK_AMETHYST_BLOCK_BREAK, SoundCategory.PLAYERS, 0.8f, 0.8f);
+        owner.sendMessage(Text.literal("Барьер рассеян"), true);
+    }
+
+    private static void castAbsorbingBarrier(World world, PlayerEntity user) {
+        if (!(user instanceof ServerPlayerEntity serverPlayer)) return;
+        int duration = 200; // 10 секунд
+        activeAbsorbingBarriers.put(serverPlayer.getUuid(), duration);
+        world.playSound(null, user.getBlockPos(), SoundEvents.BLOCK_ENCHANTMENT_TABLE_USE, SoundCategory.PLAYERS, 1.0f, 0.8f);
+        serverPlayer.sendMessage(Text.literal("Поглощающий барьер активен (10с)"), true);
+        if (world instanceof ServerWorld serverWorld) {
+            for (int i = 0; i < 20; i++) {
+                double angle = serverWorld.random.nextDouble() * Math.PI * 2;
+                double radius = 1.5 + serverWorld.random.nextDouble();
+                double px = user.getX() + Math.cos(angle) * radius;
+                double pz = user.getZ() + Math.sin(angle) * radius;
+                double py = user.getY() + 0.5 + serverWorld.random.nextDouble();
+                serverWorld.spawnParticles(ParticleTypes.REVERSE_PORTAL, px, py, pz, 1, 0, 0, 0, 0);
+            }
+        }
+    }
+
+    public static void tickAbsorbingBarriers(List<ServerPlayerEntity> players) {
+        if (activeAbsorbingBarriers.isEmpty()) return;
+        List<UUID> toRemove = new ArrayList<>();
+        for (ServerPlayerEntity owner : players) {
+            Integer ticks = activeAbsorbingBarriers.get(owner.getUuid());
+            if (ticks == null) continue;
+            int remaining = ticks - 1;
+            if (remaining <= 0) {
+                toRemove.add(owner.getUuid());
+                continue;
+            }
+            activeAbsorbingBarriers.put(owner.getUuid(), remaining);
+
+            World w = owner.getEntityWorld();
+            if (!(w instanceof ServerWorld world)) continue;
+
+            double radius = 2.5;
+            Box area = Box.of(new Vec3d(owner.getX(), owner.getY() + 1.0, owner.getZ()), radius * 2, radius * 2, radius * 2);
+
+            List<net.minecraft.entity.projectile.ProjectileEntity> projectiles = world.getEntitiesByClass(
+                net.minecraft.entity.projectile.ProjectileEntity.class,
+                area,
+                e -> e != null && e.isAlive() && e.getOwner() != owner
+            );
+
+            for (net.minecraft.entity.projectile.ProjectileEntity p : projectiles) {
+                Vec3d vel = p.getVelocity();
+                Vec3d toOwner = new Vec3d(owner.getX() - p.getX(), (owner.getEyeY()) - p.getY(), owner.getZ() - p.getZ());
+                if (vel.dotProduct(toOwner) <= 0) continue; // не летит к игроку
+
+                double hearts = 1.0; // базовая оценка
+                if (p instanceof net.minecraft.entity.projectile.SmallFireballEntity) {
+                    hearts = 1.5;
+                } else if (p instanceof net.minecraft.entity.projectile.PersistentProjectileEntity) {
+                    hearts = 1.0;
+                }
+
+                int manaRestore = (int)Math.round(hearts * 5.0);
+                com.manaborn.mana.ManaManager.addMana(owner, manaRestore);
+
+                Vec3d newVel = vel.multiply(-1.2);
+                p.setVelocity(newVel.x, newVel.y, newVel.z);
+                p.setOwner(owner);
+
+                world.playSound(null, owner.getBlockPos(), SoundEvents.BLOCK_RESPAWN_ANCHOR_SET_SPAWN, SoundCategory.PLAYERS, 0.6f, 0.6f);
+                world.spawnParticles(ParticleTypes.SOUL, p.getX(), p.getY(), p.getZ(), 6, 0.1, 0.1, 0.1, 0.01);
+            }
+
+            if (remaining % 6 == 0) {
+                double a = world.random.nextDouble() * Math.PI * 2;
+                double r = 2.2;
+                world.spawnParticles(ParticleTypes.SOUL, owner.getX() + Math.cos(a) * r, owner.getY() + 1.0, owner.getZ() + Math.sin(a) * r, 1, 0, 0, 0, 0);
+            }
+        }
+        for (UUID id : toRemove) {
+            activeAbsorbingBarriers.remove(id);
         }
     }
 
@@ -125,6 +225,7 @@ public class SpellManager {
             }
 
             if (!ManaManager.tryConsume(serverPlayer, selectedSpell.getManaCost())) {
+                serverPlayer.sendMessage(Text.literal("Недостаточно маны: нужно " + selectedSpell.getManaCost()), true);
                 return;
             }
 
@@ -149,6 +250,10 @@ public class SpellManager {
                 case FROST_AURA:
                     castFrostAura(world, user);
                     cooldown = 1000; // 50 секунд
+                    break;
+                case ABSORBING_BARRIER:
+                    castAbsorbingBarrier(world, user);
+                    cooldown = 1500; // 75 секунд
                     break;
                 default:
                     cooldown = 100;

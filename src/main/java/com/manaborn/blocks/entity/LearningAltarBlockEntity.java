@@ -31,6 +31,7 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
     private int progress = 0;
     private int maxProgress = 200;
     private boolean learning = false;
+    @SuppressWarnings("unused")
     private int reservedCost = 0;
     private @Nullable PlayerEntity lastInteracting;
     private int effectTick = 0;
@@ -193,6 +194,7 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
             case FIRE_WALL -> 17;
             case INNER_HEAT -> 13;
             case FROST_AURA -> 12;
+            case ABSORBING_BARRIER -> 25;
         };
     }
 
@@ -212,6 +214,8 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
             return SpellType.INNER_HEAT;
         if (item == ManabornMod.FROST_AURA_SPELL_BOOK)
             return SpellType.FROST_AURA;
+        if (item == ManabornMod.ABSORBING_BARRIER_SPELL_BOOK)
+            return SpellType.ABSORBING_BARRIER;
         if (item instanceof SpellBookItem) {
             return null;
         }
@@ -225,6 +229,7 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
             case FIRE_WALL -> 60 * 20; // 60 seconds
             case INNER_HEAT -> 120 * 20; // 120 seconds
             case FROST_AURA -> 75 * 20; // 75 seconds
+            case ABSORBING_BARRIER -> 240 * 20; // 240 seconds
         };
     }
 

@@ -45,7 +45,6 @@ public final class SpellHudOverlay {
         } else if (offHand.getItem().getClass().getSimpleName().equals("MagicStaffItem")) {
             staff = offHand;
         }
-        
         if (staff == null) {
             lastSpell = null;
             return;
@@ -106,6 +105,9 @@ public final class SpellHudOverlay {
             case FROST_AURA:
                 // Аура стужи: используем ледяной стиль
                 renderIceShardStyle(drawContext, x, y, width, height, time, client, alpha);
+                break;
+            case ABSORBING_BARRIER:
+                renderDarkBarrierStyle(drawContext, x, y, width, height, time, client, alpha);
                 break;
         }
         
@@ -305,6 +307,46 @@ public final class SpellHudOverlay {
         int b = (int) (b1 + (b2 - b1) * ratio);
         
         return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+    
+    private static void renderDarkBarrierStyle(DrawContext ctx, int x, int y, int width, int height, float time, MinecraftClient client, float alpha) {
+        float pulse = (float) Math.sin(time * Math.PI * 2) * 0.25f + 0.75f;
+        int baseA = (int) (alpha * 200);
+        int bgTop = (baseA << 24) | 0x0A0A12;
+        int bgBottom = ((int)(alpha * 255) << 24) | 0x141424;
+        drawGradientRect(ctx, x, y, x + width, y + height, bgTop, bgBottom);
+
+        int ring1 = ((int)(alpha * 255) << 24) | 0x3A2A5F;
+        int ring2 = ((int)(alpha * 255) << 24) | 0x5C3B89;
+        int ringBlend = blendColors(ring1, ring2, pulse);
+        ctx.fill(x - 2, y - 2, x + width + 2, y - 1, ringBlend);
+        ctx.fill(x - 2, y + height + 1, x + width + 2, y + height + 2, ringBlend);
+        ctx.fill(x - 2, y - 1, x - 1, y + height + 1, ringBlend);
+        ctx.fill(x + width + 1, y - 1, x + width + 2, y + height + 1, ringBlend);
+
+        int inner = ((int)(alpha * 255) << 24) | 0x221833;
+        ctx.fill(x - 1, y - 1, x + width + 1, y, inner);
+        ctx.fill(x - 1, y + height, x + width + 1, y + height + 1, inner);
+        ctx.fill(x - 1, y, x, y + height, inner);
+        ctx.fill(x + width, y, x + width + 1, y + height, inner);
+
+        int specks = 10;
+        for (int i = 0; i < specks; i++) {
+            float t = (time + i * 0.07f) % 1.0f;
+            int sx = x + 6 + (int)((i * 11 + 7 * t) % (width - 12));
+            int sy = y + 6 + (int)(t * (height - 12));
+            int a = (int)(alpha * (120 + 100 * Math.sin((t + i) * Math.PI * 2)));
+            int c = ((a & 0xFF) << 24) | 0xA060FF;
+            ctx.fill(sx, sy, sx + 2, sy + 2, c);
+        }
+
+        for (int i = 0; i < 3; i++) {
+            float t = (time * 0.8f + i * 0.33f) % 1.0f;
+            int lineY = y + 6 + (int)(t * (height - 12));
+            int la = (int)((1.0f - Math.abs(t - 0.5f) * 2) * 100 * alpha);
+            int lc = (la << 24) | 0x8A6AD9;
+            ctx.fill(x + 6, lineY, x + width - 6, lineY + 1, lc);
+        }
     }
     
     /**

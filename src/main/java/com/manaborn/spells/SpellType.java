@@ -7,7 +7,8 @@ public enum SpellType {
     ICE_SHARD("Ледяной осколок", 35, "ice_shard", Formatting.AQUA),
     FIRE_WALL("Стена огня", 50, "fire_wall", Formatting.GOLD),
     INNER_HEAT("Внутренний жар", 30, "inner_heat", Formatting.GOLD),
-    FROST_AURA("Аура Стужи", 40, "frost_aura", Formatting.AQUA);
+    FROST_AURA("Аура Стужи", 40, "frost_aura", Formatting.AQUA),
+    ABSORBING_BARRIER("Поглощающий барьер", 15, "absorbing_barrier", Formatting.DARK_PURPLE);
     
     private final String displayName;
     private final int manaCost;
