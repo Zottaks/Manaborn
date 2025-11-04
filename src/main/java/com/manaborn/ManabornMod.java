@@ -17,6 +17,7 @@ import com.manaborn.spells.SpellType;
 import com.manaborn.entities.IceShardEntity;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -281,6 +282,16 @@ public class ManabornMod implements ModInitializer {
 						.with(ItemEntry.builder(ABSORBING_BARRIER_SPELL_BOOK).weight(14)));
 				}
 			}
+		});
+		
+		// Загрузка изученных заклинаний при старте сервера
+		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+			LearnedSpellsManager.loadFromDisk();
+		});
+		
+		// Сохранение изученных заклинаний при остановке сервера
+		ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+			LearnedSpellsManager.saveToDisk();
 		});
 
 		System.out.println("✨ Manaborn loaded — awaken your inner magic!");
