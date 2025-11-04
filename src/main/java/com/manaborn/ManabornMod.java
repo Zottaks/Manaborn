@@ -59,6 +59,7 @@ public class ManabornMod implements ModInitializer {
 	public static Item INNER_HEAT_SPELL_BOOK;
 	public static Item FROST_AURA_SPELL_BOOK;
 	public static Item ABSORBING_BARRIER_SPELL_BOOK;
+	public static Item ICE_WALL_SPELL_BOOK;
 	public static EntityType<IceShardEntity> ICE_SHARD_ENTITY;
 	public static Block LEARNING_ALTAR;
 	public static BlockEntityType<LearningAltarBlockEntity> LEARNING_ALTAR_BE;
@@ -146,6 +147,12 @@ public class ManabornMod implements ModInitializer {
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(ABSORBING_BARRIER_SPELL_BOOK));
 		System.out.println(" [DEBUG] Absorbing Barrier Spell Book зарегистрирована с ID: " + barrierBookKey.getValue());
 
+		// Регистрация Ice Wall Spell Book
+		RegistryKey<Item> iceWallBookKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "ice_wall_spell_book"));
+		ICE_WALL_SPELL_BOOK = Registry.register(Registries.ITEM, iceWallBookKey, new SpellBookItem(new Item.Settings().maxCount(1).registryKey(iceWallBookKey), SpellType.ICE_WALL));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(ICE_WALL_SPELL_BOOK));
+		System.out.println(" [DEBUG] Ice Wall Spell Book зарегистрирована с ID: " + iceWallBookKey.getValue());
+
 		// Регистрация Learning Altar блока
 		RegistryKey<Block> altarBlockKey = RegistryKey.of(Registries.BLOCK.getKey(), Identifier.of(MOD_ID, "learning_altar"));
 		LEARNING_ALTAR = Registry.register(
@@ -200,6 +207,7 @@ public class ManabornMod implements ModInitializer {
 			com.manaborn.spells.SpellManager.tickFireWalls();
 			com.manaborn.spells.SpellManager.tickFrostAuras(server.getPlayerManager().getPlayerList());
 			com.manaborn.spells.SpellManager.tickAbsorbingBarriers(server.getPlayerManager().getPlayerList());
+			com.manaborn.spells.SpellManager.tickIceWalls();
 		});
 
 		// Синхронизация при входе
@@ -223,6 +231,7 @@ public class ManabornMod implements ModInitializer {
 						.with(ItemEntry.builder(FIREBALL_SPELL_BOOK).weight(5))
 						.with(ItemEntry.builder(ICE_SHARD_SPELL_BOOK).weight(5))
 						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(5))
+						.with(ItemEntry.builder(ICE_WALL_SPELL_BOOK).weight(5))
 						.with(ItemEntry.builder(FROST_AURA_SPELL_BOOK).weight(5))
 						.with(ItemEntry.builder(ABSORBING_BARRIER_SPELL_BOOK).weight(3)));
 				}
@@ -234,6 +243,7 @@ public class ManabornMod implements ModInitializer {
 						.with(ItemEntry.builder(FIREBALL_SPELL_BOOK).weight(3))
 						.with(ItemEntry.builder(ICE_SHARD_SPELL_BOOK).weight(3))
 						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(3))
+						.with(ItemEntry.builder(ICE_WALL_SPELL_BOOK).weight(3))
 						.with(ItemEntry.builder(FROST_AURA_SPELL_BOOK).weight(3))
 						.with(ItemEntry.builder(ABSORBING_BARRIER_SPELL_BOOK).weight(2)));
 				}
@@ -245,6 +255,7 @@ public class ManabornMod implements ModInitializer {
 						.with(ItemEntry.builder(FIREBALL_SPELL_BOOK).weight(15))
 						.with(ItemEntry.builder(ICE_SHARD_SPELL_BOOK).weight(15))
 						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(15))
+						.with(ItemEntry.builder(ICE_WALL_SPELL_BOOK).weight(15))
 						.with(ItemEntry.builder(FROST_AURA_SPELL_BOOK).weight(15))
 						.with(ItemEntry.builder(ABSORBING_BARRIER_SPELL_BOOK).weight(10)));
 				}
@@ -256,6 +267,7 @@ public class ManabornMod implements ModInitializer {
 						.with(ItemEntry.builder(FIREBALL_SPELL_BOOK).weight(8))
 						.with(ItemEntry.builder(ICE_SHARD_SPELL_BOOK).weight(8))
 						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(8))
+						.with(ItemEntry.builder(ICE_WALL_SPELL_BOOK).weight(8))
 						.with(ItemEntry.builder(FROST_AURA_SPELL_BOOK).weight(8))
 						.with(ItemEntry.builder(ABSORBING_BARRIER_SPELL_BOOK).weight(5)));
 				}
@@ -267,6 +279,7 @@ public class ManabornMod implements ModInitializer {
 						.with(ItemEntry.builder(FIREBALL_SPELL_BOOK).weight(10))
 						.with(ItemEntry.builder(ICE_SHARD_SPELL_BOOK).weight(10))
 						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(10))
+						.with(ItemEntry.builder(ICE_WALL_SPELL_BOOK).weight(10))
 						.with(ItemEntry.builder(FROST_AURA_SPELL_BOOK).weight(10))
 						.with(ItemEntry.builder(ABSORBING_BARRIER_SPELL_BOOK).weight(7)));
 				}
@@ -278,6 +291,7 @@ public class ManabornMod implements ModInitializer {
 						.with(ItemEntry.builder(FIREBALL_SPELL_BOOK).weight(20))
 						.with(ItemEntry.builder(ICE_SHARD_SPELL_BOOK).weight(20))
 						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(20))
+						.with(ItemEntry.builder(ICE_WALL_SPELL_BOOK).weight(20))
 						.with(ItemEntry.builder(FROST_AURA_SPELL_BOOK).weight(20))
 						.with(ItemEntry.builder(ABSORBING_BARRIER_SPELL_BOOK).weight(14)));
 				}

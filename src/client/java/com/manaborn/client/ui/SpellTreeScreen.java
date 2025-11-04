@@ -136,7 +136,7 @@ public class SpellTreeScreen extends Screen {
         int listX = boxLeft + 16;
 
         List<SpellType> fireSpells = Arrays.asList(SpellType.FIREBALL, SpellType.FIRE_WALL, SpellType.INNER_HEAT);
-        List<SpellType> iceSpells = Arrays.asList(SpellType.ICE_SHARD);
+        List<SpellType> iceSpells = Arrays.asList(SpellType.ICE_SHARD, SpellType.ICE_WALL);
         List<SpellType> darkSpells = Arrays.asList(SpellType.ABSORBING_BARRIER);
 
         if (selectedTab == Tab.FIRE) {
@@ -219,7 +219,7 @@ public class SpellTreeScreen extends Screen {
             int bg = 0xBF1E1E23;
             int stroke = 0xFF3A3A3A;
             int accent;
-            if (spell == SpellType.ICE_SHARD) {
+            if (spell == SpellType.ICE_SHARD || spell == SpellType.ICE_WALL) {
                 accent = 0xFF66D0FF;
             } else if (spell == SpellType.ABSORBING_BARRIER) {
                 accent = 0xFF8A6AD9;
@@ -251,6 +251,8 @@ public class SpellTreeScreen extends Screen {
                 return "Запускает огненный шар, нанося урон при попадании.";
             case ICE_SHARD:
                 return "Быстрый ледяной осколок, поражающий цель на расстоянии.";
+            case ICE_WALL:
+                return "Создает стену из льда. Удерживайте ПКМ для увеличения размера.";
             case FIRE_WALL:
                 return "Создает стену огня, наносящую урон при соприкосновении.";
             case INNER_HEAT:

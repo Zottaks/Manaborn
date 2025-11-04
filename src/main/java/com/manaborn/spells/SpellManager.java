@@ -30,6 +30,9 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.block.Blocks;
+import net.minecraft.fluid.FluidState;
 
 public class SpellManager {
     private static final String SPELL_NBT_KEY = "selectedSpell";
@@ -42,6 +45,8 @@ public class SpellManager {
     private static final Map<UUID, Integer> activeFrostAuras = new HashMap<>();
     // Активные поглощающие барьеры: UUID игрока -> тики до конца
     private static final Map<UUID, Integer> activeAbsorbingBarriers = new HashMap<>();
+    // Активные стены льда: UUID -> данные стены
+    private static final Map<UUID, IceWallData> activeIceWalls = new HashMap<>();
     
     // Данные о стене огня
     private static class FireWallData {
@@ -53,6 +58,18 @@ public class SpellManager {
             this.boundingBox = boundingBox;
             this.world = world;
             this.ticksRemaining = duration;
+        }
+    }
+
+    private static class IceWallData {
+        final ServerWorld world;
+        final List<BlockPos> blocks;
+        int ticksRemaining;
+
+        IceWallData(ServerWorld world, List<BlockPos> blocks, int durationTicks) {
+            this.world = world;
+            this.blocks = blocks;
+            this.ticksRemaining = durationTicks;
         }
     }
 
@@ -254,6 +271,11 @@ public class SpellManager {
                 case ABSORBING_BARRIER:
                     castAbsorbingBarrier(world, user);
                     cooldown = 1500; // 75 секунд
+                    break;
+                case ICE_WALL:
+                    // Для Стены Льда используем механику удержания и каст из MagicStaffItem.
+                    // Здесь ничего не делаем.
+                    cooldown = 0;
                     break;
                 default:
                     cooldown = 100;
@@ -517,6 +539,119 @@ public class SpellManager {
             }
         }
         return false;
+    }
+
+    /**
+     * Публичный хелпер: проверка кулдауна заклинания на предмете
+     */
+    public static boolean isOnCooldown(ItemStack stack, World world, SpellType spell) {
+        return isSpellOnCooldown(stack, world, spell);
+    }
+
+    /**
+     * Публичный хелпер: установка кулдауна заклинания на предмете
+     */
+    public static void setCooldown(ItemStack stack, World world, SpellType spell, int durationTicks) {
+        setSpellCooldown(stack, world, spell, durationTicks);
+    }
+
+    /**
+     * Создаёт стену льда из packed_ice, заполняя только воздух (без жидкостей и сущностей),
+     * ориентированную перпендикулярно направлению взгляда игрока, на расстоянии ~2 блоков.
+     *
+     * @param world ServerWorld
+     * @param user игрок-кастер
+     * @param width ширина (по горизонтали) в блоках
+     * @param height высота в блоках
+     * @param durationTicks время жизни в тиках
+     */
+    public static void castIceWall(ServerWorld world, PlayerEntity user, int width, int height, int durationTicks) {
+        Vec3d lookVec = user.getRotationVector();
+        double distance = 2.0;
+        double centerX = user.getX() + lookVec.x * distance;
+        double centerY = Math.floor(user.getY());
+        double centerZ = user.getZ() + lookVec.z * distance;
+
+        double perpX = -lookVec.z;
+        double perpZ = lookVec.x;
+        double length = Math.sqrt(perpX * perpX + perpZ * perpZ);
+        if (length > 0) {
+            perpX /= length;
+            perpZ /= length;
+        }
+
+        int half = width / 2;
+        List<BlockPos> placed = new ArrayList<>();
+
+        for (int dx = -half; dx <= (width - 1 - half); dx++) {
+            double offsetX = perpX * dx;
+            double offsetZ = perpZ * dx;
+            int baseX = (int)Math.floor(centerX + offsetX);
+            int baseZ = (int)Math.floor(centerZ + offsetZ);
+            for (int dy = 0; dy < height; dy++) {
+                int by = (int)(centerY + dy);
+                BlockPos pos = new BlockPos(baseX, by, baseZ);
+
+                // Проверки: только воздух, без жидкостей, без сущностей внутри
+                if (!world.isAir(pos)) continue;
+                FluidState fluid = world.getFluidState(pos);
+                if (!fluid.isEmpty()) continue;
+                Box blockBox = Box.from(Vec3d.ofCenter(pos)).expand(0.4);
+                List<LivingEntity> colliders = world.getEntitiesByClass(LivingEntity.class, blockBox, e -> e.isAlive());
+                if (!colliders.isEmpty()) continue;
+
+                world.setBlockState(pos, Blocks.PACKED_ICE.getDefaultState());
+                placed.add(pos);
+            }
+        }
+
+        if (!placed.isEmpty()) {
+            UUID id = UUID.randomUUID();
+            activeIceWalls.put(id, new IceWallData(world, placed, durationTicks));
+            world.playSound(null, user.getBlockPos(), SoundEvents.BLOCK_GLASS_PLACE, SoundCategory.PLAYERS, 0.8f, 0.9f);
+            // Ледяные частицы
+            for (BlockPos p : placed) {
+                world.spawnParticles(ParticleTypes.SNOWFLAKE, p.getX() + 0.5, p.getY() + 0.5, p.getZ() + 0.5, 1, 0.05, 0.05, 0.05, 0.0);
+            }
+        } else {
+            // Нечего поставить — тихий отказ
+        }
+    }
+
+    /**
+     * Тик для активных ледяных стен: осыпание в последние 2 секунды и удаление.
+     */
+    public static void tickIceWalls() {
+        if (activeIceWalls.isEmpty()) return;
+        List<UUID> toRemove = new ArrayList<>();
+        for (Map.Entry<UUID, IceWallData> entry : activeIceWalls.entrySet()) {
+            IceWallData data = entry.getValue();
+            data.ticksRemaining--;
+            if (data.ticksRemaining <= 0) {
+                // Полная очистка
+                for (BlockPos p : data.blocks) {
+                    if (data.world.getBlockState(p).isOf(Blocks.PACKED_ICE)) {
+                        data.world.setBlockState(p, Blocks.AIR.getDefaultState());
+                    }
+                }
+                toRemove.add(entry.getKey());
+                continue;
+            }
+            // Осыпание в последние 2 секунды
+            if (data.ticksRemaining <= 40 && data.ticksRemaining % 2 == 0) {
+                int removeCount = Math.max(1, data.blocks.size() / 12);
+                for (int i = 0; i < removeCount && !data.blocks.isEmpty(); i++) {
+                    int idx = data.world.random.nextInt(data.blocks.size());
+                    BlockPos p = data.blocks.remove(idx);
+                    if (data.world.getBlockState(p).isOf(Blocks.PACKED_ICE)) {
+                        data.world.setBlockState(p, Blocks.AIR.getDefaultState());
+                        data.world.spawnParticles(ParticleTypes.SNOWFLAKE, p.getX() + 0.5, p.getY() + 0.5, p.getZ() + 0.5, 3, 0.1, 0.1, 0.1, 0.0);
+                        data.world.playSound(null, p, SoundEvents.BLOCK_GLASS_BREAK, SoundCategory.BLOCKS, 0.3f, 1.3f);
+                    }
+                }
+            }
+        }
+        for (UUID id : toRemove) activeIceWalls.remove(id);
     }
     
     /**

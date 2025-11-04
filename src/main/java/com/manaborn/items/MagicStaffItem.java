@@ -3,6 +3,7 @@ package com.manaborn.items;
 import com.manaborn.spells.SpellManager;
 import com.manaborn.spells.SpellType;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.component.type.TooltipDisplayComponent;
@@ -12,6 +13,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 
 import java.util.function.Consumer;
 
@@ -38,10 +41,58 @@ public class MagicStaffItem extends Item {
             }
             return ActionResult.SUCCESS;
         } else {
-            // Обычное использование для каста заклинания
+            // Если выбрана Стена Льда — начинаем удержание ПКМ (зарядка)
+            SpellType selected = SpellManager.getSelectedSpell(stack);
+            if (selected == SpellType.ICE_WALL) {
+                user.setCurrentHand(hand);
+                return ActionResult.CONSUME;
+            }
+            // Иначе — обычный мгновенный каст
             SpellManager.castSpell(world, user, hand);
             return ActionResult.SUCCESS;
         }
+    }
+    
+    @Override
+    public boolean onStoppedUsing(ItemStack stack, World world, LivingEntity user, int remainingUseTicks) {
+        if (!(user instanceof PlayerEntity player)) return false;
+        SpellType selected = SpellManager.getSelectedSpell(stack);
+        if (selected != SpellType.ICE_WALL) return false;
+        if (world.isClient()) return false;
+
+        int usedTicks = getMaxUseTime(stack, user) - remainingUseTicks;
+        float usedSeconds = usedTicks / 20.0f;
+
+        // Пороговые уровни заряда
+        int width, height, durationTicks, manaCost;
+        if (usedSeconds >= 8.0f) {
+            // Большая стена 4x6, держится 10с, 45 маны
+            width = 4; height = 6; durationTicks = 10 * 20; manaCost = 45;
+        } else if (usedSeconds >= 4.0f) {
+            // Средняя стена 3x4, держится 20с, 25 маны
+            width = 3; height = 4; durationTicks = 20 * 20; manaCost = 25;
+        } else {
+            // Малая стена 2x2, держится 35с, 10 маны
+            width = 2; height = 2; durationTicks = 35 * 20; manaCost = 10;
+        }
+
+        ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
+        if (!com.manaborn.mana.ManaManager.tryConsume(serverPlayer, manaCost)) {
+            serverPlayer.sendMessage(Text.literal("Недостаточно маны: нужно " + manaCost), true);
+            return false;
+        }
+
+        if (world instanceof ServerWorld sw) {
+            SpellManager.castIceWall(sw, serverPlayer, width, height, durationTicks);
+        }
+        // Кулдаун для стены льда не ставим (зарядка уже ограничивает), при необходимости добавим позже
+        return true;
+    }
+
+    @Override
+    public int getMaxUseTime(ItemStack stack, LivingEntity user) {
+        // До 10 секунд удержания
+        return 200;
     }
     
     @Override

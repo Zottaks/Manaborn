@@ -109,6 +109,10 @@ public final class SpellHudOverlay {
             case ABSORBING_BARRIER:
                 renderDarkBarrierStyle(drawContext, x, y, width, height, time, client, alpha);
                 break;
+            case ICE_WALL:
+                // Стена льда: используем ледяной стиль
+                renderIceShardStyle(drawContext, x, y, width, height, time, client, alpha);
+                break;
         }
         
         // Применяем прозрачность к тексту

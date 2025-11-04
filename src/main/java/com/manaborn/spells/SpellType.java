@@ -8,7 +8,8 @@ public enum SpellType {
     FIRE_WALL("Стена огня", 50, "fire_wall", Formatting.GOLD),
     INNER_HEAT("Внутренний жар", 30, "inner_heat", Formatting.GOLD),
     FROST_AURA("Аура Стужи", 40, "frost_aura", Formatting.AQUA),
-    ABSORBING_BARRIER("Поглощающий барьер", 15, "absorbing_barrier", Formatting.DARK_PURPLE);
+    ABSORBING_BARRIER("Поглощающий барьер", 15, "absorbing_barrier", Formatting.DARK_PURPLE),
+    ICE_WALL("Стена льда", 10, "ice_wall", Formatting.AQUA);
     
     private final String displayName;
     private final int manaCost;
