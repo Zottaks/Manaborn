@@ -7,11 +7,11 @@ trigger: always_on
 ## 📋 Общая информация
 
 Этот проект - мод для Minecraft на Fabric loader.
-- **Версия Minecraft**: 1.21.10
-- **Версия Fabric Loader**: 0.17.2
-- **Версия Fabric API**: 0.134.1+1.21.10
-- **Версия Java**: 21
-- **Система сборки**: Gradle с Fabric Loom 1.11
+- **Версия Minecraft**: 1.20.1
+- **Версия Fabric Loader**: 0.15.11
+- **Версия Fabric API**: 0.92.2+1.20.1
+- **Версия Java**: 17
+- **Система сборки**: Gradle с Fabric Loom 1.6
 
 ## 🎯 Основные принципы
 
@@ -46,21 +46,18 @@ src/
 
 ## 🔧 API и лучшие практики
 
-### Регистрация предметов (Items)
+### Регистрация предметов (Items) - 1.20.1
 ```java
-// Создаем ключ реестра
-RegistryKey<Item> itemKey = RegistryKey.of(
-    Registries.ITEM.getKey(), 
-    Identifier.of(MOD_ID, "item_name")
-);
+// REPLACED: В 1.20.1 НЕ используется RegistryKey в Item.Settings
+// Создаем Identifier для предмета
+Identifier itemId = new Identifier(MOD_ID, "item_name");
 
 // Регистрируем предмет
 Item item = Registry.register(
     Registries.ITEM, 
-    itemKey, 
+    itemId, 
     new CustomItem(new Item.Settings()
-        .maxCount(64)
-        .registryKey(itemKey))
+        .maxCount(64))
 );
 
 // Добавляем в группу предметов
@@ -68,92 +65,108 @@ ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT)
     .register(entries -> entries.add(item));
 ```
 
-### Сетевое взаимодействие (Networking)
+**⚠️ ВАЖНО**: `RegistryKey` в `Item.Settings()` появился в 1.20.5+. В 1.20.1 он не используется.
 
-#### 1. Создание пакета (Payload)
+### Сетевое взаимодействие (Networking) - 1.20.1
+
+**⚠️ КРИТИЧЕСКИ ВАЖНО**: В 1.20.1 используется `PacketByteBuf`, а НЕ `CustomPayload`/`PacketCodec` (они появились в 1.20.5+).
+
+#### 1. Регистрация пакета (в ModInitializer)
 ```java
-public record MyPacketS2C(int data, String message) implements CustomPayload {
-    // ID пакета
-    public static final CustomPayload.Id<MyPacketS2C> ID = 
-        new CustomPayload.Id<>(Identifier.of("modid", "packet_name"));
-    
-    // Кодек для сериализации/десериализации
-    public static final PacketCodec<RegistryByteBuf, MyPacketS2C> CODEC = 
-        PacketCodec.tuple(
-            PacketCodecs.VAR_INT, MyPacketS2C::data,
-            PacketCodecs.STRING, MyPacketS2C::message,
-            MyPacketS2C::new
-        );
-    
-    @Override
-    public CustomPayload.Id<? extends CustomPayload> getId() {
-        return ID;
-    }
+// Для пакетов Server -> Client
+public static final Identifier MANA_SYNC_PACKET = new Identifier(MOD_ID, "mana_sync");
+
+@Override
+public void onInitialize() {
+    // Регистрация не требуется на сервере для отправки
 }
 ```
 
-#### 2. Регистрация пакета (в ModInitializer)
+#### 2. Получение пакета (в ClientModInitializer)
 ```java
-// Для пакетов Server -> Client
-PayloadTypeRegistry.playS2C().register(MyPacketS2C.ID, MyPacketS2C.CODEC);
-
-// Для пакетов Client -> Server
-PayloadTypeRegistry.playC2S().register(MyPacketC2S.ID, MyPacketC2S.CODEC);
+@Override
+public void onInitializeClient() {
+    ClientPlayNetworking.registerGlobalReceiver(MANA_SYNC_PACKET, 
+        (client, handler, buf, responseSender) -> {
+            // Читаем данные из буфера
+            int mana = buf.readVarInt();
+            int maxMana = buf.readVarInt();
+            
+            // Выполняем в главном потоке клиента
+            client.execute(() -> {
+                // Обработка данных пакета
+                ClientManaState.set(mana, maxMana);
+            });
+        });
+}
 ```
 
-#### 3. Отправка пакета
+#### 3. Отправка пакета Server -> Client
 ```java
 // С сервера клиенту
-ServerPlayNetworking.send(serverPlayer, new MyPacketS2C(42, "Hello"));
-
-// С клиента серверу
-ClientPlayNetworking.send(new MyPacketC2S(data));
+public static void sendManaSync(ServerPlayerEntity player, int mana, int maxMana) {
+    PacketByteBuf buf = PacketByteBufs.create();
+    buf.writeVarInt(mana);
+    buf.writeVarInt(maxMana);
+    
+    ServerPlayNetworking.send(player, MANA_SYNC_PACKET, buf);
+}
 ```
 
-#### 4. Получение пакета (в ClientModInitializer)
+#### 4. Отправка пакета Client -> Server
 ```java
-ClientPlayNetworking.registerGlobalReceiver(MyPacketS2C.ID, (payload, context) -> {
-    // Выполняем в главном потоке клиента
-    context.client().execute(() -> {
-        // Обработка данных пакета
-        int data = payload.data();
-        String message = payload.message();
+// Регистрация на сервере (в ModInitializer)
+ServerPlayNetworking.registerGlobalReceiver(SPELL_CAST_PACKET,
+    (server, player, handler, buf, responseSender) -> {
+        // Читаем данные
+        int spellId = buf.readVarInt();
+        
+        // Обработка в главном потоке сервера
+        server.execute(() -> {
+            // Логика на сервере
+        });
     });
-});
+
+// Отправка с клиента (в ClientModInitializer или клиентском коде)
+PacketByteBuf buf = PacketByteBufs.create();
+buf.writeVarInt(spellId);
+ClientPlayNetworking.send(SPELL_CAST_PACKET, buf);
 ```
 
-### HUD рендеринг (ВАЖНО!)
+**Импорты для networking**:
+```java
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.util.Identifier;
+```
 
-**⚠️ УСТАРЕЛО**: `HudRenderCallback` deprecated с Fabric API 0.116+
+### HUD рендеринг (1.20.1)
 
-**✅ ПРАВИЛЬНО**: Используйте `HudElementRegistry`
+**✅ ПРАВИЛЬНО для 1.20.1**: Используйте `HudRenderCallback`
 
 ```java
 // В ClientModInitializer
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 
-HudElementRegistry.attachElementBefore(
-    VanillaHudElements.CHAT,  // Рендерим перед чатом
-    Identifier.of("modid", "hud_element"),
-    MyHudRenderer::render
-);
-
-// Метод рендеринга
-public static void render(DrawContext context, RenderTickCounter tickCounter) {
-    MinecraftClient client = MinecraftClient.getInstance();
-    if (client == null || client.player == null || client.options.hudHidden) return;
-    
-    // Рисуем на HUD
-    context.fill(x1, y1, x2, y2, color);
-    context.drawText(textRenderer, text, x, y, color, shadow);
+@Override
+public void onInitializeClient() {
+    HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null || client.player == null || client.options.hudHidden) {
+            return;
+        }
+        
+        // tickDelta - прогресс между тиками (0.0 - 1.0)
+        // Рисуем на HUD
+        drawContext.fill(x1, y1, x2, y2, color);
+        drawContext.drawText(client.textRenderer, text, x, y, color, true);
+    });
 }
 ```
 
-**Другие методы позиционирования:**
-- `HudElementRegistry.addFirst()` - в начало
-- `HudElementRegistry.addLast()` - в конец
-- `HudElementRegistry.attachElementAfter()` - после элемента
+**⚠️ ВАЖНО**: `HudElementRegistry` появился в Fabric API 0.116+ (для 1.21+). В 1.20.1 используйте `HudRenderCallback`.
 
 ### События (Events)
 
@@ -178,6 +191,7 @@ ClientTickEvents.END_CLIENT_TICK.register(client -> {
 ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
     ServerPlayerEntity player = handler.player;
     // Логика при входе игрока
+    // Отправляем синхронизирующие пакеты
 });
 ```
 
@@ -194,40 +208,57 @@ public static int getData(UUID playerId) {
 public static void setData(UUID playerId, int value) {
     playerData.put(playerId, value);
 }
+
+// ADDED: Thread-safe операции
+public static void updateData(UUID playerId, int delta) {
+    playerData.compute(playerId, (id, current) -> {
+        return (current == null ? 0 : current) + delta;
+    });
+}
 ```
+
+**⚠️ Thread Safety**: Всегда используйте `ConcurrentHashMap` для данных игроков, т.к. доступ может быть из разных потоков.
 
 ## ⚠️ Частые ошибки и как их избежать
 
-### 1. Неправильные импорты пакетов
-❌ **НЕПРАВИЛЬНО:**
-```java
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback; // DEPRECATED!
-import net.fabricmc.fabric.api.client.rendering.v1.HudElementRegistry; // НЕВЕРНЫЙ ПУТЬ!
-```
-
-✅ **ПРАВИЛЬНО:**
+### 1. Неправильные импорты пакетов (1.20.1)
+❌ **НЕПРАВИЛЬНО** (API из 1.21+):
 ```java
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
+import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.network.codec.PacketCodec;
 ```
 
-### 2. Создание Identifier
-❌ **УСТАРЕЛО** (до 1.20):
+✅ **ПРАВИЛЬНО** (для 1.20.1):
+```java
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.minecraft.network.PacketByteBuf;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+```
+
+### 2. Создание Identifier (1.20.1)
+❌ **НЕПРАВИЛЬНО** (синтаксис 1.21+):
+```java
+Identifier.of("modid", "name")  // НЕ СУЩЕСТВУЕТ в 1.20.1!
+```
+
+✅ **ПРАВИЛЬНО** (для 1.20.1):
 ```java
 new Identifier("modid", "name")
 ```
 
-✅ **ПРАВИЛЬНО** (1.20+):
-```java
-Identifier.of("modid", "name")
-```
-
-### 3. Item Settings
-Всегда указывайте `registryKey` при создании предмета:
+### 3. Item Settings (1.20.1)
+❌ **НЕПРАВИЛЬНО** (1.20.5+):
 ```java
 new Item.Settings()
     .maxCount(1)
-    .registryKey(itemKey)  // ОБЯЗАТЕЛЬНО!
+    .registryKey(itemKey)  // НЕ СУЩЕСТВУЕТ в 1.20.1!
+```
+
+✅ **ПРАВИЛЬНО** (для 1.20.1):
+```java
+new Item.Settings()
+    .maxCount(1)
 ```
 
 ### 4. Проверка стороны (Client/Server)
@@ -249,23 +280,50 @@ public ActionResult use(World world, PlayerEntity user, Hand hand) {
 - Сервер - источник истины
 - Всегда синхронизируйте важные данные с клиентом через пакеты
 - Не полагайтесь на клиентские данные для серверной логики
+- Отправляйте пакеты ТОЛЬКО при изменении данных (не каждый тик)
+
+### 6. PacketByteBuf - порядок чтения/записи
+❌ **НЕПРАВИЛЬНО**:
+```java
+// Запись
+buf.writeVarInt(mana);
+buf.writeString(playerName);
+
+// Чтение (неправильный порядок!)
+String name = buf.readString();
+int mana = buf.readVarInt();
+```
+
+✅ **ПРАВИЛЬНО**:
+```java
+// Запись
+buf.writeVarInt(mana);
+buf.writeString(playerName);
+
+// Чтение (тот же порядок!)
+int mana = buf.readVarInt();
+String name = buf.readString();
+```
+
+**⚠️ КРИТИЧЕСКИ ВАЖНО**: Порядок и типы операций чтения ДОЛЖНЫ точно соответствовать порядку и типам записи!
 
 ## 📚 Полезные ресурсы
 
 ### Официальная документация
 - [Fabric Wiki](https://wiki.fabricmc.net/tutorial:start) - туториалы и гайды
 - [Fabric Documentation](https://docs.fabricmc.net/develop/) - современная документация
-- [Fabric API Javadoc](https://maven.fabricmc.net/docs/) - документация API
+- [Fabric API Javadoc](https://maven.fabricmc.net/docs/fabric-api-0.92.2+1.20.1/) - документация API для 1.20.1
 
 ### Важные страницы
-- [Networking](https://docs.fabricmc.net/develop/networking) - сетевое взаимодействие
-- [HUD Rendering](https://docs.fabricmc.net/develop/rendering/hud) - рендеринг на HUD
+- [Networking](https://fabricmc.net/wiki/tutorial:networking) - сетевое взаимодействие (1.20.1)
 - [Items](https://docs.fabricmc.net/develop/items/first-item) - создание предметов
 - [Blocks](https://docs.fabricmc.net/develop/blocks/first-block) - создание блоков
+- [HUD Rendering](https://fabricmc.net/wiki/tutorial:hud) - старый туториал для 1.20.1
 
 ### Изменения в версиях
-- [Fabric for 1.20](https://fabricmc.net/2023/05/25/120.html)
-- [Fabric for 1.21](https://fabricmc.net/2024/05/31/121.html)
+- [Fabric for 1.20](https://fabricmc.net/2023/05/25/120.html) - релиз-ноты
+- [Fabric for 1.20.5](https://fabricmc.net/2024/04/15/1205.html) - networking переработан!
+- [Fabric for 1.21](https://fabricmc.net/2024/05/31/121.html) - HUD API обновлен
 
 ## 🔍 Проверка кода
 
@@ -275,12 +333,17 @@ public ActionResult use(World world, PlayerEntity user, Hand hand) {
 ```
 
 ### Проверка deprecated API
-В `build.gradle` добавлено:
+В `build.gradle` добавьте:
 ```groovy
 tasks.withType(JavaCompile).configureEach {
-    it.options.release = 21
+    it.options.release = 17
     it.options.compilerArgs << "-Xlint:deprecation"
 }
+```
+
+### Проверка модификаторов доступа
+```bash
+./gradlew build --info | grep "warning"
 ```
 
 ## 📝 Комментарии в коде
@@ -294,13 +357,14 @@ tasks.withType(JavaCompile).configureEach {
  * 
  * @param parameter Описание параметра
  * @return Описание возвращаемого значения
+ * @since 1.0.0
  */
 ```
 
 ## 🎨 Стиль кода
 
 - Используйте `final` для неизменяемых полей
-- Предпочитайте `record` для простых data-классов
+- Предпочитайте `record` для простых data-классов (Java 17+)
 - Используйте `static final` для констант
 - Именуйте константы `UPPER_SNAKE_CASE`
 - Именуйте переменные и методы `camelCase`
@@ -318,54 +382,60 @@ tasks.withType(JavaCompile).configureEach {
 # Запуск сервера
 ./gradlew runServer
 
+# Запуск с флагами для отладки networking
+./gradlew runClient --debug-jvm
+
 # Обновление зависимостей
 ./gradlew --refresh-dependencies
 ```
 
+## 🔄 Миграция на 1.20.5+ и 1.21+
+
+### Networking изменения (1.20.5+)
+При миграции на 1.20.5+:
+- ❌ Удалить `PacketByteBuf` код
+- ✅ Использовать `CustomPayload` + `PacketCodec`
+- ✅ Регистрировать через `PayloadTypeRegistry`
+
+### HUD изменения (1.21+)
+При миграции на 1.21+:
+- ❌ Удалить `HudRenderCallback`
+- ✅ Использовать `HudElementRegistry`
+- ✅ Параметр `RenderTickCounter` вместо `float tickDelta`
+
+### Identifier изменения (1.21+)
+При миграции на 1.21+:
+- ❌ Заменить `new Identifier()` на `Identifier.of()`
+
+### Item Settings изменения (1.20.5+)
+При миграции на 1.20.5+:
+- ✅ Добавить `.registryKey()` в `Item.Settings()`
+
+## ⚠️ Риски совместимости
+
+### API, которые часто ломают совместимость:
+1. **Networking** - полностью переработан в 1.20.5
+2. **HUD Rendering** - изменен в 1.21 (новый API)
+3. **Entity Rendering** - регулярные изменения
+4. **Recipe API** - изменения в каждой минорной версии
+5. **Data Generation** - breaking changes между версиями
+
+### Критические точки для тестирования:
+- ✅ Синхронизация данных клиент-сервер (через пакеты)
+- ✅ HUD отображение на разных разрешениях
+- ✅ Мультиплеер (несколько игроков одновременно)
+- ✅ Перезаход в мир (сохранение/загрузка данных)
+- ✅ Совместимость с другими модами
+
+### Thread-safety проблемы:
+- ⚠️ Всегда используйте `client.execute()` для клиентской логики в пакетах
+- ⚠️ Всегда используйте `server.execute()` для серверной логики в пакетах
+- ⚠️ `ConcurrentHashMap` для данных игроков
+- ⚠️ Избегайте статических полей для изменяемых данных
+
 ---
 
-**Последнее обновление**: Октябрь 2025
-**Версия правил**: 1.0
-
-## 🔄 Обновление: Deprecated API в Fabric 1.21.10
-
-### EntityRendererRegistry (Deprecated но рабочий)
-
-**Статус**: Deprecated в Fabric API, но всё ещё официальный способ для 1.21.10
-
-**Правильное использование**:
-```java
-/**
- * Регистрирует рендерер для кастомной сущности
- * 
- * EntityRendererRegistry помечен как deprecated,
- * но остается рабочим способом для Fabric 1.21.10
- */
-@SuppressWarnings("deprecation")
-private void registerCustomEntityRenderer() {
-    EntityRendererRegistry.register(
-        ModEntities.CUSTOM_ENTITY, 
-        CustomEntityRenderer::new
-    );
-}
-```
-
-**Для сущностей-снарядов (стрелы, снежки и т.д.)**:
-```java
-@SuppressWarnings("deprecation")
-private void registerProjectileRenderer() {
-    EntityRendererRegistry.register(
-        ModEntities.ICE_SHARD, 
-        ArrowEntityRenderer::new  // Для стрел
-    );
-}
-```
-
-**Важно**: 
-- Без регистрации рендерера игра **крашится** при попытке отрисовать сущность
-- `@SuppressWarnings("deprecation")` подавляет предупреждение линтера
-- Новый API для регистрации рендереров планируется в будущих версиях Fabric
-
----
-
-**Дата обновления**: 19 октября 2025
+**Последнее обновление**: Ноябрь 2024
+**Версия правил**: 2.0 для Minecraft 1.20.1
+**Совместимость**: Minecraft 1.20.1 + Fabric API 0.92.2+1.20.1
+**Java**: 17
