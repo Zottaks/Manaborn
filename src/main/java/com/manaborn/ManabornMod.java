@@ -8,6 +8,10 @@ import com.manaborn.blocks.MagicOreBlock;
 import com.manaborn.mana.ManaManager;
 import com.manaborn.blocks.LearningAltarBlock;
 import com.manaborn.blocks.entity.LearningAltarBlockEntity;
+import com.manaborn.blocks.ManaConverterBlock;
+import com.manaborn.blocks.entity.ManaConverterBlockEntity;
+import com.manaborn.screen.ManaConverterScreenHandler;
+import com.manaborn.items.ManaVesselItem;
 import com.manaborn.screen.LearningAltarScreenHandler;
 import com.manaborn.network.ManaSyncS2CPacket;
 import com.manaborn.network.LearnedSpellsSyncS2CPacket;
@@ -65,6 +69,10 @@ public class ManabornMod implements ModInitializer {
 	public static Block LEARNING_ALTAR;
 	public static BlockEntityType<LearningAltarBlockEntity> LEARNING_ALTAR_BE;
 	public static ScreenHandlerType<LearningAltarScreenHandler> LEARNING_ALTAR_SH;
+	public static Block MANA_CONVERTER;
+	public static BlockEntityType<ManaConverterBlockEntity> MANA_CONVERTER_BE;
+	public static ScreenHandlerType<ManaConverterScreenHandler> MANA_CONVERTER_SH;
+	public static Item MANA_VESSEL;
 	
 	// Lev: тут происходят инициализации
 	@Override
@@ -188,7 +196,40 @@ public class ManabornMod implements ModInitializer {
             Identifier.of(MOD_ID, "learning_altar"),
             new ScreenHandlerType<>(altarFactory, FeatureFlags.VANILLA_FEATURES)
         );
-		
+
+		// Регистрация Mana Converter блока
+		RegistryKey<Block> converterBlockKey = RegistryKey.of(Registries.BLOCK.getKey(), Identifier.of(MOD_ID, "mana_converter"));
+		MANA_CONVERTER = Registry.register(
+			Registries.BLOCK,
+			converterBlockKey,
+			new ManaConverterBlock(AbstractBlock.Settings.create()
+				.strength(2.0f, 3.0f)
+				.sounds(BlockSoundGroup.STONE)
+				.registryKey(converterBlockKey))
+		);
+		RegistryKey<Item> converterItemKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "mana_converter"));
+		Registry.register(Registries.ITEM, converterItemKey, new BlockItem(MANA_CONVERTER, new Item.Settings().registryKey(converterItemKey)));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.BUILDING_BLOCKS).register(entries -> entries.add(MANA_CONVERTER));
+
+		// BE и ScreenHandler для конвертора
+		MANA_CONVERTER_BE = Registry.register(
+			Registries.BLOCK_ENTITY_TYPE,
+			RegistryKey.of(Registries.BLOCK_ENTITY_TYPE.getKey(), Identifier.of(MOD_ID, "mana_converter")),
+			FabricBlockEntityTypeBuilder.create(ManaConverterBlockEntity::new, MANA_CONVERTER).build()
+		);
+		Factory<ManaConverterScreenHandler> converterFactory = (syncId, inv) -> new ManaConverterScreenHandler(syncId, inv);
+		MANA_CONVERTER_SH = Registry.register(
+			Registries.SCREEN_HANDLER,
+			Identifier.of(MOD_ID, "mana_converter"),
+			new ScreenHandlerType<>(converterFactory, FeatureFlags.VANILLA_FEATURES)
+		);
+
+		// Регистрация Mana Vessel
+		RegistryKey<Item> vesselKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "mana_vessel"));
+		MANA_VESSEL = Registry.register(Registries.ITEM, vesselKey, new ManaVesselItem(new Item.Settings().maxCount(1).registryKey(vesselKey)));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(MANA_VESSEL));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(MANA_VESSEL));
+
 		// Регистрация Magic Ore Block
 		RegistryKey<Block> oreBlockKey = RegistryKey.of(Registries.BLOCK.getKey(), Identifier.of(MOD_ID, "magic_ore"));
 		MAGIC_ORE = Registry.register(

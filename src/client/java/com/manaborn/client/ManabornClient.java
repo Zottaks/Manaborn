@@ -76,8 +76,9 @@ public class ManabornClient implements ClientModInitializer {
             }
         });
 
-        // Register client screen for Learning Altar
+        // Register client screens
         HandledScreens.register(ManabornMod.LEARNING_ALTAR_SH, LearningAltarScreen::new);
+        HandledScreens.register(ManabornMod.MANA_CONVERTER_SH, com.manaborn.client.ui.ManaConverterScreen::new);
     }
 	
 	/**

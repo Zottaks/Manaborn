@@ -4,11 +4,13 @@
   "item.manaborn.magic_dust": "Магическая пыль",
   "block.manaborn.magic_ore": "Магическая руда",
   "block.manaborn.learning_altar": "алтарь изучения",
+  "block.manaborn.mana_converter": "Конвертор маны",
   "item.manaborn.fireball_spell_book": "Книга заклинания: Огненный шар",
   "item.manaborn.ice_shard_spell_book": "Книга заклинания: Ледяной осколок",
   "item.manaborn.ice_wall_spell_book": "Книга заклинания: Стена льда",
   "item.manaborn.fire_wall_spell_book": "Книга заклинания: Стена огня",
   "item.manaborn.absorbing_barrier_spell_book": "Книга заклинания: Поглощающий барьер",
-  "item.manaborn.weakness_curse_spell_book": "Книга заклинания: Проклятие Слабости"
+  "item.manaborn.weakness_curse_spell_book": "Книга заклинания: Проклятие Слабости",
+  "item.manaborn.mana_vessel": "Сосуд маны"
 }
 
