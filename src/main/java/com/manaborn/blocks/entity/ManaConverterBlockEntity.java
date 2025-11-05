@@ -11,7 +11,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.PropertyDelegate;
 import net.minecraft.screen.ScreenHandler;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
@@ -46,7 +45,8 @@ public class ManaConverterBlockEntity extends BlockEntity implements Inventory, 
 
         @Override
         public void set(int index, int value) {
-            if (index == 2) progress = value;
+            if (index == 2)
+                progress = value;
         }
 
         @Override
@@ -60,7 +60,8 @@ public class ManaConverterBlockEntity extends BlockEntity implements Inventory, 
     }
 
     public static void serverTick(World world, BlockPos pos, BlockState state, ManaConverterBlockEntity be) {
-        if (world.isClient()) return;
+        if (world.isClient())
+            return;
         boolean dirty = false;
 
         // Convert dust -> mana
@@ -96,25 +97,34 @@ public class ManaConverterBlockEntity extends BlockEntity implements Inventory, 
             }
         }
 
-        if (dirty) be.markDirty();
+        if (dirty)
+            be.markDirty();
     }
 
     // Inventory
     @Override
-    public int size() { return items.size(); }
-
-    @Override
-    public boolean isEmpty() {
-        for (ItemStack s : items) if (!s.isEmpty()) return false; return true;
+    public int size() {
+        return items.size();
     }
 
     @Override
-    public ItemStack getStack(int slot) { return items.get(slot); }
+    public boolean isEmpty() {
+        for (ItemStack s : items)
+            if (!s.isEmpty())
+                return false;
+        return true;
+    }
+
+    @Override
+    public ItemStack getStack(int slot) {
+        return items.get(slot);
+    }
 
     @Override
     public ItemStack removeStack(int slot, int amount) {
         ItemStack result = Inventories.splitStack(items, slot, amount);
-        if (!result.isEmpty()) markDirty();
+        if (!result.isEmpty())
+            markDirty();
         return result;
     }
 
@@ -132,16 +142,22 @@ public class ManaConverterBlockEntity extends BlockEntity implements Inventory, 
     }
 
     @Override
-    public boolean canPlayerUse(PlayerEntity player) { return true; }
+    public boolean canPlayerUse(PlayerEntity player) {
+        return true;
+    }
 
     @Override
-    public void clear() { items.clear(); }
+    public void clear() {
+        items.clear();
+    }
 
     // NBT intentionally omitted for 1.21.10 draft, following project pattern
 
     // UI
     @Override
-    public Text getDisplayName() { return Text.literal("Конвертор маны"); }
+    public Text getDisplayName() {
+        return Text.literal("Конвертор маны");
+    }
 
     @Nullable
     @Override

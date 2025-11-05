@@ -1,7 +1,6 @@
 package com.manaborn.client.ui;
 
 import com.manaborn.screen.ManaConverterScreenHandler;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
@@ -38,7 +37,8 @@ public class ManaConverterScreen extends HandledScreen<ManaConverterScreenHandle
 
         // Labels
         ctx.drawText(this.textRenderer, Text.literal("Пыль").asOrderedText(), dustX, dustY - 12, 0xFFBBBBBB, false);
-        ctx.drawText(this.textRenderer, Text.literal("Сосуд").asOrderedText(), vesselX, vesselY - 12, 0xFFBBBBBB, false);
+        ctx.drawText(this.textRenderer, Text.literal("Сосуд").asOrderedText(), vesselX, vesselY - 12, 0xFFBBBBBB,
+                false);
 
         // Progress bar (dust -> mana) between slots
         int progress = handler.getProgress();
@@ -47,7 +47,7 @@ public class ManaConverterScreen extends HandledScreen<ManaConverterScreenHandle
         int gapRight = vesselX;
         int available = Math.max(0, gapRight - gapLeft);
         int barWidth = Math.max(32, Math.min(60, available - 4));
-        int filled = maxProg > 0 ? (int)((progress / (float)maxProg) * barWidth) : 0;
+        int filled = maxProg > 0 ? (int) ((progress / (float) maxProg) * barWidth) : 0;
         int barX = gapLeft + ((available - barWidth) / 2);
         int barY = dustY + (s - 8) / 2;
         drawBar(ctx, barX, barY, barWidth, 8, filled, 0xFF4DA3FF);
@@ -59,18 +59,19 @@ public class ManaConverterScreen extends HandledScreen<ManaConverterScreenHandle
         drawTank(ctx, tankX, tankY, tankW, tankH, handler.getMana(), handler.getMaxMana());
 
         // Title subdued
-        ctx.drawText(this.textRenderer, Text.literal("Конвертор маны").asOrderedText(), x + 8, y + 6, 0xFFBBD7FF, false);
+        ctx.drawText(this.textRenderer, Text.literal("Конвертор маны").asOrderedText(), x + 8, y + 6, 0xFFBBD7FF,
+                false);
 
         // Subtle particles
         long time = Util.getMeasuringTimeMs();
         int dots = 10;
         for (int i = 0; i < dots; i++) {
             float t = (time % 4000L) / 4000.0f + i * 0.11f;
-            float fx = (float)(MathHelper.sin(t * 8.1f + i) * 0.5f + 0.5f);
-            float fy = (float)(MathHelper.cos(t * 6.7f + i * 0.31f) * 0.5f + 0.5f);
-            int px = x + 10 + (int)(fx * (backgroundWidth - 20));
-            int py = y + 12 + (int)(fy * (backgroundHeight - 24));
-            int alpha = 0x20 + (int)(0x20 * (0.5f + 0.5f * MathHelper.sin(t * 6.28f + i)));
+            float fx = (float) (MathHelper.sin(t * 8.1f + i) * 0.5f + 0.5f);
+            float fy = (float) (MathHelper.cos(t * 6.7f + i * 0.31f) * 0.5f + 0.5f);
+            int px = x + 10 + (int) (fx * (backgroundWidth - 20));
+            int py = y + 12 + (int) (fy * (backgroundHeight - 24));
+            int alpha = 0x20 + (int) (0x20 * (0.5f + 0.5f * MathHelper.sin(t * 6.28f + i)));
             int pcol = (alpha << 24) | 0xB9E5FF;
             ctx.fill(px, py, px + 1, py + 1, pcol);
         }
@@ -94,7 +95,8 @@ public class ManaConverterScreen extends HandledScreen<ManaConverterScreenHandle
         // bg
         ctx.fill(x, y, x + w, y + h, 0xFF000000);
         // fill
-        if (filled > 0) ctx.fill(x, y, x + filled, y + h, color);
+        if (filled > 0)
+            ctx.fill(x, y, x + filled, y + h, color);
     }
 
     private void drawTank(DrawContext ctx, int x, int y, int w, int h, int mana, int max) {
@@ -108,12 +110,12 @@ public class ManaConverterScreen extends HandledScreen<ManaConverterScreenHandle
         ctx.fill(x, y, x + w, y + h, 0xFF000000);
         // fill from bottom
         if (max > 0 && mana > 0) {
-            int fillH = Math.max(1, (int)(h * (mana / (float)max)));
+            int fillH = Math.max(1, (int) (h * (mana / (float) max)));
             int fy = y + h - fillH;
             ctx.fill(x + 1, fy + 1, x + w - 1, y + h - 1, 0xFF4DA3FF);
             // shimmer
             long t = Util.getMeasuringTimeMs();
-            int shimmer = (int)((t / 120) % (w - 2));
+            int shimmer = (int) ((t / 120) % (w - 2));
             int sx = x + 1 + shimmer;
             ctx.fill(sx, fy + 1, sx + 1, y + h - 1, 0x66B9E5FF);
         }
@@ -130,6 +132,7 @@ public class ManaConverterScreen extends HandledScreen<ManaConverterScreenHandle
 
     @Override
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
-        context.drawText(this.textRenderer, this.playerInventoryTitle, this.playerInventoryTitleX, this.playerInventoryTitleY, 4210752, false);
+        context.drawText(this.textRenderer, this.playerInventoryTitle, this.playerInventoryTitleX,
+                this.playerInventoryTitleY, 4210752, false);
     }
 }

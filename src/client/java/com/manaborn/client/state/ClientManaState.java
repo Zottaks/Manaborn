@@ -3,14 +3,14 @@ package com.manaborn.client.state;
 public final class ClientManaState {
 	private static int mana = 100;
 	private static int maxMana = 100;
+	@SuppressWarnings("unused")
 	private static int regenTickCounter = 0;
 	private static int lastSpendDelayTicks = 0;
 
-	// Естественная регенерация отключена на клиенте — источник истины сервер
-	private static final int TICKS_PER_1_MANA = Integer.MAX_VALUE;
 	private static final int REGEN_DELAY_TICKS = Integer.MAX_VALUE;
 
-	private ClientManaState() {}
+	private ClientManaState() {
+	}
 
 	public static int getMana() {
 		return mana;
@@ -24,7 +24,7 @@ public final class ClientManaState {
 		int oldMana = mana;
 		mana = Math.max(0, Math.min(max, current));
 		maxMana = Math.max(0, max);
-		
+
 		// Если мана уменьшилась (потратили на сервере), сбрасываем задержку регенерации
 		if (mana < oldMana) {
 			lastSpendDelayTicks = REGEN_DELAY_TICKS;
@@ -33,14 +33,16 @@ public final class ClientManaState {
 	}
 
 	public static void spend(int amount) {
-		if (amount <= 0) return;
+		if (amount <= 0)
+			return;
 		mana = Math.max(0, mana - amount);
-		lastSpendDelayTicks = REGEN_DELAY_TICKS; 
+		lastSpendDelayTicks = REGEN_DELAY_TICKS;
 		regenTickCounter = 0;
 	}
 
 	public static void clientTick() {
-		// Клиентская регенерация отключена — мана обновляется только серверными пакетами
+		// Клиентская регенерация отключена — мана обновляется только серверными
+		// пакетами
 		if (lastSpendDelayTicks > 0) {
 			lastSpendDelayTicks--;
 		}
