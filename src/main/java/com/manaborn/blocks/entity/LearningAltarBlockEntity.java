@@ -195,6 +195,7 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
             case INNER_HEAT -> 13;
             case FROST_AURA -> 12;
             case ABSORBING_BARRIER -> 25;
+            case WEAKNESS_CURSE -> 20;
             case ICE_WALL -> 9;
         };
     }
@@ -217,6 +218,8 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
             return SpellType.FROST_AURA;
         if (item == ManabornMod.ABSORBING_BARRIER_SPELL_BOOK)
             return SpellType.ABSORBING_BARRIER;
+        if (item == ManabornMod.WEAKNESS_CURSE_SPELL_BOOK)
+            return SpellType.WEAKNESS_CURSE;
         if (item == ManabornMod.ICE_WALL_SPELL_BOOK)
             return SpellType.ICE_WALL;
         if (item instanceof SpellBookItem) {
@@ -233,6 +236,7 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
             case INNER_HEAT -> 120 * 20; // 120 seconds
             case FROST_AURA -> 75 * 20; // 75 seconds
             case ABSORBING_BARRIER -> 240 * 20; // 240 seconds
+            case WEAKNESS_CURSE -> 75 * 20; // 75 seconds
             case ICE_WALL -> 40 * 20; // 40 seconds (средний показатель для UI)
         };
     }

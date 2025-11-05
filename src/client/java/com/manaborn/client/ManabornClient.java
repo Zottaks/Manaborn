@@ -42,6 +42,12 @@ public class ManabornClient implements ClientModInitializer {
 				Identifier.of("manaborn", "spell_display"),
 				SpellHudOverlay::render);
 
+        // Регистрируем HUD элемент для отображения кулдауна выбранного заклинания (под маной)
+        HudElementRegistry.attachElementBefore(
+                VanillaHudElements.CHAT,
+                Identifier.of("manaborn", "cooldown_display"),
+                CooldownHudOverlay::render);
+
         // Открытие меню заклинаний по клавише I (edge-detection)
 
         // Обработчик пакета синхронизации маны

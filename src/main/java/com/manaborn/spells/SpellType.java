@@ -9,6 +9,7 @@ public enum SpellType {
     INNER_HEAT("Внутренний жар", 30, "inner_heat", Formatting.GOLD),
     FROST_AURA("Аура Стужи", 40, "frost_aura", Formatting.AQUA),
     ABSORBING_BARRIER("Поглощающий барьер", 15, "absorbing_barrier", Formatting.DARK_PURPLE),
+    WEAKNESS_CURSE("Проклятие Слабости", 45, "weakness_curse", Formatting.DARK_PURPLE),
     ICE_WALL("Стена льда", 10, "ice_wall", Formatting.AQUA);
     
     private final String displayName;

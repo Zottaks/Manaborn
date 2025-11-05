@@ -61,6 +61,8 @@ public class SpellManager {
         }
     }
 
+    
+
     private static class IceWallData {
         final ServerWorld world;
         final List<BlockPos> blocks;
@@ -272,6 +274,10 @@ public class SpellManager {
                     castAbsorbingBarrier(world, user);
                     cooldown = 1500; // 75 секунд
                     break;
+                case WEAKNESS_CURSE:
+                    castWeaknessCurse(world, user);
+                    cooldown = 1500; // 75 секунд
+                    break;
                 case ICE_WALL:
                     // Для Стены Льда используем механику удержания и каст из MagicStaffItem.
                     // Здесь ничего не делаем.
@@ -301,6 +307,77 @@ public class SpellManager {
         world.spawnEntity(iceShard);
         world.playSound(null, user.getBlockPos(), SoundEvents.ENTITY_SNOW_GOLEM_SHOOT, SoundCategory.PLAYERS, 1.0f,
                 1.2f);
+    }
+    
+    /**
+     * Накладывает Проклятие Слабости на цель перед игроком.
+     * Ищет ближайшую живую цель в конусе ~20° на дистанции до 12 блоков.
+     * Применяет эффект WEAKNESS и проигрывает мрачные эффекты.
+     */
+    private static void castWeaknessCurse(World world, PlayerEntity user) {
+        if (!(world instanceof ServerWorld serverWorld)) return;
+        double range = 12.0;
+        Vec3d eye = user.getEyePos();
+        Vec3d look = user.getRotationVector().normalize();
+
+        // Поиск кандидатов в расширенном боксе
+        Box search = user.getBoundingBox().expand(range, range * 0.5, range);
+        List<LivingEntity> candidates = serverWorld.getEntitiesByClass(
+            LivingEntity.class,
+            search,
+            e -> e != null && e.isAlive() && e != user
+        );
+
+        LivingEntity best = null;
+        double bestDist = Double.MAX_VALUE;
+        double cosThreshold = Math.cos(Math.toRadians(20.0)); // узкий конус
+
+        for (LivingEntity e : candidates) {
+            Vec3d to = e.getEyePos().subtract(eye);
+            double dist = to.length();
+            if (dist > range || dist < 0.1) continue;
+            Vec3d dir = to.normalize();
+            double dot = dir.dotProduct(look);
+            if (dot < cosThreshold) continue; // вне конуса
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = e;
+            }
+        }
+
+        if (best == null) {
+            if (user instanceof ServerPlayerEntity sp) {
+                sp.sendMessage(Text.literal("Нет подходящей цели перед вами"), true);
+            }
+            world.playSound(null, user.getBlockPos(), SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 0.5f, 0.6f);
+            return;
+        }
+
+        int duration = 400; // 20 секунд
+        int amplifier = 2; // Сильное ослабление
+        best.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, duration, amplifier, false, true, true), user);
+
+        // Визуальные эффекты вокруг цели
+        double tx = best.getX();
+        double ty = best.getY() + best.getHeight() * 0.6;
+        double tz = best.getZ();
+        for (int i = 0; i < 28; i++) {
+            double a = serverWorld.random.nextDouble() * Math.PI * 2;
+            double r = 0.4 + serverWorld.random.nextDouble() * 0.9;
+            double px = tx + Math.cos(a) * r;
+            double pz = tz + Math.sin(a) * r;
+            double py = ty + (serverWorld.random.nextDouble() - 0.5) * 0.8;
+            serverWorld.spawnParticles(ParticleTypes.REVERSE_PORTAL, px, py, pz, 1, 0, 0, 0, 0);
+            if (i % 3 == 0) {
+                serverWorld.spawnParticles(ParticleTypes.SOUL, px, py, pz, 1, 0.02, 0.02, 0.02, 0.005);
+            }
+        }
+        world.playSound(null, best.getBlockPos(), SoundEvents.ENTITY_ELDER_GUARDIAN_CURSE, SoundCategory.PLAYERS, 0.7f, 0.8f);
+        world.playSound(null, user.getBlockPos(), SoundEvents.BLOCK_RESPAWN_ANCHOR_CHARGE, SoundCategory.PLAYERS, 0.5f, 0.7f);
+
+        if (user instanceof ServerPlayerEntity sp) {
+            sp.sendMessage(Text.literal("Цель проклята слабостью (20с)"), true);
+        }
     }
     
     private static void castFireWall(World world, PlayerEntity user) {
@@ -553,6 +630,16 @@ public class SpellManager {
      */
     public static void setCooldown(ItemStack stack, World world, SpellType spell, int durationTicks) {
         setSpellCooldown(stack, world, spell, durationTicks);
+    }
+
+    /**
+     * Публичный хелпер для HUD: оставшееся время кулдауна в тиках.
+     */
+    public static int getCooldownRemainingTicks(ItemStack stack, World world, SpellType spell) {
+        long end = getSpellCooldownEnd(stack, spell);
+        long now = world.getTime();
+        long diff = end - now;
+        return (int) Math.max(0L, diff);
     }
 
     /**

@@ -59,6 +59,7 @@ public class ManabornMod implements ModInitializer {
 	public static Item INNER_HEAT_SPELL_BOOK;
 	public static Item FROST_AURA_SPELL_BOOK;
 	public static Item ABSORBING_BARRIER_SPELL_BOOK;
+	public static Item WEAKNESS_CURSE_SPELL_BOOK;
 	public static Item ICE_WALL_SPELL_BOOK;
 	public static EntityType<IceShardEntity> ICE_SHARD_ENTITY;
 	public static Block LEARNING_ALTAR;
@@ -147,6 +148,12 @@ public class ManabornMod implements ModInitializer {
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(ABSORBING_BARRIER_SPELL_BOOK));
 		System.out.println(" [DEBUG] Absorbing Barrier Spell Book зарегистрирована с ID: " + barrierBookKey.getValue());
 
+		// Регистрация Weakness Curse Spell Book
+		RegistryKey<Item> weaknessCurseBookKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "weakness_curse_spell_book"));
+		WEAKNESS_CURSE_SPELL_BOOK = Registry.register(Registries.ITEM, weaknessCurseBookKey, new SpellBookItem(new Item.Settings().maxCount(1).registryKey(weaknessCurseBookKey), SpellType.WEAKNESS_CURSE));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(WEAKNESS_CURSE_SPELL_BOOK));
+		System.out.println(" [DEBUG] Weakness Curse Spell Book зарегистрирована с ID: " + weaknessCurseBookKey.getValue());
+
 		// Регистрация Ice Wall Spell Book
 		RegistryKey<Item> iceWallBookKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "ice_wall_spell_book"));
 		ICE_WALL_SPELL_BOOK = Registry.register(Registries.ITEM, iceWallBookKey, new SpellBookItem(new Item.Settings().maxCount(1).registryKey(iceWallBookKey), SpellType.ICE_WALL));
@@ -233,7 +240,8 @@ public class ManabornMod implements ModInitializer {
 						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(5))
 						.with(ItemEntry.builder(ICE_WALL_SPELL_BOOK).weight(5))
 						.with(ItemEntry.builder(FROST_AURA_SPELL_BOOK).weight(5))
-						.with(ItemEntry.builder(ABSORBING_BARRIER_SPELL_BOOK).weight(3)));
+						.with(ItemEntry.builder(ABSORBING_BARRIER_SPELL_BOOK).weight(3))
+						.with(ItemEntry.builder(WEAKNESS_CURSE_SPELL_BOOK).weight(3)));
 				}
 				
 				// Заброшенные шахты (3% шанс)
@@ -245,7 +253,8 @@ public class ManabornMod implements ModInitializer {
 						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(3))
 						.with(ItemEntry.builder(ICE_WALL_SPELL_BOOK).weight(3))
 						.with(ItemEntry.builder(FROST_AURA_SPELL_BOOK).weight(3))
-						.with(ItemEntry.builder(ABSORBING_BARRIER_SPELL_BOOK).weight(2)));
+						.with(ItemEntry.builder(ABSORBING_BARRIER_SPELL_BOOK).weight(2))
+						.with(ItemEntry.builder(WEAKNESS_CURSE_SPELL_BOOK).weight(2)));
 				}
 				
 				// Библиотека крепости (15% шанс)
@@ -257,7 +266,8 @@ public class ManabornMod implements ModInitializer {
 						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(15))
 						.with(ItemEntry.builder(ICE_WALL_SPELL_BOOK).weight(15))
 						.with(ItemEntry.builder(FROST_AURA_SPELL_BOOK).weight(15))
-						.with(ItemEntry.builder(ABSORBING_BARRIER_SPELL_BOOK).weight(10)));
+						.with(ItemEntry.builder(ABSORBING_BARRIER_SPELL_BOOK).weight(10))
+						.with(ItemEntry.builder(WEAKNESS_CURSE_SPELL_BOOK).weight(10)));
 				}
 				
 				// Деревня (дом картографа) (8% шанс)
@@ -269,7 +279,8 @@ public class ManabornMod implements ModInitializer {
 						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(8))
 						.with(ItemEntry.builder(ICE_WALL_SPELL_BOOK).weight(8))
 						.with(ItemEntry.builder(FROST_AURA_SPELL_BOOK).weight(8))
-						.with(ItemEntry.builder(ABSORBING_BARRIER_SPELL_BOOK).weight(5)));
+						.with(ItemEntry.builder(ABSORBING_BARRIER_SPELL_BOOK).weight(5))
+						.with(ItemEntry.builder(WEAKNESS_CURSE_SPELL_BOOK).weight(5)));
 				}
 				
 				// Крепость Незера (10% шанс)
@@ -281,7 +292,8 @@ public class ManabornMod implements ModInitializer {
 						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(10))
 						.with(ItemEntry.builder(ICE_WALL_SPELL_BOOK).weight(10))
 						.with(ItemEntry.builder(FROST_AURA_SPELL_BOOK).weight(10))
-						.with(ItemEntry.builder(ABSORBING_BARRIER_SPELL_BOOK).weight(7)));
+						.with(ItemEntry.builder(ABSORBING_BARRIER_SPELL_BOOK).weight(7))
+						.with(ItemEntry.builder(WEAKNESS_CURSE_SPELL_BOOK).weight(7)));
 				}
 				
 				// Город Энда (20% шанс)
@@ -293,7 +305,8 @@ public class ManabornMod implements ModInitializer {
 						.with(ItemEntry.builder(FIRE_WALL_SPELL_BOOK).weight(20))
 						.with(ItemEntry.builder(ICE_WALL_SPELL_BOOK).weight(20))
 						.with(ItemEntry.builder(FROST_AURA_SPELL_BOOK).weight(20))
-						.with(ItemEntry.builder(ABSORBING_BARRIER_SPELL_BOOK).weight(14)));
+						.with(ItemEntry.builder(ABSORBING_BARRIER_SPELL_BOOK).weight(14))
+						.with(ItemEntry.builder(WEAKNESS_CURSE_SPELL_BOOK).weight(14)));
 				}
 			}
 		});

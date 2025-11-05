@@ -137,7 +137,7 @@ public class SpellTreeScreen extends Screen {
 
         List<SpellType> fireSpells = Arrays.asList(SpellType.FIREBALL, SpellType.FIRE_WALL, SpellType.INNER_HEAT);
         List<SpellType> iceSpells = Arrays.asList(SpellType.ICE_SHARD, SpellType.ICE_WALL);
-        List<SpellType> darkSpells = Arrays.asList(SpellType.ABSORBING_BARRIER);
+        List<SpellType> darkSpells = Arrays.asList(SpellType.ABSORBING_BARRIER, SpellType.WEAKNESS_CURSE);
 
         if (selectedTab == Tab.FIRE) {
             int bannerTop = listStartY;
@@ -259,6 +259,8 @@ public class SpellTreeScreen extends Screen {
                 return "Наполняет вас огненной энергией, временно увеличивая скорость.";
             case ABSORBING_BARRIER:
                 return "Темный барьер отражает вражеские снаряды и восстанавливает ману.";
+            case WEAKNESS_CURSE:
+                return "Проклинает цель, значительно снижая наносимый ею урон.";
             default:
                 return "Заклинание.";
         }
