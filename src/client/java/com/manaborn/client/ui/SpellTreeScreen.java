@@ -215,7 +215,14 @@ public class SpellTreeScreen extends Screen {
             }
             any = true;
 
-            int cardHeight = 46;
+            // Получаем описание и считаем количество строк для адаптивной высоты
+            String desc = getDescription(spell);
+            String[] lines = desc.split("\n");
+            int descriptionLines = lines.length;
+            
+            // Базовая высота + дополнительное пространство для каждой строки описания
+            int cardHeight = 46 + (descriptionLines - 1) * 10; // +10 пикселей на каждую дополнительную строку
+            
             int bg = 0xBF1E1E23;
             int stroke = 0xFF3A3A3A;
             int accent;
@@ -236,9 +243,13 @@ public class SpellTreeScreen extends Screen {
             String cost = "Стоимость: " + spell.getManaCost() + " маны";
             context.drawText(this.textRenderer, Text.literal(cost), x + 10, y + 20, 0xFFCCCCCC, false);
 
-            String desc = getDescription(spell);
-            context.drawText(this.textRenderer, Text.literal(desc).formatted(net.minecraft.util.Formatting.GRAY),
-                    x + 10, y + 31, 0xFFC0C0C0, false);
+            // Поддержка многострочного описания через \n
+            int lineY = y + 31;
+            for (String line : lines) {
+                context.drawText(this.textRenderer, Text.literal(line).formatted(net.minecraft.util.Formatting.GRAY),
+                        x + 10, lineY, 0xFFC0C0C0, false);
+                lineY += 10; // Отступ между строками
+            }
 
             y += cardHeight + 6;
         }
@@ -258,7 +269,8 @@ public class SpellTreeScreen extends Screen {
             case INNER_HEAT:
                 return "Наполняет вас огненной энергией, временно увеличивая скорость.";
             case HEAT_WEAPON:
-                return "Нагревает ваши атаки, поджигая цели. 10-я атака вызывает взрыв без урона владельцу.";
+                // ВАЖНО: Использовать перенос строк \n для длинных описаний, чтобы текст влезал в UI
+                return "Нагревает ваши атаки, поджигая цели.\n10-я атака вызывает взрыв без урона владельцу.";
             case ABSORBING_BARRIER:
                 return "Темный барьер отражает вражеские снаряды и восстанавливает ману.";
             case WEAKNESS_CURSE:
