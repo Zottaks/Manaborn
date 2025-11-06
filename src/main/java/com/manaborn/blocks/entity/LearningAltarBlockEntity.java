@@ -197,6 +197,7 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
             case ABSORBING_BARRIER -> 25;
             case WEAKNESS_CURSE -> 20;
             case ICE_WALL -> 9;
+            case HEAT_WEAPON -> 15;
         };
     }
 
@@ -238,6 +239,7 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
             case ABSORBING_BARRIER -> 240 * 20; // 240 seconds
             case WEAKNESS_CURSE -> 75 * 20; // 75 seconds
             case ICE_WALL -> 40 * 20; // 40 seconds (средний показатель для UI)
+            case HEAT_WEAPON -> 30 * 20; // 30 seconds
         };
     }
 

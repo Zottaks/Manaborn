@@ -51,7 +51,7 @@ public final class CooldownHudOverlay {
         ctx.fill(x, y, x + w, y + h, bg);
 
         switch (spell) {
-            case FIREBALL, INNER_HEAT -> {
+            case FIREBALL, INNER_HEAT, HEAT_WEAPON -> {
                 // огненная окантовка
                 ctx.fill(x - 1, y - 1, x + w + 1, y, 0xCCFF8800);
                 ctx.fill(x - 1, y + h, x + w + 1, y + h + 1, 0xCCFF8800);

@@ -47,6 +47,8 @@ public class SpellManager {
     private static final Map<UUID, Integer> activeAbsorbingBarriers = new HashMap<>();
     // Активные стены льда: UUID -> данные стены
     private static final Map<UUID, IceWallData> activeIceWalls = new HashMap<>();
+    // Активный нагрев оружия: UUID игрока -> данные о combo
+    private static final Map<UUID, HeatWeaponData> activeHeatWeapons = new HashMap<>();
     
     // Данные о стене огня
     private static class FireWallData {
@@ -72,6 +74,14 @@ public class SpellManager {
             this.world = world;
             this.blocks = blocks;
             this.ticksRemaining = durationTicks;
+        }
+    }
+
+    private static class HeatWeaponData {
+        int attackCount;
+        
+        HeatWeaponData() {
+            this.attackCount = 0;
         }
     }
 
@@ -203,6 +213,91 @@ public class SpellManager {
         world.playSound(null, user.getBlockPos(), SoundEvents.ITEM_FIRECHARGE_USE, SoundCategory.PLAYERS, 1.0f, 1.2f);
     }
 
+    private static void castHeatWeapon(World world, PlayerEntity user) {
+        if (!(user instanceof ServerPlayerEntity serverPlayer)) return;
+        
+        // Активируем нагрев оружия на 30 секунд (600 тиков)
+        UUID playerId = serverPlayer.getUuid();
+        activeHeatWeapons.put(playerId, new HeatWeaponData());
+        
+        // Визуальные эффекты: огненные частицы вокруг рук игрока
+        if (world instanceof ServerWorld serverWorld) {
+            double baseX = user.getX();
+            double baseY = user.getY() + 1.2; // уровень рук
+            double baseZ = user.getZ();
+            for (int i = 0; i < 20; i++) {
+                double offsetX = (world.random.nextDouble() - 0.5) * 1.2;
+                double offsetY = (world.random.nextDouble() - 0.5) * 0.6;
+                double offsetZ = (world.random.nextDouble() - 0.5) * 1.2;
+                serverWorld.spawnParticles(ParticleTypes.FLAME,
+                        baseX + offsetX,
+                        baseY + offsetY,
+                        baseZ + offsetZ,
+                        1,
+                        0.0, 0.01, 0.0,
+                        0.01);
+            }
+        }
+        
+        // Звук активации
+        world.playSound(null, user.getBlockPos(), SoundEvents.ITEM_FIRECHARGE_USE, SoundCategory.PLAYERS, 1.0f, 1.5f);
+        serverPlayer.sendMessage(Text.literal("Нагрев оружия активирован! Следующие 10 атак поджигают цели."), true);
+    }
+
+    public static void onPlayerAttack(ServerPlayerEntity player, LivingEntity target, World world) {
+        UUID playerId = player.getUuid();
+        HeatWeaponData data = activeHeatWeapons.get(playerId);
+        
+        if (data == null) return; // Нагрев оружия не активен
+        
+        // Увеличиваем счетчик атак
+        data.attackCount++;
+        
+        // Поджигаем цель
+        target.setOnFireFor(3); // Поджигаем на 3 секунды
+        
+        // Визуальные эффекты при атаке
+        if (world instanceof ServerWorld serverWorld) {
+            serverWorld.spawnParticles(ParticleTypes.FLAME, 
+                target.getX(), target.getY() + target.getHeight() / 2, target.getZ(), 
+                5, 0.2, 0.3, 0.2, 0.01);
+        }
+        
+        // Проверяем на 10-ю атаку (взрыв)
+        if (data.attackCount >= 10) {
+            // Создаем взрыв, который не наносит урон владельцу
+            world.createExplosion(null, target.getX(), target.getY(), target.getZ(), 3.0f, 
+                World.ExplosionSourceType.NONE);
+            
+            // Наносим урон цели, но не владельцу
+            target.damage((ServerWorld) world, world.getDamageSources().explosion(null), 8.0f);
+            
+            // Визуальные эффекты взрыва
+            if (world instanceof ServerWorld serverWorld) {
+                for (int i = 0; i < 20; i++) {
+                    double offsetX = (serverWorld.random.nextDouble() - 0.5) * 2.0;
+                    double offsetY = serverWorld.random.nextDouble() * 1.5;
+                    double offsetZ = (serverWorld.random.nextDouble() - 0.5) * 2.0;
+                    serverWorld.spawnParticles(ParticleTypes.EXPLOSION,
+                        target.getX() + offsetX, target.getY() + offsetY, target.getZ() + offsetZ,
+                        1, 0.0, 0.0, 0.0, 0.0);
+                }
+            }
+            
+            // Звук взрыва
+            world.playSound(null, target.getBlockPos(), SoundEvents.ENTITY_GENERIC_EXPLODE.value(), 
+                SoundCategory.PLAYERS, 1.0f, 1.0f);
+            
+            // Удаляем эффект нагрева оружия
+            activeHeatWeapons.remove(playerId);
+            player.sendMessage(Text.literal("Взрыв! Нагрев оружия завершен."), true);
+        } else {
+            // Сообщаем о прогрессе
+            int remaining = 10 - data.attackCount;
+            player.sendMessage(Text.literal("Атака " + data.attackCount + "/10. Осталось атак: " + remaining), true);
+        }
+    }
+
     public static void castSpell(World world, PlayerEntity user, Hand hand) {
         ItemStack stack = user.getStackInHand(hand);
 
@@ -282,6 +377,10 @@ public class SpellManager {
                     // Для Стены Льда используем механику удержания и каст из MagicStaffItem.
                     // Здесь ничего не делаем.
                     cooldown = 0;
+                    break;
+                case HEAT_WEAPON:
+                    castHeatWeapon(world, user);
+                    cooldown = 100; // 5 секунд
                     break;
                 default:
                     cooldown = 100;

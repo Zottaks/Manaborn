@@ -135,7 +135,7 @@ public class SpellTreeScreen extends Screen {
         int listStartY = tabBarY + tabHeight + 8;
         int listX = boxLeft + 16;
 
-        List<SpellType> fireSpells = Arrays.asList(SpellType.FIREBALL, SpellType.FIRE_WALL, SpellType.INNER_HEAT);
+        List<SpellType> fireSpells = Arrays.asList(SpellType.FIREBALL, SpellType.FIRE_WALL, SpellType.INNER_HEAT, SpellType.HEAT_WEAPON);
         List<SpellType> iceSpells = Arrays.asList(SpellType.ICE_SHARD, SpellType.ICE_WALL);
         List<SpellType> darkSpells = Arrays.asList(SpellType.ABSORBING_BARRIER, SpellType.WEAKNESS_CURSE);
 
@@ -257,6 +257,8 @@ public class SpellTreeScreen extends Screen {
                 return "Создает стену огня, наносящую урон при соприкосновении.";
             case INNER_HEAT:
                 return "Наполняет вас огненной энергией, временно увеличивая скорость.";
+            case HEAT_WEAPON:
+                return "Нагревает ваши атаки, поджигая цели. 10-я атака вызывает взрыв без урона владельцу.";
             case ABSORBING_BARRIER:
                 return "Темный барьер отражает вражеские снаряды и восстанавливает ману.";
             case WEAKNESS_CURSE:
