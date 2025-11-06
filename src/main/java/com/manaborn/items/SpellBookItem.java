@@ -74,4 +74,8 @@ public class SpellBookItem extends Item {
         tooltip.accept(
                 Text.literal("(книга исчезнет после изучения)").formatted(Formatting.DARK_GRAY, Formatting.ITALIC));
     }
+
+    public SpellType getSpell() {
+        return this.spell;
+    }
 }

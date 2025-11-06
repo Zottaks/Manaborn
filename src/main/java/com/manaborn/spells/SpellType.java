@@ -11,7 +11,7 @@ public enum SpellType {
     ABSORBING_BARRIER("Поглощающий барьер", 15, "absorbing_barrier", Formatting.DARK_PURPLE),
     WEAKNESS_CURSE("Проклятие Слабости", 45, "weakness_curse", Formatting.DARK_PURPLE),
     ICE_WALL("Стена льда", 10, "ice_wall", Formatting.AQUA),
-    HEAT_WEAPON("Нагрев оружия", 25, "heat_weapon", Formatting.GOLD);
+    HEAT_WEAPON("Накаливание", 25, "heat_weapon", Formatting.GOLD);
     
     private final String displayName;
     private final int manaCost;

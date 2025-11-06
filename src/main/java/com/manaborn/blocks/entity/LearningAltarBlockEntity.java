@@ -207,24 +207,8 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
 
     private @Nullable SpellType getSpellFromBook(ItemStack stack) {
         Item item = stack.getItem();
-        if (item == ManabornMod.FIREBALL_SPELL_BOOK)
-            return SpellType.FIREBALL;
-        if (item == ManabornMod.ICE_SHARD_SPELL_BOOK)
-            return SpellType.ICE_SHARD;
-        if (item == ManabornMod.FIRE_WALL_SPELL_BOOK)
-            return SpellType.FIRE_WALL;
-        if (item == ManabornMod.INNER_HEAT_SPELL_BOOK)
-            return SpellType.INNER_HEAT;
-        if (item == ManabornMod.FROST_AURA_SPELL_BOOK)
-            return SpellType.FROST_AURA;
-        if (item == ManabornMod.ABSORBING_BARRIER_SPELL_BOOK)
-            return SpellType.ABSORBING_BARRIER;
-        if (item == ManabornMod.WEAKNESS_CURSE_SPELL_BOOK)
-            return SpellType.WEAKNESS_CURSE;
-        if (item == ManabornMod.ICE_WALL_SPELL_BOOK)
-            return SpellType.ICE_WALL;
-        if (item instanceof SpellBookItem) {
-            return null;
+        if (item instanceof SpellBookItem book) {
+            return book.getSpell();
         }
         return null;
     }

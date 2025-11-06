@@ -32,13 +32,13 @@ public class ManaConverterScreenHandler extends ScreenHandler {
         this.addProperties(properties);
 
         // Slots: 0 - magic dust, 1 - mana vessel
-        this.addSlot(new Slot(inventory, 0, 44, 35) {
+        this.addSlot(new Slot(inventory, 0, 31, 35) {
             @Override
             public boolean canInsert(ItemStack stack) {
                 return stack.getItem() == ManabornMod.MAGIC_DUST;
             }
         });
-        this.addSlot(new Slot(inventory, 1, 116, 35) {
+        this.addSlot(new Slot(inventory, 1, 127, 35) {
             @Override
             public boolean canInsert(ItemStack stack) {
                 return stack.getItem() instanceof ManaVesselItem;

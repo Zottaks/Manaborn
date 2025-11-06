@@ -26,37 +26,50 @@ public class ManaConverterScreen extends HandledScreen<ManaConverterScreenHandle
         ctx.fill(x, y, x + backgroundWidth, y + 2, 0xFF4DA3FF);
         ctx.fill(x, y + backgroundHeight - 2, x + backgroundWidth, y + backgroundHeight, 0xFF4DA3FF);
 
-        // Slots: 0 dust at (44,35), 1 vessel at (116,35)
+        // Slots: 0 dust on left, 1 vessel on right
         int s = 18;
-        int dustX = x + 44, dustY = y + 35;
-        int vesselX = x + 116, vesselY = y + 35;
+        int dustX = x + 31, dustY = y + 35;
+        int vesselX = x + 127, vesselY = y + 35;
         int oc = 0xFF444444;
         // borders
         drawSlotBorder(ctx, dustX, dustY, s, oc);
         drawSlotBorder(ctx, vesselX, vesselY, s, oc);
 
-        // Labels
-        ctx.drawText(this.textRenderer, Text.literal("Пыль").asOrderedText(), dustX, dustY - 12, 0xFFBBBBBB, false);
-        ctx.drawText(this.textRenderer, Text.literal("Сосуд").asOrderedText(), vesselX, vesselY - 12, 0xFFBBBBBB,
-                false);
-
-        // Progress bar (dust -> mana) between slots
-        int progress = handler.getProgress();
-        int maxProg = handler.getMaxProgress();
-        int gapLeft = dustX + s;
-        int gapRight = vesselX;
-        int available = Math.max(0, gapRight - gapLeft);
-        int barWidth = Math.max(32, Math.min(60, available - 4));
-        int filled = maxProg > 0 ? (int) ((progress / (float) maxProg) * barWidth) : 0;
-        int barX = gapLeft + ((available - barWidth) / 2);
-        int barY = dustY + (s - 8) / 2;
-        drawBar(ctx, barX, barY, barWidth, 8, filled, 0xFF4DA3FF);
-
-        // Mana tank on right side
+        // Centered mana tank
         int tankW = 14, tankH = 54;
-        int tankX = x + backgroundWidth - 20 - tankW;
+        int tankX = x + (backgroundWidth - tankW) / 2;
         int tankY = y + 16;
         drawTank(ctx, tankX, tankY, tankW, tankH, handler.getMana(), handler.getMaxMana());
+
+        // Labels
+        ctx.drawText(this.textRenderer, Text.literal("Пыль").asOrderedText(), dustX, dustY - 12, 0xFFBBBBBB, false);
+        ctx.drawText(this.textRenderer, Text.literal("Хранилище").asOrderedText(), tankX - 6, tankY - 10, 0xFFBBD7FF, false);
+        ctx.drawText(this.textRenderer, Text.literal("Сосуд").asOrderedText(), vesselX, vesselY - 12, 0xFFBBBBBB, false);
+
+        // Left flow: dust -> mana (progress-based)
+        int progress = handler.getProgress();
+        int maxProg = handler.getMaxProgress();
+        int leftGapStart = dustX + s + 3;
+        int leftGapEnd = tankX - 6;
+        int leftWidth = Math.max(16, leftGapEnd - leftGapStart);
+        int leftFilled = (maxProg > 0) ? Math.max(0, Math.min(leftWidth, (int) (leftWidth * (progress / (float) maxProg)))) : 0;
+        int leftBarY = dustY + (s - 6) / 2;
+        drawBar(ctx, leftGapStart, leftBarY, leftWidth, 6, leftFilled, 0xFF4DA3FF);
+
+        // Right flow: mana -> vessel (animated when mana>0)
+        int mana = handler.getMana();
+        int rightGapStart = tankX + tankW + 6;
+        int rightGapEnd = vesselX - 3;
+        int rightWidth = Math.max(16, rightGapEnd - rightGapStart);
+        int rightBarY = vesselY + (s - 6) / 2;
+        // Animated fill based on time, gated by available mana
+        int animFilled = 0;
+        if (mana > 0) {
+            long t = Util.getMeasuringTimeMs();
+            float phase = (float) ((t % 1000L) / 1000.0);
+            animFilled = (int) (rightWidth * phase);
+        }
+        drawBar(ctx, rightGapStart, rightBarY, rightWidth, 6, animFilled, 0xFF7ED957);
 
         // Title subdued
         ctx.drawText(this.textRenderer, Text.literal("Конвертор маны").asOrderedText(), x + 8, y + 6, 0xFFBBD7FF,
