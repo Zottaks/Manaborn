@@ -372,9 +372,8 @@ public class ActiveEffectManager {
         }
 
         if (data.attackCount >= 10) {
-            world.createExplosion(null, target.getX(), target.getY(), target.getZ(), 3.0f,
+            world.createExplosion(player, target.getX(), target.getY(), target.getZ(), 3.0f,
                     World.ExplosionSourceType.NONE);
-            target.damage((ServerWorld) world, world.getDamageSources().explosion(null), 8.0f);
 
             if (world instanceof ServerWorld serverWorld) {
                 for (int i = 0; i < 20; i++) {
