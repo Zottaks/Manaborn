@@ -132,7 +132,7 @@ public class ManabornMod implements ModInitializer {
 				Identifier.of(MOD_ID, "fireball_spell_book"));
 		FIREBALL_SPELL_BOOK = Registry.register(Registries.ITEM, fireballBookKey,
 				new SpellBookItem(new Item.Settings().maxCount(1).registryKey(fireballBookKey), SpellType.FIREBALL));
-		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(FIREBALL_SPELL_BOOK));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(FIREBALL_SPELL_BOOK));
 		System.out.println(" [DEBUG] Fireball Spell Book зарегистрирована с ID: " + fireballBookKey.getValue());
 
 		// Регистрация Ice Shard Spell Book
@@ -140,7 +140,7 @@ public class ManabornMod implements ModInitializer {
 				Identifier.of(MOD_ID, "ice_shard_spell_book"));
 		ICE_SHARD_SPELL_BOOK = Registry.register(Registries.ITEM, iceShardBookKey,
 				new SpellBookItem(new Item.Settings().maxCount(1).registryKey(iceShardBookKey), SpellType.ICE_SHARD));
-		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(ICE_SHARD_SPELL_BOOK));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(ICE_SHARD_SPELL_BOOK));
 		System.out.println(" [DEBUG] Ice Shard Spell Book зарегистрирована с ID: " + iceShardBookKey.getValue());
 
 		// Регистрация Fire Wall Spell Book
@@ -148,7 +148,7 @@ public class ManabornMod implements ModInitializer {
 				Identifier.of(MOD_ID, "fire_wall_spell_book"));
 		FIRE_WALL_SPELL_BOOK = Registry.register(Registries.ITEM, fireWallBookKey,
 				new SpellBookItem(new Item.Settings().maxCount(1).registryKey(fireWallBookKey), SpellType.FIRE_WALL));
-		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(FIRE_WALL_SPELL_BOOK));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(FIRE_WALL_SPELL_BOOK));
 		System.out.println(" [DEBUG] Fire Wall Spell Book зарегистрирована с ID: " + fireWallBookKey.getValue());
 
 		// Регистрация Inner Heat Spell Book
@@ -156,7 +156,7 @@ public class ManabornMod implements ModInitializer {
 				Identifier.of(MOD_ID, "inner_heat_spell_book"));
 		INNER_HEAT_SPELL_BOOK = Registry.register(Registries.ITEM, innerHeatBookKey,
 				new SpellBookItem(new Item.Settings().maxCount(1).registryKey(innerHeatBookKey), SpellType.INNER_HEAT));
-		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(INNER_HEAT_SPELL_BOOK));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(INNER_HEAT_SPELL_BOOK));
 		System.out.println(" [DEBUG] Inner Heat Spell Book зарегистрирована с ID: " + innerHeatBookKey.getValue());
 
 		// Регистрация Frost Aura Spell Book
@@ -164,7 +164,7 @@ public class ManabornMod implements ModInitializer {
 				Identifier.of(MOD_ID, "frost_aura_spell_book"));
 		FROST_AURA_SPELL_BOOK = Registry.register(Registries.ITEM, frostAuraBookKey,
 				new SpellBookItem(new Item.Settings().maxCount(1).registryKey(frostAuraBookKey), SpellType.FROST_AURA));
-		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(FROST_AURA_SPELL_BOOK));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(FROST_AURA_SPELL_BOOK));
 		System.out.println(" [DEBUG] Frost Aura Spell Book зарегистрирована с ID: " + frostAuraBookKey.getValue());
 
 		// Регистрация Absorbing Barrier Spell Book
@@ -172,7 +172,7 @@ public class ManabornMod implements ModInitializer {
 				Identifier.of(MOD_ID, "absorbing_barrier_spell_book"));
 		ABSORBING_BARRIER_SPELL_BOOK = Registry.register(Registries.ITEM, barrierBookKey, new SpellBookItem(
 				new Item.Settings().maxCount(1).registryKey(barrierBookKey), SpellType.ABSORBING_BARRIER));
-		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT)
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS)
 				.register(entries -> entries.add(ABSORBING_BARRIER_SPELL_BOOK));
 		System.out.println(" [DEBUG] Absorbing Barrier Spell Book зарегистрирована с ID: " + barrierBookKey.getValue());
 
@@ -181,7 +181,7 @@ public class ManabornMod implements ModInitializer {
 				Identifier.of(MOD_ID, "weakness_curse_spell_book"));
 		WEAKNESS_CURSE_SPELL_BOOK = Registry.register(Registries.ITEM, weaknessCurseBookKey, new SpellBookItem(
 				new Item.Settings().maxCount(1).registryKey(weaknessCurseBookKey), SpellType.WEAKNESS_CURSE));
-		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT)
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS)
 				.register(entries -> entries.add(WEAKNESS_CURSE_SPELL_BOOK));
 		System.out.println(
 				" [DEBUG] Weakness Curse Spell Book зарегистрирована с ID: " + weaknessCurseBookKey.getValue());
@@ -191,7 +191,7 @@ public class ManabornMod implements ModInitializer {
 				Identifier.of(MOD_ID, "ice_wall_spell_book"));
 		ICE_WALL_SPELL_BOOK = Registry.register(Registries.ITEM, iceWallBookKey,
 				new SpellBookItem(new Item.Settings().maxCount(1).registryKey(iceWallBookKey), SpellType.ICE_WALL));
-		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(ICE_WALL_SPELL_BOOK));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(ICE_WALL_SPELL_BOOK));
 		System.out.println(" [DEBUG] Ice Wall Spell Book зарегистрирована с ID: " + iceWallBookKey.getValue());
 
 		// Регистрация Heat Weapon Spell Book
@@ -199,7 +199,7 @@ public class ManabornMod implements ModInitializer {
 				Identifier.of(MOD_ID, "heat_weapon_spell_book"));
 		HEAT_WEAPON_SPELL_BOOK = Registry.register(Registries.ITEM, heatWeaponBookKey, new SpellBookItem(
 				new Item.Settings().maxCount(1).registryKey(heatWeaponBookKey), SpellType.HEAT_WEAPON));
-		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(HEAT_WEAPON_SPELL_BOOK));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(HEAT_WEAPON_SPELL_BOOK));
 		System.out.println(" [DEBUG] Heat Weapon Spell Book зарегистрирована с ID: " + heatWeaponBookKey.getValue());
 
 		// Регистрация Learning Altar блока
