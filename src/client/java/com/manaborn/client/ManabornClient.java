@@ -8,6 +8,7 @@ import com.manaborn.network.ManaSyncS2CPacket;
 import com.manaborn.network.LearnedSpellsSyncS2CPacket;
 import com.manaborn.network.RequestLearnedSpellsC2SPacket;
 import com.manaborn.ManabornMod;
+import com.manaborn.items.ManaVesselItem;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
@@ -79,6 +80,8 @@ public class ManabornClient implements ClientModInitializer {
         // Register client screens
         HandledScreens.register(ManabornMod.LEARNING_ALTAR_SH, LearningAltarScreen::new);
         HandledScreens.register(ManabornMod.MANA_CONVERTER_SH, com.manaborn.client.ui.ManaConverterScreen::new);
+
+        // Предикат модели для сосуда временно отключён до стабилизации импорта
     }
 	
 	/**

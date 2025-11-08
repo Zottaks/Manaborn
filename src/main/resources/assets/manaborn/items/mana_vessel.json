@@ -1,6 +1,13 @@
 {
   "model": {
-    "type": "minecraft:model",
-    "model": "manaborn:item/mana_vessel"
+    "type": "minecraft:range_dispatch",
+    "property": "minecraft:custom_model_data",
+    "entries": [
+      { "threshold": 0.0, "model": { "type": "minecraft:model", "model": "manaborn:item/mana_vessel" } },
+      { "threshold": 1.0, "model": { "type": "minecraft:model", "model": "manaborn:item/mana_vessel_25" } },
+      { "threshold": 2.0, "model": { "type": "minecraft:model", "model": "manaborn:item/mana_vessel_50" } },
+      { "threshold": 3.0, "model": { "type": "minecraft:model", "model": "manaborn:item/mana_vessel_75" } },
+      { "threshold": 4.0, "model": { "type": "minecraft:model", "model": "manaborn:item/mana_vessel_full" } }
+    ]
   }
 }

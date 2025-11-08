@@ -1,6 +1,12 @@
 {
   "parent": "item/generated",
   "textures": {
-    "layer0": "minecraft:item/glass_bottle"
-  }
+    "layer0": "manaborn:item/mana_vessel_empty"
+  },
+  "overrides": [
+    { "predicate": { "custom_model_data": 1.0 }, "model": "manaborn:item/mana_vessel_25" },
+    { "predicate": { "custom_model_data": 2.0 }, "model": "manaborn:item/mana_vessel_50" },
+    { "predicate": { "custom_model_data": 3.0 }, "model": "manaborn:item/mana_vessel_75" },
+    { "predicate": { "custom_model_data": 4.0 }, "model": "manaborn:item/mana_vessel_full" }
+  ]
 }

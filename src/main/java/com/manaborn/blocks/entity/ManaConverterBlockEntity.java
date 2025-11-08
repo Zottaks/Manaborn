@@ -90,6 +90,7 @@ public class ManaConverterBlockEntity extends BlockEntity implements Inventory, 
                     ManaVesselItem.setStored(vessel, stored + move);
                     be.manaStored -= move;
                     dirty = true;
+                    be.setStack(1, vessel);
                     if (world.getTime() % 20 == 0) {
                         world.playSound(null, pos, SoundEvents.ITEM_BOTTLE_FILL, SoundCategory.BLOCKS, 0.3f, 1.5f);
                     }

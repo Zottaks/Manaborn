@@ -1,6 +1,7 @@
 package com.manaborn.client.ui;
 
 import com.manaborn.screen.ManaConverterScreenHandler;
+import com.manaborn.items.ManaVesselItem;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
@@ -56,15 +57,24 @@ public class ManaConverterScreen extends HandledScreen<ManaConverterScreenHandle
         int leftBarY = dustY + (s - 6) / 2;
         drawBar(ctx, leftGapStart, leftBarY, leftWidth, 6, leftFilled, 0xFF4DA3FF);
 
-        // Right flow: mana -> vessel (animated when mana>0)
+        // Right flow: mana -> vessel (animate only when vessel present and can accept mana)
         int mana = handler.getMana();
         int rightGapStart = tankX + tankW + 6;
         int rightGapEnd = vesselX - 3;
         int rightWidth = Math.max(16, rightGapEnd - rightGapStart);
         int rightBarY = vesselY + (s - 6) / 2;
-        // Animated fill based on time, gated by available mana
         int animFilled = 0;
-        if (mana > 0) {
+        boolean hasVessel = false;
+        boolean vesselCanAccept = false;
+        if (this.handler.getSlot(1) != null && this.handler.getSlot(1).hasStack()) {
+            var stack = this.handler.getSlot(1).getStack();
+            hasVessel = stack.getItem() instanceof ManaVesselItem;
+            if (hasVessel) {
+                int stored = ManaVesselItem.getStored(stack);
+                vesselCanAccept = stored < ManaVesselItem.CAPACITY;
+            }
+        }
+        if (mana > 0 && hasVessel && vesselCanAccept) {
             long t = Util.getMeasuringTimeMs();
             float phase = (float) ((t % 1000L) / 1000.0);
             animFilled = (int) (rightWidth * phase);

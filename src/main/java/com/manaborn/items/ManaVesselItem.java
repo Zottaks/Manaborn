@@ -3,6 +3,7 @@ package com.manaborn.items;
 import com.manaborn.mana.ManaManager;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.NbtComponent;
+import net.minecraft.component.type.CustomModelDataComponent;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -14,6 +15,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.world.World;
+import java.util.List;
 
 public class ManaVesselItem extends Item {
     public static final int CAPACITY = 200;
@@ -35,6 +37,21 @@ public class ManaVesselItem extends Item {
         var nbt = data.copyNbt();
         nbt.putInt(KEY, clamped);
         stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
+
+        int level;
+        if (clamped >= CAPACITY) level = 4;
+        else if (clamped >= (int)(CAPACITY * 0.75f)) level = 3;
+        else if (clamped >= (int)(CAPACITY * 0.50f)) level = 2;
+        else if (clamped > 0) level = 1;
+        else level = 0;
+
+        CustomModelDataComponent cmd = new CustomModelDataComponent(
+                List.of((float) level),
+                List.of(),
+                List.of(),
+                List.of()
+        );
+        stack.set(DataComponentTypes.CUSTOM_MODEL_DATA, cmd);
     }
 
     @Override
@@ -51,6 +68,9 @@ public class ManaVesselItem extends Item {
         ManaManager.setMana(sp.getUuid(), current + toRestore);
         ManaManager.sendSync(sp);
         setStored(stack, stored - toRestore);
+        // Синхронизируем инвентарь с клиентом, чтобы модель переключилась сразу
+        user.getInventory().markDirty();
+        sp.playerScreenHandler.sendContentUpdates();
         world.playSound(null, user.getBlockPos(), SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 0.8f, 1.1f);
         user.incrementStat(Stats.USED.getOrCreateStat(this));
         user.sendMessage(Text.literal("+" + toRestore + " маны"), true);
