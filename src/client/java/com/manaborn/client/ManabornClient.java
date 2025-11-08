@@ -26,28 +26,37 @@ public class ManabornClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        // Регистрируем рендерер для ледяного осколка (КРИТИЧНО для предотвращения краша!)
-        // EntityRendererRegistry deprecated, но это всё ещё официальный способ для Fabric 1.21.10
+        // Регистрируем рендерер для ледяного осколка (КРИТИЧНО для предотвращения
+        // краша!)
+        // EntityRendererRegistry deprecated, но это всё ещё официальный способ для
+        // Fabric 1.21.10
         // Новый API появится в будущих версиях Fabric API
         registerIceShardRenderer();
-		
-		// Регистрируем HUD элемент для отображения маны перед чатом
-		HudElementRegistry.attachElementBefore(
-				VanillaHudElements.CHAT,
-				Identifier.of("manaborn", "mana_display"),
-				ManaHudOverlay::render);
-		
-		// Регистрируем HUD элемент для отображения выбранного заклинания
-		HudElementRegistry.attachElementBefore(
-				VanillaHudElements.CHAT,
-				Identifier.of("manaborn", "spell_display"),
-				SpellHudOverlay::render);
 
-        // Регистрируем HUD элемент для отображения кулдауна выбранного заклинания (под маной)
+        // Регистрируем HUD элемент для отображения маны перед чатом
+        HudElementRegistry.attachElementBefore(
+                VanillaHudElements.CHAT,
+                Identifier.of("manaborn", "mana_display"),
+                ManaHudOverlay::render);
+
+        // Регистрируем HUD элемент для отображения выбранного заклинания
+        HudElementRegistry.attachElementBefore(
+                VanillaHudElements.CHAT,
+                Identifier.of("manaborn", "spell_display"),
+                SpellHudOverlay::render);
+
+        // Регистрируем HUD элемент для отображения кулдауна выбранного заклинания (под
+        // маной)
         HudElementRegistry.attachElementBefore(
                 VanillaHudElements.CHAT,
                 Identifier.of("manaborn", "cooldown_display"),
                 CooldownHudOverlay::render);
+
+        // Регистрируем HUD элемент для отображения прогресса стены льда
+        HudElementRegistry.attachElementBefore(
+                VanillaHudElements.HOTBAR,
+                Identifier.of("manaborn", "ice_wall_progress"),
+                IceWallProgressOverlay::render);
 
         // Открытие меню заклинаний по клавише I (edge-detection)
 
@@ -55,7 +64,7 @@ public class ManabornClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(ManaSyncS2CPacket.ID, (payload, context) -> {
             context.client().execute(() -> ClientManaState.set(payload.mana(), payload.maxMana()));
         });
-        
+
         // Обработчик пакета синхронизации изученных заклинаний
         ClientPlayNetworking.registerGlobalReceiver(LearnedSpellsSyncS2CPacket.ID, (payload, context) -> {
             context.client().execute(() -> ClientLearnedSpellsState.setLearnedSpells(payload.spellIds()));
@@ -83,18 +92,19 @@ public class ManabornClient implements ClientModInitializer {
 
         // Предикат модели для сосуда временно отключён до стабилизации импорта
     }
-	
-	/**
-	 * Регистрирует рендерер для сущности ледяного осколка
-	 * 
-	 * Используем FlyingItemEntityRenderer для отображения снежка.
-	 * EntityRendererRegistry deprecated, но это всё ещё официальный способ для Fabric 1.21.10
-	 * Новый API появится в будущих версиях Fabric API
-	 * но остается рабочим и официальным способом для версии 1.21.10.
-	 * Новый API для регистрации рендереров планируется в будущих версиях.
-	 */
-	@SuppressWarnings("deprecation")
-	private void registerIceShardRenderer() {
-		EntityRendererRegistry.register(ManabornMod.ICE_SHARD_ENTITY, FlyingItemEntityRenderer::new);
-	}
+
+    /**
+     * Регистрирует рендерер для сущности ледяного осколка
+     * 
+     * Используем FlyingItemEntityRenderer для отображения снежка.
+     * EntityRendererRegistry deprecated, но это всё ещё официальный способ для
+     * Fabric 1.21.10
+     * Новый API появится в будущих версиях Fabric API
+     * но остается рабочим и официальным способом для версии 1.21.10.
+     * Новый API для регистрации рендереров планируется в будущих версиях.
+     */
+    @SuppressWarnings("deprecation")
+    private void registerIceShardRenderer() {
+        EntityRendererRegistry.register(ManabornMod.ICE_SHARD_ENTITY, FlyingItemEntityRenderer::new);
+    }
 }
