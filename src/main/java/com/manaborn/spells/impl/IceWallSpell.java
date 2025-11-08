@@ -37,6 +37,80 @@ public class IceWallSpell implements Spell {
      * Create ice wall with specified parameters
      */
     public static void createIceWall(ServerWorld world, PlayerEntity user, int width, int height, int durationTicks) {
+        // Special effect for maximum level (3x3 wall with hole that lifts player)
+        if (width == 4 && height == 6) {
+            createSpecialIceWall(world, user, durationTicks);
+            return;
+        }
+
+        // Regular wall for other levels
+        createRegularIceWall(world, user, width, height, durationTicks);
+    }
+
+    /**
+     * Creates a Highground: base 4x4 platform under feet (Y+3), and surrounding 3x3
+     * ring walls with center hole
+     */
+    private static void createSpecialIceWall(ServerWorld world, PlayerEntity user, int durationTicks) {
+        int baseX = (int) Math.floor(user.getX());
+        int baseY = (int) Math.floor(user.getY());
+        int baseZ = (int) Math.floor(user.getZ());
+
+        // Target platform height: +3 from ground. Player will stand at Y+4
+        int platformY = baseY + 3;
+
+        List<BlockPos> placed = new ArrayList<>();
+
+        // Base platform 4x4 under feet (centered around player)
+        for (int dx = -1; dx <= 2; dx++) {
+            for (int dz = -1; dz <= 2; dz++) {
+                BlockPos pos = new BlockPos(baseX + dx, platformY, baseZ + dz);
+                if (!canPlaceIceBlock(world, pos))
+                    continue;
+                world.setBlockState(pos, Blocks.PACKED_ICE.getDefaultState());
+                placed.add(pos);
+            }
+        }
+
+        // Walls around: 3x3 ring with center hole at platformY+1 and platformY+2
+        // (window to shoot)
+        for (int h = 1; h <= 2; h++) {
+            int y = platformY + h;
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    if (dx == 0 && dz == 0)
+                        continue; // hole in the middle
+                    BlockPos pos = new BlockPos(baseX + dx, y, baseZ + dz);
+                    if (!canPlaceIceBlock(world, pos))
+                        continue;
+                    world.setBlockState(pos, Blocks.PACKED_ICE.getDefaultState());
+                    placed.add(pos);
+                }
+            }
+        }
+
+        if (!placed.isEmpty()) {
+            ActiveEffectManager.addIceWall(world, placed, durationTicks);
+
+            // Teleport player onto the platform. Feet should be just above platformY
+            user.teleport(baseX + 0.5, platformY + 1.01, baseZ + 0.5, false);
+
+            world.playSound(null, user.getBlockPos(), SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 1.0f,
+                    1.0f);
+            world.playSound(null, user.getBlockPos(), SoundEvents.BLOCK_GLASS_PLACE, SoundCategory.PLAYERS, 0.8f, 0.9f);
+
+            for (int i = 0; i < 30; i++) {
+                world.spawnParticles(ParticleTypes.SNOWFLAKE, baseX + 0.5, platformY + 1.5, baseZ + 0.5, 8, 2.0, 2.0,
+                        2.0, 0.15);
+            }
+        }
+    }
+
+    /**
+     * Creates regular ice wall (original implementation)
+     */
+    private static void createRegularIceWall(ServerWorld world, PlayerEntity user, int width, int height,
+            int durationTicks) {
         Vec3d lookVec = user.getRotationVector();
         double distance = 2.0;
         double centerX = user.getX() + lookVec.x * distance;
@@ -64,14 +138,7 @@ public class IceWallSpell implements Spell {
                 BlockPos pos = new BlockPos(baseX, by, baseZ);
 
                 // Checks: air only, no fluids, no entities inside
-                if (!world.isAir(pos))
-                    continue;
-                FluidState fluid = world.getFluidState(pos);
-                if (!fluid.isEmpty())
-                    continue;
-                Box blockBox = Box.from(Vec3d.ofCenter(pos)).expand(0.4);
-                List<LivingEntity> colliders = world.getEntitiesByClass(LivingEntity.class, blockBox, e -> e.isAlive());
-                if (!colliders.isEmpty())
+                if (!canPlaceIceBlock(world, pos))
                     continue;
 
                 world.setBlockState(pos, Blocks.PACKED_ICE.getDefaultState());
@@ -88,6 +155,20 @@ public class IceWallSpell implements Spell {
                         0.05, 0.05, 0.0);
             }
         }
+    }
+
+    /**
+     * Check if ice block can be placed at position
+     */
+    private static boolean canPlaceIceBlock(ServerWorld world, BlockPos pos) {
+        if (!world.isAir(pos))
+            return false;
+        FluidState fluid = world.getFluidState(pos);
+        if (!fluid.isEmpty())
+            return false;
+        Box blockBox = Box.from(Vec3d.ofCenter(pos)).expand(0.4);
+        List<LivingEntity> colliders = world.getEntitiesByClass(LivingEntity.class, blockBox, e -> e.isAlive());
+        return colliders.isEmpty();
     }
 
     @Override

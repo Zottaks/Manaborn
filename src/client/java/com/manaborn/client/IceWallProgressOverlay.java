@@ -137,7 +137,7 @@ public final class IceWallProgressOverlay {
 
         float shownSeconds = Math.min(usedSeconds, 3.0f);
         if (usedSeconds >= 3.0f) {
-            wallType = "Большая стена 4x6";
+            wallType = "Highground";
             chargeInfo = String.format("%.1f/3.0с", shownSeconds);
         } else if (usedSeconds >= 1.5f) {
             wallType = "Средняя стена 3x4";
