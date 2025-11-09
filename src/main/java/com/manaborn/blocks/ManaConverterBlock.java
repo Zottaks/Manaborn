@@ -41,8 +41,10 @@ public class ManaConverterBlock extends BlockWithEntity {
 
     @Nullable
     @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-        if (world.isClient()) return null;
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state,
+            BlockEntityType<T> type) {
+        if (world.isClient())
+            return null;
         return (w, p, s, be) -> {
             if (be instanceof ManaConverterBlockEntity m) {
                 ManaConverterBlockEntity.serverTick(w, p, s, m);
@@ -52,7 +54,8 @@ public class ManaConverterBlock extends BlockWithEntity {
 
     @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        if (world.isClient()) return ActionResult.SUCCESS;
+        if (world.isClient())
+            return ActionResult.SUCCESS;
         BlockEntity be = world.getBlockEntity(pos);
         if (be instanceof ManaConverterBlockEntity m) {
             NamedScreenHandlerFactory factory = m;

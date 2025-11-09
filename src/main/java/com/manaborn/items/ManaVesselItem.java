@@ -13,8 +13,12 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.world.World;
+import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.component.type.TooltipDisplayComponent;
+import java.util.function.Consumer;
 import java.util.List;
 
 public class ManaVesselItem extends Item {
@@ -39,31 +43,38 @@ public class ManaVesselItem extends Item {
         stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
 
         int level;
-        if (clamped >= CAPACITY) level = 4;
-        else if (clamped >= (int)(CAPACITY * 0.75f)) level = 3;
-        else if (clamped >= (int)(CAPACITY * 0.50f)) level = 2;
-        else if (clamped > 0) level = 1;
-        else level = 0;
+        if (clamped >= CAPACITY)
+            level = 4;
+        else if (clamped >= (int) (CAPACITY * 0.75f))
+            level = 3;
+        else if (clamped >= (int) (CAPACITY * 0.50f))
+            level = 2;
+        else if (clamped > 0)
+            level = 1;
+        else
+            level = 0;
 
         CustomModelDataComponent cmd = new CustomModelDataComponent(
                 List.of((float) level),
                 List.of(),
                 List.of(),
-                List.of()
-        );
+                List.of());
         stack.set(DataComponentTypes.CUSTOM_MODEL_DATA, cmd);
     }
 
     @Override
     public ActionResult use(World world, PlayerEntity user, Hand hand) {
         ItemStack stack = user.getStackInHand(hand);
-        if (world.isClient()) return ActionResult.SUCCESS;
+        if (world.isClient())
+            return ActionResult.SUCCESS;
         ServerPlayerEntity sp = (ServerPlayerEntity) user;
         int stored = getStored(stack);
-        if (stored <= 0) return ActionResult.FAIL;
+        if (stored <= 0)
+            return ActionResult.FAIL;
         int current = ManaManager.getMana(sp.getUuid());
         int max = ManaManager.MAX_MANA;
-        if (current >= max) return ActionResult.FAIL;
+        if (current >= max)
+            return ActionResult.FAIL;
         int toRestore = Math.min(30, Math.min(stored, max - current));
         ManaManager.setMana(sp.getUuid(), current + toRestore);
         ManaManager.sendSync(sp);
@@ -71,9 +82,39 @@ public class ManaVesselItem extends Item {
         // Синхронизируем инвентарь с клиентом, чтобы модель переключилась сразу
         user.getInventory().markDirty();
         sp.playerScreenHandler.sendContentUpdates();
-        world.playSound(null, user.getBlockPos(), SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 0.8f, 1.1f);
+        world.playSound(null, user.getBlockPos(), SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 0.8f,
+                1.1f);
         user.incrementStat(Stats.USED.getOrCreateStat(this));
         user.sendMessage(Text.literal("+" + toRestore + " маны"), true);
         return ActionResult.SUCCESS;
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public void appendTooltip(ItemStack stack, TooltipContext context, TooltipDisplayComponent tooltipDisplay,
+            Consumer<Text> tooltip, TooltipType type) {
+        super.appendTooltip(stack, context, tooltipDisplay, tooltip, type);
+
+        int stored = getStored(stack);
+        int segments = 10;
+        int filled = Math.round((stored / (float) CAPACITY) * segments);
+        if (filled < 0)
+            filled = 0;
+        else if (filled > segments)
+            filled = segments;
+        String filledPart = "█".repeat(filled);
+        String emptyPart = "░".repeat(segments - filled);
+
+        // 1) Цветная строка с количеством маны
+        tooltip.accept(Text.literal("Мана: " + stored + "/" + CAPACITY).formatted(Formatting.AQUA, Formatting.BOLD));
+
+        // 2) Небольшая цветная шкала заряда
+        tooltip.accept(
+                Text.literal("[").formatted(Formatting.DARK_GRAY)
+                        .append(Text.literal(filledPart).formatted(Formatting.GREEN))
+                        .append(Text.literal(emptyPart).formatted(Formatting.DARK_GRAY))
+                        .append(Text.literal("] ").formatted(Formatting.DARK_GRAY))
+                        .append(Text.literal(String.valueOf((int) Math.round(stored * 100.0 / CAPACITY)) + "%")
+                                .formatted(Formatting.GRAY)));
     }
 }

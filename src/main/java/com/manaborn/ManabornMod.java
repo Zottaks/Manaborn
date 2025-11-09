@@ -12,6 +12,9 @@ import com.manaborn.blocks.ManaConverterBlock;
 import com.manaborn.blocks.entity.ManaConverterBlockEntity;
 import com.manaborn.screen.ManaConverterScreenHandler;
 import com.manaborn.items.ManaVesselItem;
+import com.manaborn.items.ManaConverterBlockItem;
+import com.manaborn.items.LearningAltarBlockItem;
+import com.manaborn.items.MagicOreBlockItem;
 import com.manaborn.screen.LearningAltarScreenHandler;
 import com.manaborn.network.ManaSyncS2CPacket;
 import com.manaborn.network.LearnedSpellsSyncS2CPacket;
@@ -38,7 +41,6 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.block.Block;
 import net.minecraft.block.AbstractBlock;
-import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
 import net.minecraft.sound.BlockSoundGroup;
@@ -215,7 +217,8 @@ public class ManabornMod implements ModInitializer {
 		RegistryKey<Item> altarItemKey = RegistryKey.of(Registries.ITEM.getKey(),
 				Identifier.of(MOD_ID, "learning_altar"));
 		Registry.register(Registries.ITEM, altarItemKey,
-				new BlockItem(LEARNING_ALTAR, new Item.Settings().registryKey(altarItemKey)));
+				new LearningAltarBlockItem((LearningAltarBlock) LEARNING_ALTAR,
+						new Item.Settings().registryKey(altarItemKey)));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.BUILDING_BLOCKS).register(entries -> entries.add(LEARNING_ALTAR));
 
 		// Регистрация BlockEntityType для алтаря
@@ -244,7 +247,8 @@ public class ManabornMod implements ModInitializer {
 		RegistryKey<Item> converterItemKey = RegistryKey.of(Registries.ITEM.getKey(),
 				Identifier.of(MOD_ID, "mana_converter"));
 		Registry.register(Registries.ITEM, converterItemKey,
-				new BlockItem(MANA_CONVERTER, new Item.Settings().registryKey(converterItemKey)));
+				new ManaConverterBlockItem((ManaConverterBlock) MANA_CONVERTER,
+						new Item.Settings().registryKey(converterItemKey)));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.BUILDING_BLOCKS).register(entries -> entries.add(MANA_CONVERTER));
 
 		// BE и ScreenHandler для конвертора
@@ -281,7 +285,7 @@ public class ManabornMod implements ModInitializer {
 		// Регистрация предмета блока
 		RegistryKey<Item> oreItemKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "magic_ore"));
 		Registry.register(Registries.ITEM, oreItemKey,
-				new BlockItem(MAGIC_ORE, new Item.Settings().registryKey(oreItemKey)));
+				new MagicOreBlockItem((MagicOreBlock) MAGIC_ORE, new Item.Settings().registryKey(oreItemKey)));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.BUILDING_BLOCKS).register(entries -> entries.add(MAGIC_ORE));
 		System.out.println(" [DEBUG] Magic Ore зарегистрирована с ID: " + oreBlockKey.getValue());
 

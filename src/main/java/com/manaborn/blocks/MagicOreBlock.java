@@ -9,7 +9,7 @@ import net.minecraft.util.math.intprovider.UniformIntProvider;
  * Генерируется на высотах от -64 до 10
  */
 public class MagicOreBlock extends ExperienceDroppingBlock {
-    
+
     public MagicOreBlock(Settings settings) {
         // Дроп 2-5 опыта при добыче
         super(UniformIntProvider.create(2, 5), settings);
