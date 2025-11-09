@@ -15,12 +15,44 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.advancement.AdvancementEntry;
+import net.minecraft.advancement.AdvancementProgress;
+import net.minecraft.util.Identifier;
 
 import java.util.function.Consumer;
 
 public class MagicStaffItem extends Item {
     public MagicStaffItem(Settings settings) {
         super(settings);
+    }
+
+    @Override
+    public void onCraft(ItemStack stack, World world) {
+        // Выдаем ачивку при крафте волшебной палочки
+        if (world instanceof ServerWorld serverWorld) {
+            // Ищем ближайшего игрока (крафт обычно происходит в контексте игрока)
+            serverWorld.getPlayers().forEach(player -> {
+                // Проверяем, есть ли у игрока только что созданный предмет в инвентаре
+                if (player.getInventory().contains(stack)) {
+                    grantMagicStaffAdvancement(player, serverWorld);
+                }
+            });
+        }
+        super.onCraft(stack, world);
+    }
+
+    private void grantMagicStaffAdvancement(ServerPlayerEntity player, ServerWorld world) {
+        // Получаем advancement по ID
+        AdvancementEntry advancement = world.getServer().getAdvancementLoader().get(
+                Identifier.of("manaborn", "magic_staff"));
+
+        if (advancement != null) {
+            AdvancementProgress progress = player.getAdvancementTracker().getProgress(advancement);
+            if (!progress.isDone()) {
+                // Выдаем ачивку
+                player.getAdvancementTracker().grantCriterion(advancement, "has_magic_staff");
+            }
+        }
     }
 
     @Override

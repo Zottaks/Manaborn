@@ -2,10 +2,6 @@
 trigger: always_on
 ---
 
----
-trigger: always_on
----
-
 # Manaborn - Структура проекта (Minecraft 1.21.10)
 
 ## 📁 Обзор проекта

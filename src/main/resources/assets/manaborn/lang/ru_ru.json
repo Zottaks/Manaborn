@@ -12,6 +12,7 @@
   "item.manaborn.heat_weapon_spell_book": "Книга заклинания: Нагрев оружия",
   "item.manaborn.absorbing_barrier_spell_book": "Книга заклинания: Поглощающий барьер",
   "item.manaborn.weakness_curse_spell_book": "Книга заклинания: Проклятие Слабости",
-  "item.manaborn.mana_vessel": "Сосуд маны"
+  "item.manaborn.mana_vessel": "Сосуд маны",
+  "advancement.manaborn.magic_staff.title": "Магическая сила!",
+  "advancement.manaborn.magic_staff.description": "Получите волшебную палочку"
 }
-
