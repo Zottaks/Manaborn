@@ -8,7 +8,6 @@ import com.manaborn.network.ManaSyncS2CPacket;
 import com.manaborn.network.LearnedSpellsSyncS2CPacket;
 import com.manaborn.network.RequestLearnedSpellsC2SPacket;
 import com.manaborn.ManabornMod;
-import com.manaborn.items.ManaVesselItem;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
