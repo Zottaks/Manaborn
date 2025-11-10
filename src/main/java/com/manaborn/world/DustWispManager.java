@@ -14,9 +14,9 @@ public class DustWispManager {
     public static final int MAX_WISPS_NEAR_PLAYER = 20; // было 25
     public static final int SCAN_RADIUS = 320; // 20 чанков (16 * 20)
     public static final double SPAWN_CHANCE_PER_TICK = 0.30; // было 0.55
-    public static final int MIN_WISPS_PER_SPAWN = 3; // было 1
-    public static final int MAX_WISPS_PER_SPAWN = 7; // было 3
-    public static final int CLUSTER_RADIUS = 8; // было 4
+    public static final int MIN_WISPS_PER_SPAWN = 1; // было 3
+    public static final int MAX_WISPS_PER_SPAWN = 3; // было 7
+    public static final int CLUSTER_RADIUS = 4; // было 8
 
     private static final Random RANDOM = new Random();
 

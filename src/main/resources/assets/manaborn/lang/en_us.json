@@ -19,6 +19,9 @@
   "item.manaborn.manoscope": "Manoscope",
   "block.manaborn.mana_magnet": "mana magnet",
   "item.manaborn.mana_magnet": "mana magnet",
+  "item.manaborn.ether": "Ether",
+  "block.manaborn.ether_converter": "Ether Converter",
+  "item.manaborn.ether_converter": "Ether Converter",
   "advancement.manaborn.magic_staff.title": "Magical Power!",
   "advancement.manaborn.magic_staff.description": "Obtain a mana wand"
 }

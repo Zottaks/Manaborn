@@ -18,7 +18,6 @@ import com.manaborn.items.LearningAltarBlockItem;
 import com.manaborn.items.MagicOreBlockItem;
 import com.manaborn.screen.LearningAltarScreenHandler;
 import com.manaborn.network.ManaSyncS2CPacket;
-import net.minecraft.item.BlockItem;
 import com.manaborn.network.LearnedSpellsSyncS2CPacket;
 import com.manaborn.network.RequestLearnedSpellsC2SPacket;
 import com.manaborn.network.SelectSpellC2SPacket;
@@ -52,6 +51,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
+import net.minecraft.item.BlockItem;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
@@ -63,44 +63,50 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.resource.featuretoggle.FeatureFlags;
+// New Ether Converter imports
+import com.manaborn.blocks.EtherConverterBlock;
+import com.manaborn.blocks.entity.EtherConverterBlockEntity;
 
 public class ManabornMod implements ModInitializer {
-	public static final String MOD_ID = "manaborn";
+    public static final String MOD_ID = "manaborn";
 
-	public static Item MANA_WAND;
-	public static Item MANA_POTION;
-	public static Item MAGIC_DUST;
-	public static Block MAGIC_ORE;
-	public static Item FIREBALL_SPELL_BOOK;
-	public static Item ICE_SHARD_SPELL_BOOK;
-	public static Item FIRE_WALL_SPELL_BOOK;
-	public static Item INNER_HEAT_SPELL_BOOK;
-	public static Item FROST_AURA_SPELL_BOOK;
-	public static Item ABSORBING_BARRIER_SPELL_BOOK;
-	public static Item WEAKNESS_CURSE_SPELL_BOOK;
-	public static Item ICE_WALL_SPELL_BOOK;
-	public static Item HEAT_WEAPON_SPELL_BOOK;
-	public static EntityType<IceShardEntity> ICE_SHARD_ENTITY;
-	public static Block LEARNING_ALTAR;
-	public static BlockEntityType<LearningAltarBlockEntity> LEARNING_ALTAR_BE;
-	public static ScreenHandlerType<LearningAltarScreenHandler> LEARNING_ALTAR_SH;
-	public static Block MANA_CONVERTER;
-	public static BlockEntityType<ManaConverterBlockEntity> MANA_CONVERTER_BE;
-	public static ScreenHandlerType<ManaConverterScreenHandler> MANA_CONVERTER_SH;
-	public static Item MANA_VESSEL;
-	public static Item MANOSCOPE;
-	public static EntityType<DustWispEntity> DUST_WISP_ENTITY;
-	public static Block MANA_MAGNET;
-	public static BlockEntityType<com.manaborn.blocks.entity.ManaMagnetBlockEntity> MANA_MAGNET_ENTITY;
+    public static Item MANA_WAND;
+    public static Item MANA_POTION;
+    public static Item MAGIC_DUST;
+    public static Block MAGIC_ORE;
+    public static Item FIREBALL_SPELL_BOOK;
+    public static Item ICE_SHARD_SPELL_BOOK;
+    public static Item FIRE_WALL_SPELL_BOOK;
+    public static Item INNER_HEAT_SPELL_BOOK;
+    public static Item FROST_AURA_SPELL_BOOK;
+    public static Item ABSORBING_BARRIER_SPELL_BOOK;
+    public static Item WEAKNESS_CURSE_SPELL_BOOK;
+    public static Item ICE_WALL_SPELL_BOOK;
+    public static Item HEAT_WEAPON_SPELL_BOOK;
+    public static EntityType<IceShardEntity> ICE_SHARD_ENTITY;
+    public static Block LEARNING_ALTAR;
+    public static BlockEntityType<LearningAltarBlockEntity> LEARNING_ALTAR_BE;
+    public static ScreenHandlerType<LearningAltarScreenHandler> LEARNING_ALTAR_SH;
+    public static Block MANA_CONVERTER;
+    public static BlockEntityType<ManaConverterBlockEntity> MANA_CONVERTER_BE;
+    public static ScreenHandlerType<ManaConverterScreenHandler> MANA_CONVERTER_SH;
+    public static Item MANA_VESSEL;
+    public static Item MANOSCOPE;
+    public static EntityType<DustWispEntity> DUST_WISP_ENTITY;
+    public static Block MANA_MAGNET;
+    public static BlockEntityType<com.manaborn.blocks.entity.ManaMagnetBlockEntity> MANA_MAGNET_ENTITY;
+    public static Item ETHER;
+    public static Block ETHER_CONVERTER;
+    public static BlockEntityType<EtherConverterBlockEntity> ETHER_CONVERTER_BE;
 
-	// Lev: тут происходят инициализации
-	@Override
-	public void onInitialize() {
-		// Регистрация типов S2C пакетов
-		PayloadTypeRegistry.playS2C().register(ManaSyncS2CPacket.ID, ManaSyncS2CPacket.CODEC);
-		PayloadTypeRegistry.playS2C().register(LearnedSpellsSyncS2CPacket.ID, LearnedSpellsSyncS2CPacket.CODEC);
-		// Регистрация типа C2S пакета для запроса синхронизации изученных заклинаний
-		PayloadTypeRegistry.playC2S().register(RequestLearnedSpellsC2SPacket.ID, RequestLearnedSpellsC2SPacket.CODEC);
+    // Lev: тут происходят инициализации
+    @Override
+    public void onInitialize() {
+        // Регистрация типов S2C пакетов
+        PayloadTypeRegistry.playS2C().register(ManaSyncS2CPacket.ID, ManaSyncS2CPacket.CODEC);
+        PayloadTypeRegistry.playS2C().register(LearnedSpellsSyncS2CPacket.ID, LearnedSpellsSyncS2CPacket.CODEC);
+        // Регистрация типа C2S пакета для запроса синхронизации изученных заклинаний
+        PayloadTypeRegistry.playC2S().register(RequestLearnedSpellsC2SPacket.ID, RequestLearnedSpellsC2SPacket.CODEC);
 
 		// Обработчик запроса с клиента — отправляем текущий список изученных заклинаний
 		ServerPlayNetworking.registerGlobalReceiver(RequestLearnedSpellsC2SPacket.ID, (payload, context) -> {
@@ -200,6 +206,13 @@ public class ManabornMod implements ModInitializer {
 				new MagicDustItem(new Item.Settings().maxCount(64).registryKey(dustKey)));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(entries -> entries.add(MAGIC_DUST));
 		System.out.println(" [DEBUG] Magic Dust зарегистрирована с ID: " + dustKey.getValue());
+
+		// Регистрация Ether (Эфир)
+		RegistryKey<Item> etherKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "ether"));
+		ETHER = Registry.register(Registries.ITEM, etherKey,
+				new Item(new Item.Settings().maxCount(64).registryKey(etherKey)));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(entries -> entries.add(ETHER));
+		System.out.println(" [DEBUG] Ether зарегистрирован с ID: " + etherKey.getValue());
 
 		// Регистрация Fireball Spell Book
 		RegistryKey<Item> fireballBookKey = RegistryKey.of(Registries.ITEM.getKey(),
@@ -334,6 +347,29 @@ public class ManabornMod implements ModInitializer {
 				Registries.SCREEN_HANDLER,
 				Identifier.of(MOD_ID, "mana_converter"),
 				new ScreenHandlerType<>(converterFactory, FeatureFlags.VANILLA_FEATURES));
+
+		// Регистрация Ether Converter блока
+		RegistryKey<Block> etherConvKey = RegistryKey.of(Registries.BLOCK.getKey(),
+				Identifier.of(MOD_ID, "ether_converter"));
+		ETHER_CONVERTER = Registry.register(
+				Registries.BLOCK,
+				etherConvKey,
+				new EtherConverterBlock(AbstractBlock.Settings.create()
+						.strength(2.0f, 3.0f)
+						.sounds(BlockSoundGroup.AMETHYST_BLOCK)
+						.registryKey(etherConvKey)));
+		RegistryKey<Item> etherConvItemKey = RegistryKey.of(Registries.ITEM.getKey(),
+				Identifier.of(MOD_ID, "ether_converter"));
+		Registry.register(Registries.ITEM, etherConvItemKey,
+				new BlockItem(ETHER_CONVERTER, new Item.Settings().registryKey(etherConvItemKey)));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.add(ETHER_CONVERTER));
+
+		// BE для Ether Converter
+		ETHER_CONVERTER_BE = Registry.register(
+				Registries.BLOCK_ENTITY_TYPE,
+				RegistryKey.of(Registries.BLOCK_ENTITY_TYPE.getKey(), Identifier.of(MOD_ID, "ether_converter")),
+				FabricBlockEntityTypeBuilder.create(com.manaborn.blocks.entity.EtherConverterBlockEntity::new, ETHER_CONVERTER)
+						.build());
 
 		// Регистрация Mana Magnet блока
 		RegistryKey<Block> magnetBlockKey = RegistryKey.of(Registries.BLOCK.getKey(),
