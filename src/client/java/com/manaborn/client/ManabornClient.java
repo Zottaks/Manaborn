@@ -93,6 +93,9 @@ public class ManabornClient implements ClientModInitializer {
         HandledScreens.register(ManabornMod.LEARNING_ALTAR_SH, LearningAltarScreen::new);
         HandledScreens.register(ManabornMod.MANA_CONVERTER_SH, com.manaborn.client.ui.ManaConverterScreen::new);
 
+        // Регистрируем обработчик радиального меню для магического посоха
+        MagicStaffClientHandler.register();
+
         // Предикат модели для сосуда временно отключён до стабилизации импорта
     }
 

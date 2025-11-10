@@ -15,6 +15,9 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.advancement.AdvancementEntry;
+import net.minecraft.advancement.AdvancementProgress;
+import net.minecraft.util.Identifier;
 
 import java.util.function.Consumer;
 
@@ -24,21 +27,41 @@ public class MagicStaffItem extends Item {
     }
 
     @Override
+    public void onCraft(ItemStack stack, World world) {
+        // Выдаем ачивку при крафте волшебной палочки
+        if (world instanceof ServerWorld serverWorld) {
+            // Ищем ближайшего игрока (крафт обычно происходит в контексте игрока)
+            serverWorld.getPlayers().forEach(player -> {
+                // Проверяем, есть ли у игрока только что созданный предмет в инвентаре
+                if (player.getInventory().contains(stack)) {
+                    grantMagicStaffAdvancement(player, serverWorld);
+                }
+            });
+        }
+        super.onCraft(stack, world);
+    }
+
+    private void grantMagicStaffAdvancement(ServerPlayerEntity player, ServerWorld world) {
+        // Получаем advancement по ID
+        AdvancementEntry advancement = world.getServer().getAdvancementLoader().get(
+                Identifier.of("manaborn", "magic_staff"));
+
+        if (advancement != null) {
+            AdvancementProgress progress = player.getAdvancementTracker().getProgress(advancement);
+            if (!progress.isDone()) {
+                // Выдаем ачивку
+                player.getAdvancementTracker().grantCriterion(advancement, "has_magic_staff");
+            }
+        }
+    }
+
+    @Override
     public ActionResult use(World world, PlayerEntity user, Hand hand) {
         ItemStack stack = user.getStackInHand(hand);
 
         if (user.isSneaking()) {
-            // Shift + ПКМ для смены заклинания (ВСЕГДА доступно, даже на кулдауне)
-            if (!world.isClient()) {
-                SpellManager.cycleLearnedSpell(stack, (net.minecraft.server.network.ServerPlayerEntity) user);
-                SpellType selected = SpellManager.getSelectedSpell(stack);
-
-                // Сообщение с цветом заклинания
-                Text message = Text.literal("Выбрано заклинание: ")
-                        .append(Text.literal(selected.getDisplayName()).formatted(selected.getColor()))
-                        .append(Text.literal(" (стоимость: " + selected.getManaCost() + " маны)"));
-                user.sendMessage(message, true);
-            }
+            // Shift + ПКМ теперь обрабатывается на клиенте (открывает радиальное меню)
+            // На сервере просто возвращаем SUCCESS, чтобы не мешать клиентской логике
             return ActionResult.SUCCESS;
         } else {
             // Если выбрана Стена Льда — начинаем удержание ПКМ (зарядка)
@@ -184,7 +207,7 @@ public class MagicStaffItem extends Item {
         tooltip.accept(Text.literal("  ПКМ").formatted(Formatting.WHITE)
                 .append(Text.literal(" - Использовать заклинание").formatted(Formatting.GRAY)));
         tooltip.accept(Text.literal("  Shift + ПКМ").formatted(Formatting.WHITE)
-                .append(Text.literal(" - Сменить заклинание").formatted(Formatting.GRAY)));
+                .append(Text.literal(" - Открыть меню выбора").formatted(Formatting.GRAY)));
 
         // Пустая строка
         tooltip.accept(Text.literal(""));

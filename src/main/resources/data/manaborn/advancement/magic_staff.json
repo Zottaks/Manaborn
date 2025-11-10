@@ -1,0 +1,38 @@
+{
+    "parent": "minecraft:adventure/root",
+    "criteria": {
+        "has_magic_staff": {
+            "trigger": "minecraft:inventory_changed",
+            "conditions": {
+                "items": [
+                    {
+                        "items": "manaborn:mana_wand"
+                    }
+                ]
+            }
+        }
+    },
+    "requirements": [
+        [
+            "has_magic_staff"
+        ]
+    ],
+    "rewards": {
+        "experience": 50
+    },
+    "display": {
+        "icon": {
+            "id": "manaborn:mana_wand"
+        },
+        "title": {
+            "translate": "advancement.manaborn.magic_staff.title"
+        },
+        "description": {
+            "translate": "advancement.manaborn.magic_staff.description"
+        },
+        "frame": "task",
+        "show_toast": true,
+        "announce_to_chat": true,
+        "hidden": false
+    }
+}
