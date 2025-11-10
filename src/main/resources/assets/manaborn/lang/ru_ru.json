@@ -17,7 +17,8 @@
   "item.manaborn.weakness_curse_spell_book": "Книга заклинания: Проклятие Слабости",
   "item.manaborn.mana_vessel": "Сосуд маны",
   "item.manaborn.manoscope": "Маноскоп",
-  "block.manaborn.mana_magnet": "Магнит маны",
+  "block.manaborn.mana_magnet": "mana magnet",
+  "item.manaborn.mana_magnet": "mana magnet",
   "advancement.manaborn.magic_staff.title": "Магическая сила!",
   "advancement.manaborn.magic_staff.description": "Получите волшебную палочку"
 }

@@ -17,7 +17,8 @@
   "item.manaborn.weakness_curse_spell_book": "Spell Book: Weakness Curse",
   "item.manaborn.mana_vessel": "Mana Vessel",
   "item.manaborn.manoscope": "Manoscope",
-  "block.manaborn.mana_magnet": "Mana Magnet",
+  "block.manaborn.mana_magnet": "mana magnet",
+  "item.manaborn.mana_magnet": "mana magnet",
   "advancement.manaborn.magic_staff.title": "Magical Power!",
   "advancement.manaborn.magic_staff.description": "Obtain a mana wand"
 }

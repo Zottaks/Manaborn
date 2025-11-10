@@ -10,20 +10,19 @@ import net.minecraft.world.Heightmap;
 import java.util.Random;
 
 public class DustWispManager {
-    // Частый спавн по 1 пылинке в большом радиусе
-    public static final int MAX_WISPS_NEAR_PLAYER = 5; // Макс пылинок вокруг игрока
+    // АГРЕССИВНЫЙ спавн для теста (может быть очень много пыли)
+    public static final int MAX_WISPS_NEAR_PLAYER = 20; // было 25
     public static final int SCAN_RADIUS = 320; // 20 чанков (16 * 20)
-    public static final double SPAWN_CHANCE_PER_TICK = 0.35; // 35% шанс спавна
-    public static final int MIN_WISPS_PER_SPAWN = 1; // Минимум пылинок за спавн (по 1)
-    public static final int MAX_WISPS_PER_SPAWN = 1; // Максимум пылинок за спавн (по 1)
-    public static final int CLUSTER_RADIUS = 0; // Нет группировки
+    public static final double SPAWN_CHANCE_PER_TICK = 0.30; // было 0.55
+    public static final int MIN_WISPS_PER_SPAWN = 3; // было 1
+    public static final int MAX_WISPS_PER_SPAWN = 7; // было 3
+    public static final int CLUSTER_RADIUS = 8; // было 4
 
     private static final Random RANDOM = new Random();
 
     public static void tick(Iterable<ServerPlayerEntity> players) {
         for (ServerPlayerEntity player : players) {
             if (!(player.getEntityWorld() instanceof ServerWorld world)) continue;
-            if (!player.isOnGround()) continue;
 
             // Cap wisps near player
             int existing = world.getEntitiesByClass(DustWispEntity.class,
@@ -33,7 +32,7 @@ public class DustWispManager {
             if (RANDOM.nextDouble() < SPAWN_CHANCE_PER_TICK) {
                 // Спавним группу пылинок
                 int wispCount = MIN_WISPS_PER_SPAWN + RANDOM.nextInt(MAX_WISPS_PER_SPAWN - MIN_WISPS_PER_SPAWN + 1);
-                
+
                 // Центр группы случайно в радиусе 20 чанков
                 int centerDx = RANDOM.nextInt(SCAN_RADIUS * 2 + 1) - SCAN_RADIUS;
                 int centerDz = RANDOM.nextInt(SCAN_RADIUS * 2 + 1) - SCAN_RADIUS;
