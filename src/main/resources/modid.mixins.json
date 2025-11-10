@@ -1,8 +1,10 @@
 {
     "required": false,
-    "package": "com.example.mixin",
+    "package": "com.manaborn.mixin",
 	"compatibilityLevel": "JAVA_21",
-    "mixins": [],
+    "mixins": [
+        "LivingEntityDamageMixin"
+    ],
 	"injectors": {
 		"defaultRequire": 1
 	},

@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    " B ",
+    " A ",
+    "   "
+  ],
+  "key": {
+    "A": "minecraft:stone",
+    "B": "manaborn:magic_dust"
+  },
+  "result": {
+    "id": "manaborn:learning_altar",
+    "count": 1
+  }
+}

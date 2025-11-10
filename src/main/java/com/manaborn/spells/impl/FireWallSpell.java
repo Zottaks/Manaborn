@@ -1,0 +1,138 @@
+package com.manaborn.spells.impl;
+
+import net.minecraft.entity.AreaEffectCloudEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Hand;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
+import com.manaborn.spells.Spell;
+import com.manaborn.spells.SpellType;
+import com.manaborn.spells.ActiveEffectManager;
+
+/**
+ * Fire Wall spell implementation
+ */
+public class FireWallSpell implements Spell {
+
+    @Override
+    public boolean cast(World world, PlayerEntity user, Hand hand) {
+        if (!(world instanceof ServerWorld serverWorld)) {
+            return true;
+        }
+
+        // Create fire wall 2 blocks in front of player
+        Vec3d lookVec = user.getRotationVector();
+        double distance = 2.0;
+        double centerX = user.getX() + lookVec.x * distance;
+        double centerY = user.getY();
+        double centerZ = user.getZ() + lookVec.z * distance;
+
+        // Calculate perpendicular direction for wall
+        double perpX = -lookVec.z;
+        double perpZ = lookVec.x;
+        double length = Math.sqrt(perpX * perpX + perpZ * perpZ);
+        if (length > 0) {
+            perpX /= length;
+            perpZ /= length;
+        }
+
+        double wallWidth = 6.0;
+        double wallHeight = 4.0;
+        int cloudsHorizontal = 9;
+        int cloudsVertical = 6;
+
+        double minX = Double.MAX_VALUE, maxX = Double.MIN_VALUE;
+        double minY = centerY, maxY = centerY + wallHeight;
+        double minZ = Double.MAX_VALUE, maxZ = Double.MIN_VALUE;
+
+        double spacing = wallWidth / (cloudsHorizontal - 1);
+        double vSpacing = wallHeight / (cloudsVertical - 1);
+
+        // Create main grid of clouds
+        for (int h = 0; h < cloudsHorizontal; h++) {
+            double offset = (h - (cloudsHorizontal - 1) / 2.0) * spacing;
+            double cloudX = centerX + perpX * offset;
+            double cloudZ = centerZ + perpZ * offset;
+
+            minX = Math.min(minX, cloudX - 0.5);
+            maxX = Math.max(maxX, cloudX + 0.5);
+            minZ = Math.min(minZ, cloudZ - 0.5);
+            maxZ = Math.max(maxZ, cloudZ + 0.5);
+
+            for (int v = 0; v < cloudsVertical; v++) {
+                double cloudY = centerY + v * vSpacing;
+
+                AreaEffectCloudEntity cloud = new AreaEffectCloudEntity(world, cloudX, cloudY, cloudZ);
+                cloud.setRadius(0.5f);
+                cloud.setDuration(200);
+                cloud.setRadiusOnUse(0);
+                cloud.setRadiusGrowth(0);
+                cloud.setWaitTime(0);
+                cloud.setParticleType(ParticleTypes.FLAME);
+
+                world.spawnEntity(cloud);
+            }
+        }
+
+        // Add staggered clouds to fill gaps
+        for (int h = 0; h < cloudsHorizontal - 1; h++) {
+            double offset = (h - (cloudsHorizontal - 1) / 2.0) * spacing + spacing / 2.0;
+            double cloudX = centerX + perpX * offset;
+            double cloudZ = centerZ + perpZ * offset;
+
+            for (int v = 0; v < cloudsVertical - 1; v++) {
+                double cloudY = centerY + v * vSpacing + vSpacing / 2.0;
+
+                AreaEffectCloudEntity cloud = new AreaEffectCloudEntity(world, cloudX, cloudY, cloudZ);
+                cloud.setRadius(0.5f);
+                cloud.setDuration(200);
+                cloud.setRadiusOnUse(0);
+                cloud.setRadiusGrowth(0);
+                cloud.setWaitTime(0);
+                cloud.setParticleType(ParticleTypes.FLAME);
+
+                world.spawnEntity(cloud);
+            }
+        }
+
+        // Create damage box
+        double damageThickness = 0.2;
+        double thickMinX = minX - Math.abs(lookVec.x) * damageThickness;
+        double thickMaxX = maxX + Math.abs(lookVec.x) * damageThickness;
+        double thickMinZ = minZ - Math.abs(lookVec.z) * damageThickness;
+        double thickMaxZ = maxZ + Math.abs(lookVec.z) * damageThickness;
+        double forwardOffset = 0.6;
+        thickMinX += lookVec.x * forwardOffset;
+        thickMaxX += lookVec.x * forwardOffset;
+        thickMinZ += lookVec.z * forwardOffset;
+        thickMaxZ += lookVec.z * forwardOffset;
+
+        Box wallBox = new Box(thickMinX, minY, thickMinZ, thickMaxX, maxY, thickMaxZ);
+        ActiveEffectManager.addFireWall(wallBox, serverWorld, 200);
+
+        return true;
+    }
+
+    @Override
+    public int getManaCost() {
+        return 40;
+    }
+
+    @Override
+    public int getCooldown() {
+        return 400; // 20 seconds
+    }
+
+    @Override
+    public SpellType getType() {
+        return SpellType.FIRE_WALL;
+    }
+
+    @Override
+    public boolean hasActiveEffects() {
+        return true;
+    }
+}

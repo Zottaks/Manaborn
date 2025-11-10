@@ -1,5 +1,23 @@
 {
-  "item.manaborn.magic_staff": "Magic Staff"
+  "item.manaborn.mana_wand": "Mana Wand",
+  "item.manaborn.mana_potion": "Mana Crystal",
+  "item.manaborn.magic_dust": "Magic Dust",
+  "block.manaborn.magic_ore": "Magic Ore",
+  "item.manaborn.magic_ore": "Magic Ore",
+  "block.manaborn.learning_altar": "Learning Altar",
+  "block.manaborn.mana_converter": "Mana Converter",
+  "item.manaborn.learning_altar": "Learning Altar",
+  "item.manaborn.mana_converter": "Mana Converter",
+  "item.manaborn.fireball_spell_book": "Spell Book: Fireball",
+  "item.manaborn.ice_shard_spell_book": "Spell Book: Ice Shard",
+  "item.manaborn.ice_wall_spell_book": "Spell Book: Ice Wall",
+  "item.manaborn.fire_wall_spell_book": "Spell Book: Fire Wall",
+  "item.manaborn.heat_weapon_spell_book": "Spell Book: Heat Weapon",
+  "item.manaborn.absorbing_barrier_spell_book": "Spell Book: Absorbing Barrier",
+  "item.manaborn.weakness_curse_spell_book": "Spell Book: Weakness Curse",
+  "item.manaborn.mana_vessel": "Mana Vessel",
+  "item.manaborn.manoscope": "Manoscope",
+  "block.manaborn.mana_magnet": "Mana Magnet",
+  "advancement.manaborn.magic_staff.title": "Magical Power!",
+  "advancement.manaborn.magic_staff.description": "Obtain a mana wand"
 }
-
-

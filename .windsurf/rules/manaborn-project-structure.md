@@ -2,63 +2,181 @@
 trigger: always_on
 ---
 
-# Manaborn - Структура проекта
+# Manaborn - Структура проекта (Minecraft 1.21.10)
 
 ## 📁 Обзор проекта
 
 **Manaborn** - мод для Minecraft, добавляющий систему маны и магические предметы.
 
+**Целевая платформа**: Minecraft **1.21.10** + Fabric API **0.134.1+1.21.10** + Java **21**
+
 ### Основные компоненты:
 - ✨ Система маны (100 единиц максимум)
-- 🔮 Магический посох (Magic Staff)
+- 🔮 Магический посох (Mana Wand)
 - 🔄 Автоматическая регенерация маны
-- 📊 HUD отображение маны
-- 🌐 Синхронизация клиент-сервер
+- 📊 HUD отображение маны и заклинаний
+- 🌐 Синхронизация клиент-сервер через CustomPayload
+- 📚 Система изучения заклинаний через Алтарь Изучения
+- 🧪 Магические предметы (зелья, сосуды, пыль)
+- 🏺 Магические блоки (руда, конвертер, алтарь)
+
+---
 
 ## 🗂️ Структура файлов
 
 ```
 src/
 ├── main/java/com/manaborn/
-│   ├── ManabornMod.java              # Главный класс мода
+│   ├── ManabornMod.java              # Главный класс мода (ModInitializer)
 │   ├── items/
-│   │   └── MagicStaffItem.java       # Магический посох
+│   │   ├── MagicStaffItem.java       # Магический посох
+│   │   ├── SpellBookItem.java        # Книги заклинаний
+│   │   ├── ManaPotionItem.java       # Зелья маны
+│   │   ├── MagicDustItem.java        # Магическая пыль
+│   │   └── ManaVesselItem.java       # Сосуды маны
 │   ├── mana/
 │   │   └── ManaManager.java          # Управление маной (серверная логика)
+│   ├── spells/
+│   │   ├── SpellManager.java         # Логика заклинаний
+│   │   ├── SpellRegistry.java        # Реестр заклинаний
+│   │   ├── SpellType.java            # Типы заклинаний
+│   │   ├── LearnedSpellsManager.java # Управление изученными заклинаниями
+│   │   └── impl/                     # Реализации заклинаний
+│   │       ├── FireballSpell.java
+│   │       ├── IceShardSpell.java
+│   │       ├── FireWallSpell.java
+│   │       ├── AbsorbingBarrierSpell.java
+│   │       └── ... (остальные заклинания)
+│   ├── blocks/
+│   │   ├── LearningAltarBlock.java   # Алтарь изучения
+│   │   ├── MagicOreBlock.java        # Магическая руда
+│   │   └── ManaConverterBlock.java   # Конвертер маны
+│   ├── blocks/entity/
+│   │   ├── LearningAltarBlockEntity.java
+│   │   └── ManaConverterBlockEntity.java
+│   ├── entities/
+│   │   ├── IceShardEntity.java       # Ледяной осколок
+│   │   └── FireWallEntity.java       # Стена огня
 │   └── network/
-│       └── ManaSyncS2CPacket.java    # Пакет синхронизации маны
+│       ├── packets/                  # CustomPayload пакеты
+│       │   ├── ManaSyncS2CPacket.java
+│       │   ├── LearnedSpellsSyncS2CPacket.java
+│       │   └── SpellCastC2SPacket.java
+│       └── NetworkConstants.java     # Константы для пакетов
 │
 ├── client/java/com/manaborn/client/
 │   ├── ManabornClient.java           # Клиентская инициализация
 │   ├── ManaHudOverlay.java           # Отображение маны на HUD
+│   ├── SpellHudOverlay.java          # Отображение заклинаний
+│   ├── CooldownHudOverlay.java       # Отображение кулдаунов
+│   ├── ui/                           # Пользовательские интерфейсы
+│   │   ├── LearningAltarScreen.java  # Экран алтаря изучения
+│   │   ├── SpellTreeScreen.java      # Дерево заклинаний
+│   │   └── ManaConverterScreen.java  # Экран конвертера
 │   └── state/
-│       └── ClientManaState.java      # Клиентское состояние маны
+│       ├── ClientManaState.java      # Клиентское состояние маны
+│       └── ClientLearnedSpellsState.java # Изученные заклинания
 │
 └── main/resources/
     ├── fabric.mod.json               # Метаданные мода
-    ├── modid.mixins.json             # Конфигурация миксинов
-    └── assets/manaborn/
-        ├── lang/
-        │   └── en_us.json            # Локализация
-        └── models/item/
-            └── magic_staff.json      # Модель посоха
+    ├── assets/manaborn/
+    │   ├── lang/
+    │   │   └── en_us.json            # Локализация
+    │   ├── models/item/
+    │   │   ├── magic_staff.json      # Модель посоха
+    │   │   ├── spell_book.json       # Модель книги
+    │   │   └── mana_potion.json      # Модель зелья
+    │   ├── textures/
+    │   │   ├── item/                 # Текстуры предметов
+    │   │   └── block/                # Текстуры блоков
+    │   └── items/                    # Описания предметов (1.21+)
+    │       ├── magic_staff.json
+    │       └── spell_book.json
+    └── data/
+        ├── manaborn/
+        │   ├── loot_tables/          # Таблицы лута
+        │   ├── recipes/              # Рецепты крафта
+        │   └── worldgen/             # Генерация руды
 ```
 
-## 🔧 Компоненты системы
+---
+
+## 🔧 Ключевые компоненты системы
 
 ### 1. ManabornMod (Серверная инициализация)
 
 **Путь**: `src/main/java/com/manaborn/ManabornMod.java`
 
 **Функции**:
-- Регистрация предметов (Magic Staff)
-- Регистрация сетевых пакетов
+- Регистрация предметов, блоков, сущностей
+- Регистрация CustomPayload пакетов через PayloadTypeRegistry
 - Настройка серверных событий (тики, подключение игроков)
 
-**Ключевые моменты**:
+**Ключевые моменты (1.21.10)**:
 ```java
-public static final String MOD_ID = "manaborn";
-public static Item MAGIC_STAFF;
+public class ManabornMod implements ModInitializer {
+    public static final String MOD_ID = "manaborn";
+    
+    // Предметы
+    public static final RegistryKey<Item> MAGIC_STAFF_KEY = 
+        RegistryKey.of(RegistryKeys.ITEM, Identifier.of(MOD_ID, "magic_staff"));
+    public static Item MAGIC_STAFF;
+    
+    // Блоки
+    public static final RegistryKey<Block> LEARNING_ALTAR_KEY = 
+        RegistryKey.of(RegistryKeys.BLOCK, Identifier.of(MOD_ID, "learning_altar"));
+    public static Block LEARNING_ALTAR;
+    
+    @Override
+    public void onInitialize() {
+        // Регистрация контента
+        registerItems();
+        registerBlocks();
+        registerEntities();
+        
+        // Регистрация сетевых пакетов
+        registerNetworkPackets();
+        
+        // События
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            ManaManager.onServerTick(server.getPlayerManager().getPlayerList());
+        });
+        
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            ServerPlayerEntity player = handler.player;
+            ManaManager.sendSync(player);
+            LearnedSpellsManager.sendSync(player);
+        });
+    }
+    
+    private static void registerNetworkPackets() {
+        // Регистрация S2C пакетов
+        PayloadTypeRegistry.playS2C().register(
+            ManaSyncS2CPacket.ID, 
+            ManaSyncS2CPacket.CODEC
+        );
+        PayloadTypeRegistry.playS2C().register(
+            LearnedSpellsSyncS2CPacket.ID,
+            LearnedSpellsSyncS2CPacket.CODEC
+        );
+        
+        // Регистрация C2S пакетов
+        PayloadTypeRegistry.playC2S().register(
+            SpellCastC2SPacket.ID,
+            SpellCastC2SPacket.CODEC
+        );
+        
+        // Обработчики C2S пакетов
+        ServerPlayNetworking.registerGlobalReceiver(
+            SpellCastC2SPacket.ID,
+            (payload, context) -> {
+                context.server().execute(() -> {
+                    SpellManager.castSpell(context.player(), payload.spellId());
+                });
+            }
+        );
+    }
+}
 ```
 
 ### 2. ManaManager (Управление маной)
@@ -70,10 +188,10 @@ public static Item MAGIC_STAFF;
 - `REGEN_UNIT_PER_5S = 20` - регенерация 20 маны за 5 секунд
 - `REGEN_DELAY_TICKS = 40` - задержка 2 секунды после траты
 
-**Хранилища данных**:
-- `playerIdToMana` - текущая мана игроков
-- `lastSpendTick` - время последней траты маны
-- `regenTickCounter` - счетчик для регенерации
+**Хранилища данных** (Thread-safe):
+- `playerIdToMana` - текущая мана игроков (`ConcurrentHashMap<UUID, Integer>`)
+- `lastSpendTick` - время последней траты маны (`ConcurrentHashMap<UUID, Long>`)
+- `regenTickCounter` - счетчик для регенерации (`ConcurrentHashMap<UUID, Integer>`)
 
 **Основные методы**:
 - `getMana(UUID)` - получить ману игрока
@@ -82,172 +200,157 @@ public static Item MAGIC_STAFF;
 - `onServerTick(Iterable<ServerPlayerEntity>)` - обработка регенерации
 - `sendSync(ServerPlayerEntity)` - синхронизация с клиентом
 
-### 3. ManaSyncS2CPacket (Сетевой пакет)
+### 3. Сетевая синхронизация (1.21.10 CustomPayload)
 
-**Путь**: `src/main/java/com/manaborn/network/ManaSyncS2CPacket.java`
+**Путь**: `src/main/java/com/manaborn/network/packets/ManaSyncS2CPacket.java`
 
-**Структура**:
 ```java
-public record ManaSyncS2CPacket(int mana, int maxMana) implements CustomPayload
+public record ManaSyncS2CPacket(
+    int currentMana,
+    int maxMana
+) implements CustomPayload {
+    
+    public static final Id<ManaSyncS2CPacket> ID = 
+        new Id<>(Identifier.of("manaborn", "mana_sync"));
+    
+    public static final PacketCodec<RegistryByteBuf, ManaSyncS2CPacket> CODEC = 
+        PacketCodec.tuple(
+            PacketCodecs.VAR_INT, ManaSyncS2CPacket::currentMana,
+            PacketCodecs.VAR_INT, ManaSyncS2CPacket::maxMana,
+            ManaSyncS2CPacket::new
+        );
+    
+    @Override
+    public Id<? extends CustomPayload> getId() {
+        return ID;
+    }
+}
 ```
 
-**Поля**:
-- `ID` - идентификатор пакета `manaborn:mana_sync`
-- `CODEC` - кодек для сериализации (VAR_INT для обоих полей)
+**Отправка пакета (Server → Client)**:
+```java
+public static void sendSync(ServerPlayerEntity player) {
+    UUID playerId = player.getUuid();
+    int mana = getMana(playerId);
+    int maxMana = MAX_MANA;
+    
+    ServerPlayNetworking.send(
+        player, 
+        new ManaSyncS2CPacket(mana, maxMana)
+    );
+}
+```
+
+**Импорты для networking (1.21.10)**:
+```java
+import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.network.codec.PacketCodecs;
+import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.util.Identifier;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+```
 
 ### 4. MagicStaffItem (Магический посох)
 
 **Путь**: `src/main/java/com/manaborn/items/MagicStaffItem.java`
 
 **Функциональность**:
-- Стоимость использования: 20 маны
-- Эффект: запуск огненного шара
-- Кулдаун: 100 тиков (5 секунд)
-- Звук: `ITEM_FIRECHARGE_USE`
+- Стоимость использования заклинаний (разная для каждого)
+- Переключение между изученными заклинаниями
+- Кулдаун 5 секунд после использования
+- Звуковые эффекты и визуализация
 
-**Логика использования**:
-1. Проверка, что вызов на сервере
-2. Попытка потратить 20 маны через `ManaManager.tryConsume()`
-3. Если успешно - создание и запуск `SmallFireballEntity`
-4. Установка кулдауна на предмет
+**Регистрация (1.21.10)**:
+```java
+public static void registerItems() {
+    // Создаем RegistryKey
+    RegistryKey<Item> staffKey = RegistryKey.of(
+        RegistryKeys.ITEM,
+        Identifier.of(MOD_ID, "magic_staff")
+    );
+    
+    // Регистрируем предмет с ключом в Settings
+    MAGIC_STAFF = Registry.register(
+        Registries.ITEM,
+        staffKey,
+        new MagicStaffItem(new Item.Settings()
+            .maxCount(1)
+            .registryKey(staffKey))
+    );
+    
+    // Добавляем в ItemGroup
+    ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT)
+        .register(entries -> entries.add(MAGIC_STAFF));
+}
+```
 
 ### 5. ManabornClient (Клиентская инициализация)
 
 **Путь**: `src/client/java/com/manaborn/client/ManabornClient.java`
 
-**Функции**:
-- Регистрация HUD элемента через `HudElementRegistry`
-- Регистрация обработчика пакета `ManaSyncS2CPacket`
-- Настройка клиентских тиков для регенерации
+**Функции (1.21.10)**:
+- Регистрация HUD через `HudElementRegistry` (НЕ `HudRenderCallback`!)
+- Регистрация обработчиков CustomPayload пакетов
+- Настройка клиентских тиков для плавной анимации
 
-**Важно**: Использует новый API `HudElementRegistry.attachElementBefore()` вместо устаревшего `HudRenderCallback`
-
-### 6. ManaHudOverlay (Отображение HUD)
-
-**Путь**: `src/client/java/com/manaborn/client/ManaHudOverlay.java`
-
-**Визуализация**:
-- Позиция: правый нижний угол (над хотбаром)
-- Формат: пузырьки маны (10 маны = 1 пузырек)
-- Цвета:
-  - Заполненные: `0xFF4DA3FF` (голубой)
-  - Пустые: `0xFF000000` (черный)
-  - Обводка: `0xFF1F1F1F` (темно-серый)
-
-**Размеры**:
-- Размер пузырька: 9x9 пикселей
-- Промежуток между пузырьками: 1 пиксель
-
-### 7. ClientManaState (Клиентское состояние)
-
-**Путь**: `src/client/java/com/manaborn/client/state/ClientManaState.java`
-
-**Назначение**: Хранение и обработка маны на стороне клиента
-
-**Функции**:
-- Хранение текущей и максимальной маны
-- Клиентская регенерация (для плавности отображения)
-- Синхронизация с серверными данными
-
-**Важно**: Клиентская регенерация - только для визуала, истинные данные на сервере
-
-## 🔄 Поток данных
-
-### Инициализация при входе игрока:
-```
-1. ServerPlayConnectionEvents.JOIN
-2. ManaManager.ensureInitialized(player)
-3. ManaManager.sendSync(player)
-4. ManaSyncS2CPacket → Client
-5. ClientManaState.set(mana, maxMana)
-```
-
-### Использование маны:
-```
-1. Player использует Magic Staff
-2. MagicStaffItem.use() (на сервере)
-3. ManaManager.tryConsume(player, 20)
-4. Если успешно:
-   - Обновление серверных данных
-   - ManaManager.sendSync(player)
-   - ManaSyncS2CPacket → Client
-   - ClientManaState.set(newMana, maxMana)
-   - Обновление HUD
-```
-
-### Регенерация маны:
-```
-Сервер (каждый тик):
-1. ServerTickEvents.END_SERVER_TICK
-2. ManaManager.onServerTick(players)
-3. Проверка задержки после траты
-4. Увеличение счетчика регенерации
-5. Каждые 5 тиков: +1 мана
-6. ManaManager.sendSync(player)
-
-Клиент (каждый тик):
-1. ClientTickEvents.END_CLIENT_TICK
-2. ClientManaState.clientTick()
-3. Локальная регенерация для плавности
-4. Обновление HUD
-```
-
-## 🎯 Ключевые особенности реализации
-
-### 1. Разделение клиент/сервер
-- Сервер - источник истины для маны
-- Клиент получает обновления через пакеты
-- Клиентская регенерация только для визуала
-
-### 2. Использование современного API
-- ✅ `HudElementRegistry` вместо deprecated `HudRenderCallback`
-- ✅ `Identifier.of()` вместо `new Identifier()`
-- ✅ `CustomPayload` с `PacketCodec` для сети
-- ✅ `RegistryKey` при регистрации предметов
-
-### 3. Потокобезопасность
-- Использование `ConcurrentHashMap` для хранения данных игроков
-- Выполнение клиентской логики в главном потоке через `context.client().execute()`
-
-### 4. Оптимизация
-- Регенерация только для игроков с неполной маной
-- Отправка пакетов только при изменении значений
-- Проверка `hudHidden` перед рендерингом
-
-## 📝 Конфигурация
-
-### fabric.mod.json
-```json
-{
-  "id": "manaborn",
-  "version": "1.0.0",
-  "name": "Manaborn",
-  "description": "A magic mod with spells, mana, and mystic power.",
-  "entrypoints": {
-    "main": ["com.manaborn.ManabornMod"],
-    "client": ["com.manaborn.client.ManabornClient"]
-  },
-  "depends": {
-    "fabricloader": ">=0.17.2",
-    "minecraft": "~1.21.10",
-    "java": ">=21",
-    "fabric-api": "*"
-  }
-}
-```
-
-## 🐛 Известные проблемы и решения
-
-### Проблема: HudRenderCallback deprecated
-**Решение**: Использовать `HudElementRegistry` из пакета `net.fabricmc.fabric.api.client.rendering.v1.hud`
-
-### Проблема: Десинхронизация маны
-**Решение**: Всегда отправлять пакет синхронизации после изменения маны на сервере
-
-### Проблема: Мана не регенерируется
-**Решение**: Проверить, что `ServerTickEvents` зарегистрирован и вызывается `ManaManager.onServerTick()`
-
----
-
-**Версия проекта**: 1.0.0
-**Последнее обновление**: Октябрь 2025
+```java
+public class ManabornClient implements ClientModInitializer {
+    @Override
+    public void onInitializeClient() {
+        // Регистрация HUD элементов
+        registerHudElements();
+        
+        // Регистрация обработчиков пакетов
+        registerPacketHandlers();
+        
+        // Клиентские тики для анимаций
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (client.player != null) {
+                ClientManaState.clientTick();
+                ClientCooldownState.clientTick();
+            }
+        });
+    }
+    
+    private void registerHudElements() {
+        // HUD для маны
+        HudElementRegistry.attachElementBefore(
+            VanillaHudElements.HOTBAR,
+            Identifier.of("manaborn", "mana_hud"),
+            (context, tickCounter) -> {
+                float tickDelta = tickCounter.getTickDelta(false);
+                ManaHudOverlay.render(context, tickDelta);
+            }
+        );
+        
+        // HUD для заклинаний
+        HudElementRegistry.attachElementBefore(
+            VanillaHudElements.HOTBAR,
+            Identifier.of("manaborn", "spell_hud"),
+            (context, tickCounter) -> {
+                float tickDelta = tickCounter.getTickDelta(false);
+                SpellHudOverlay.render(context, tickDelta);
+            }
+        );
+    }
+    
+    private void registerPacketHandlers() {
+        // Обработчик синхронизации маны
+        ClientPlayNetworking.registerGlobalReceiver(
+            ManaSyncS2CPacket.ID,
+            (payload, context) -> {
+                context.client().execute(() -> {
+                    ClientManaState.set(payload.currentMana(), payload.maxMana());
+                });
+            }
+        );
+        
+        // Обработчик синхронизации изученных заклинаний
+        ClientPlayNetworking.registerGlobalReceiver(
+            LearnedSpellsSyncS2CPacket.ID,
+            (payload, context) -> {
+                context.client().execute(() -> {
+                    ClientLear

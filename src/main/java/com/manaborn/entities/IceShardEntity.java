@@ -9,6 +9,9 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.world.World;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.Box;
+import com.manaborn.spells.SpellManager;
 
 public class IceShardEntity extends SnowballEntity {
     /**
@@ -25,6 +28,17 @@ public class IceShardEntity extends SnowballEntity {
         super(com.manaborn.ManabornMod.ICE_SHARD_ENTITY, world);
         this.setOwner(owner);
         this.setPosition(owner.getX(), owner.getEyeY() - 0.1, owner.getZ());
+    }
+    
+    @Override
+    public void tick() {
+        super.tick();
+        if (!this.getEntityWorld().isClient() && this.getEntityWorld() instanceof ServerWorld serverWorld) {
+            Box box = this.getBoundingBox();
+            if (SpellManager.intersectsFireWall(serverWorld, box)) {
+                this.discard();
+            }
+        }
     }
     
     /**
