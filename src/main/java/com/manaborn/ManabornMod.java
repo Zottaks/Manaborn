@@ -12,6 +12,7 @@ import com.manaborn.blocks.ManaConverterBlock;
 import com.manaborn.blocks.entity.ManaConverterBlockEntity;
 import com.manaborn.screen.ManaConverterScreenHandler;
 import com.manaborn.items.ManaVesselItem;
+import com.manaborn.items.ManoscopeItem;
 import com.manaborn.screen.LearningAltarScreenHandler;
 import com.manaborn.network.ManaSyncS2CPacket;
 import com.manaborn.network.LearnedSpellsSyncS2CPacket;
@@ -19,8 +20,13 @@ import com.manaborn.network.RequestLearnedSpellsC2SPacket;
 import com.manaborn.spells.LearnedSpellsManager;
 import com.manaborn.spells.SpellType;
 import com.manaborn.entities.IceShardEntity;
+import com.manaborn.entities.DustWispEntity;
+import com.manaborn.world.DustWispManager;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.EquippableComponent;
+import net.minecraft.entity.EquipmentSlot;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
@@ -77,6 +83,10 @@ public class ManabornMod implements ModInitializer {
 	public static BlockEntityType<ManaConverterBlockEntity> MANA_CONVERTER_BE;
 	public static ScreenHandlerType<ManaConverterScreenHandler> MANA_CONVERTER_SH;
 	public static Item MANA_VESSEL;
+	public static Item MANOSCOPE;
+	public static EntityType<DustWispEntity> DUST_WISP_ENTITY;
+	public static Block MANA_MAGNET;
+	public static BlockEntityType<com.manaborn.blocks.entity.ManaMagnetBlockEntity> MANA_MAGNET_ENTITY;
 
 	// Lev: тут происходят инициализации
 	@Override
@@ -106,6 +116,16 @@ public class ManabornMod implements ModInitializer {
 						.dimensions(0.5f, 0.5f)
 						.build(iceShardKey));
 
+		// Регистрация сущности пылинки (невидимая метка для магической пыли)
+		RegistryKey<EntityType<?>> wispKey = RegistryKey.of(Registries.ENTITY_TYPE.getKey(),
+				Identifier.of(MOD_ID, "dust_wisp"));
+		DUST_WISP_ENTITY = Registry.register(
+				Registries.ENTITY_TYPE,
+				wispKey,
+				EntityType.Builder.<DustWispEntity>create(DustWispEntity::new, SpawnGroup.MISC)
+						.dimensions(0.1f, 0.1f)
+						.build(wispKey));
+
 		// Регистрация Mana Wand
 		RegistryKey<Item> wandKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "mana_wand"));
 		MANA_WAND = Registry.register(Registries.ITEM, wandKey,
@@ -119,6 +139,18 @@ public class ManabornMod implements ModInitializer {
 				new ManaPotionItem(new Item.Settings().maxCount(16).registryKey(potionKey)));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.FOOD_AND_DRINK).register(entries -> entries.add(MANA_POTION));
 		System.out.println(" [DEBUG] Mana Crystal зарегистрирован с ID: " + potionKey.getValue());
+
+		// Регистрация Manoscope (магические очки для обнаружения пыли)
+		RegistryKey<Item> scopeKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "manoscope"));
+		MANOSCOPE = Registry.register(Registries.ITEM, scopeKey,
+				new ManoscopeItem(new Item.Settings()
+						.maxCount(1)
+						.registryKey(scopeKey)
+						.component(DataComponentTypes.EQUIPPABLE, 
+								EquippableComponent.builder(EquipmentSlot.HEAD).build())));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(MANOSCOPE));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(MANOSCOPE));
+		System.out.println(" [DEBUG] Manoscope зарегистрирован с ID: " + scopeKey.getValue());
 
 		// Регистрация Magic Dust
 		RegistryKey<Item> dustKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "magic_dust"));
@@ -259,6 +291,29 @@ public class ManabornMod implements ModInitializer {
 				Identifier.of(MOD_ID, "mana_converter"),
 				new ScreenHandlerType<>(converterFactory, FeatureFlags.VANILLA_FEATURES));
 
+		// Регистрация Mana Magnet блока
+		RegistryKey<Block> magnetBlockKey = RegistryKey.of(Registries.BLOCK.getKey(),
+				Identifier.of(MOD_ID, "mana_magnet"));
+		MANA_MAGNET = Registry.register(
+				Registries.BLOCK,
+				magnetBlockKey,
+				new com.manaborn.blocks.ManaMagnetBlock(AbstractBlock.Settings.create()
+						.strength(3.0f, 4.0f)
+						.sounds(BlockSoundGroup.AMETHYST_BLOCK)
+						.luminance(state -> 8)
+						.registryKey(magnetBlockKey)));
+		RegistryKey<Item> magnetItemKey = RegistryKey.of(Registries.ITEM.getKey(),
+				Identifier.of(MOD_ID, "mana_magnet"));
+		Registry.register(Registries.ITEM, magnetItemKey,
+				new BlockItem(MANA_MAGNET, new Item.Settings().registryKey(magnetItemKey)));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.add(MANA_MAGNET));
+
+		// BE для Mana Magnet
+		MANA_MAGNET_ENTITY = Registry.register(
+				Registries.BLOCK_ENTITY_TYPE,
+				RegistryKey.of(Registries.BLOCK_ENTITY_TYPE.getKey(), Identifier.of(MOD_ID, "mana_magnet")),
+				FabricBlockEntityTypeBuilder.create(com.manaborn.blocks.entity.ManaMagnetBlockEntity::new, MANA_MAGNET).build());
+
 		// Регистрация Mana Vessel
 		RegistryKey<Item> vesselKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "mana_vessel"));
 		MANA_VESSEL = Registry.register(Registries.ITEM, vesselKey,
@@ -285,13 +340,14 @@ public class ManabornMod implements ModInitializer {
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.BUILDING_BLOCKS).register(entries -> entries.add(MAGIC_ORE));
 		System.out.println(" [DEBUG] Magic Ore зарегистрирована с ID: " + oreBlockKey.getValue());
 
-		// Тик сервера: регенерация маны, обработка стен огня и ауры стужи
+		// Тик сервера: регенерация маны, обработка стен огня и ауры стужи, спавн пылинок
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			ManaManager.onServerTick(server.getPlayerManager().getPlayerList());
 			com.manaborn.spells.SpellManager.tickFireWalls();
 			com.manaborn.spells.SpellManager.tickFrostAuras(server.getPlayerManager().getPlayerList());
 			com.manaborn.spells.SpellManager.tickAbsorbingBarriers(server.getPlayerManager().getPlayerList());
 			com.manaborn.spells.SpellManager.tickIceWalls();
+			DustWispManager.tick(server.getPlayerManager().getPlayerList());
 		});
 
 		// Синхронизация при входе

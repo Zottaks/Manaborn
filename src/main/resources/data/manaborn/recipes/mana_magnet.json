@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "LDL",
+    "DWD",
+    "LVL"
+  ],
+  "key": {
+    "L": "minecraft:lapis_lazuli",
+    "D": "manaborn:magic_dust",
+    "W": "minecraft:lodestone",
+    "V": "manaborn:mana_vessel"
+  },
+  "result": { "id": "manaborn:mana_magnet", "count": 1 }
+}

@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "manaborn:block/mana_magnet_top",
+    "down": "manaborn:block/mana_magnet_bottom",
+    "up": "manaborn:block/mana_magnet_top",
+    "north": "manaborn:block/mana_magnet_side",
+    "east": "manaborn:block/mana_magnet_side",
+    "south": "manaborn:block/mana_magnet_side",
+    "west": "manaborn:block/mana_magnet_side"
+  }
+}

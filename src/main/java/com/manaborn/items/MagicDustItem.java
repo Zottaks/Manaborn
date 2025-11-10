@@ -31,7 +31,7 @@ public class MagicDustItem extends Item {
         
         // Описание
         tooltip.accept(Text.literal("Мерцающая магическая пыль,").formatted(Formatting.DARK_GRAY));
-        tooltip.accept(Text.literal("полученная из магической руды.").formatted(Formatting.DARK_GRAY));
+        tooltip.accept(Text.literal("обнаруживаемая с помощью маноскопа.").formatted(Formatting.DARK_GRAY));
         
         // Пустая строка
         tooltip.accept(Text.literal(""));

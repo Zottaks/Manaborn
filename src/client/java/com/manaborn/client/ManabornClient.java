@@ -8,7 +8,6 @@ import com.manaborn.network.ManaSyncS2CPacket;
 import com.manaborn.network.LearnedSpellsSyncS2CPacket;
 import com.manaborn.network.RequestLearnedSpellsC2SPacket;
 import com.manaborn.ManabornMod;
-import com.manaborn.items.ManaVesselItem;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
@@ -32,6 +31,7 @@ public class ManabornClient implements ClientModInitializer {
         // Fabric 1.21.10
         // Новый API появится в будущих версиях Fabric API
         registerIceShardRenderer();
+        registerDustWispRenderer();
 
         // Регистрируем HUD элемент для отображения маны перед чатом
         HudElementRegistry.attachElementBefore(
@@ -74,6 +74,9 @@ public class ManabornClient implements ClientModInitializer {
             if (client.player != null) {
                 ClientManaState.clientTick();
             }
+            // Отрисовка частиц пылинок (видны только с Маноскопом)
+            DustWispParticleRenderer.tick(client);
+            
             // Открытие меню заклинаний по клавише I
             if (client.player != null) {
                 boolean isDown = InputUtil.isKeyPressed(client.getWindow(), GLFW.GLFW_KEY_I);
@@ -106,5 +109,17 @@ public class ManabornClient implements ClientModInitializer {
     @SuppressWarnings("deprecation")
     private void registerIceShardRenderer() {
         EntityRendererRegistry.register(ManabornMod.ICE_SHARD_ENTITY, FlyingItemEntityRenderer::new);
+    }
+
+    /**
+     * Регистрирует рендерер для сущности пылинки
+     * 
+     * Используем EmptyEntityRenderer для невидимой сущности.
+     * Клиентский код будет рисовать частицы только когда игрок носит Manoscope.
+     */
+    @SuppressWarnings("deprecation")
+    private void registerDustWispRenderer() {
+        EntityRendererRegistry.register(ManabornMod.DUST_WISP_ENTITY, 
+            (context) -> new net.minecraft.client.render.entity.EmptyEntityRenderer<>(context));
     }
 }

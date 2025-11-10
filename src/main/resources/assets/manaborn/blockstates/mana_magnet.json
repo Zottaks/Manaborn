@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "manaborn:block/mana_magnet"
+    }
+  }
+}
