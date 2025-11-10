@@ -18,6 +18,7 @@ import com.manaborn.items.LearningAltarBlockItem;
 import com.manaborn.items.MagicOreBlockItem;
 import com.manaborn.screen.LearningAltarScreenHandler;
 import com.manaborn.network.ManaSyncS2CPacket;
+import net.minecraft.item.BlockItem;
 import com.manaborn.network.LearnedSpellsSyncS2CPacket;
 import com.manaborn.network.RequestLearnedSpellsC2SPacket;
 import com.manaborn.network.SelectSpellC2SPacket;
@@ -187,7 +188,7 @@ public class ManabornMod implements ModInitializer {
 				new ManoscopeItem(new Item.Settings()
 						.maxCount(1)
 						.registryKey(scopeKey)
-						.component(DataComponentTypes.EQUIPPABLE, 
+						.component(DataComponentTypes.EQUIPPABLE,
 								EquippableComponent.builder(EquipmentSlot.HEAD).build())));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(MANOSCOPE));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(MANOSCOPE));
@@ -355,7 +356,8 @@ public class ManabornMod implements ModInitializer {
 		MANA_MAGNET_ENTITY = Registry.register(
 				Registries.BLOCK_ENTITY_TYPE,
 				RegistryKey.of(Registries.BLOCK_ENTITY_TYPE.getKey(), Identifier.of(MOD_ID, "mana_magnet")),
-				FabricBlockEntityTypeBuilder.create(com.manaborn.blocks.entity.ManaMagnetBlockEntity::new, MANA_MAGNET).build());
+				FabricBlockEntityTypeBuilder.create(com.manaborn.blocks.entity.ManaMagnetBlockEntity::new, MANA_MAGNET)
+						.build());
 
 		// Регистрация Mana Vessel
 		RegistryKey<Item> vesselKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "mana_vessel"));
@@ -383,7 +385,8 @@ public class ManabornMod implements ModInitializer {
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.BUILDING_BLOCKS).register(entries -> entries.add(MAGIC_ORE));
 		System.out.println(" [DEBUG] Magic Ore зарегистрирована с ID: " + oreBlockKey.getValue());
 
-		// Тик сервера: регенерация маны, обработка стен огня и ауры стужи, спавн пылинок
+		// Тик сервера: регенерация маны, обработка стен огня и ауры стужи, спавн
+		// пылинок
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			ManaManager.onServerTick(server.getPlayerManager().getPlayerList());
 			com.manaborn.spells.SpellManager.tickFireWalls();
