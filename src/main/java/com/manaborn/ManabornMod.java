@@ -17,6 +17,7 @@ import com.manaborn.items.ManaConverterBlockItem;
 import com.manaborn.items.LearningAltarBlockItem;
 import com.manaborn.items.MagicOreBlockItem;
 import com.manaborn.screen.LearningAltarScreenHandler;
+import com.manaborn.screen.EtherConverterScreenHandler;
 import com.manaborn.network.ManaSyncS2CPacket;
 import com.manaborn.network.LearnedSpellsSyncS2CPacket;
 import com.manaborn.network.RequestLearnedSpellsC2SPacket;
@@ -98,6 +99,7 @@ public class ManabornMod implements ModInitializer {
     public static Item ETHER;
     public static Block ETHER_CONVERTER;
     public static BlockEntityType<EtherConverterBlockEntity> ETHER_CONVERTER_BE;
+    public static ScreenHandlerType<EtherConverterScreenHandler> ETHER_CONVERTER_SH;
 
     // Lev: тут происходят инициализации
     @Override
@@ -364,12 +366,16 @@ public class ManabornMod implements ModInitializer {
 				new BlockItem(ETHER_CONVERTER, new Item.Settings().registryKey(etherConvItemKey)));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.add(ETHER_CONVERTER));
 
-		// BE для Ether Converter
+		// BE и ScreenHandler для Ether Converter
 		ETHER_CONVERTER_BE = Registry.register(
 				Registries.BLOCK_ENTITY_TYPE,
 				RegistryKey.of(Registries.BLOCK_ENTITY_TYPE.getKey(), Identifier.of(MOD_ID, "ether_converter")),
-				FabricBlockEntityTypeBuilder.create(com.manaborn.blocks.entity.EtherConverterBlockEntity::new, ETHER_CONVERTER)
-						.build());
+				FabricBlockEntityTypeBuilder.create(EtherConverterBlockEntity::new, ETHER_CONVERTER).build());
+		Factory<EtherConverterScreenHandler> etherFactory = (syncId, inv) -> new EtherConverterScreenHandler(syncId, inv);
+		ETHER_CONVERTER_SH = Registry.register(
+				Registries.SCREEN_HANDLER,
+				Identifier.of(MOD_ID, "ether_converter"),
+				new ScreenHandlerType<>(etherFactory, FeatureFlags.VANILLA_FEATURES));
 
 		// Регистрация Mana Magnet блока
 		RegistryKey<Block> magnetBlockKey = RegistryKey.of(Registries.BLOCK.getKey(),
@@ -387,13 +393,6 @@ public class ManabornMod implements ModInitializer {
 		Registry.register(Registries.ITEM, magnetItemKey,
 				new BlockItem(MANA_MAGNET, new Item.Settings().registryKey(magnetItemKey)));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.add(MANA_MAGNET));
-
-		// BE для Mana Magnet
-		MANA_MAGNET_ENTITY = Registry.register(
-				Registries.BLOCK_ENTITY_TYPE,
-				RegistryKey.of(Registries.BLOCK_ENTITY_TYPE.getKey(), Identifier.of(MOD_ID, "mana_magnet")),
-				FabricBlockEntityTypeBuilder.create(com.manaborn.blocks.entity.ManaMagnetBlockEntity::new, MANA_MAGNET)
-						.build());
 
 		// Регистрация Mana Vessel
 		RegistryKey<Item> vesselKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "mana_vessel"));

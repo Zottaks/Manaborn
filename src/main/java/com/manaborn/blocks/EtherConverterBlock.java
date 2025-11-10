@@ -9,9 +9,8 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -55,17 +54,11 @@ public class EtherConverterBlock extends BlockWithEntity {
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         if (world.isClient()) return ActionResult.SUCCESS;
         BlockEntity be = world.getBlockEntity(pos);
-        if (!(be instanceof EtherConverterBlockEntity e)) return ActionResult.PASS;
-
-        ItemStack hand = player.getStackInHand(Hand.MAIN_HAND);
-        if (!hand.isEmpty() && e.tryInsertDust(hand)) {
+        if (be instanceof EtherConverterBlockEntity m) {
+            NamedScreenHandlerFactory factory = m;
+            player.openHandledScreen(factory);
             return ActionResult.CONSUME;
         }
-
-        if (e.tryGiveEther(player)) {
-            return ActionResult.CONSUME;
-        }
-
-        return ActionResult.SUCCESS;
+        return ActionResult.PASS;
     }
 }
