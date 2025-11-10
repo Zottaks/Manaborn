@@ -19,7 +19,9 @@ import com.manaborn.screen.LearningAltarScreenHandler;
 import com.manaborn.network.ManaSyncS2CPacket;
 import com.manaborn.network.LearnedSpellsSyncS2CPacket;
 import com.manaborn.network.RequestLearnedSpellsC2SPacket;
+import com.manaborn.network.SelectSpellC2SPacket;
 import com.manaborn.spells.LearnedSpellsManager;
+import com.manaborn.spells.SpellManager;
 import com.manaborn.spells.SpellType;
 import com.manaborn.entities.IceShardEntity;
 import net.fabricmc.api.ModInitializer;
@@ -96,6 +98,43 @@ public class ManabornMod implements ModInitializer {
 				LearnedSpellsManager.ensureInitialized(player);
 				LearnedSpellsManager.sendSync(player);
 			}
+		});
+
+		// Регистрация типа C2S пакета для выбора заклинания
+		PayloadTypeRegistry.playC2S().register(SelectSpellC2SPacket.ID, SelectSpellC2SPacket.CODEC);
+
+		// Обработчик выбора заклинания с клиента
+		ServerPlayNetworking.registerGlobalReceiver(SelectSpellC2SPacket.ID, (payload, context) -> {
+			context.server().execute(() -> {
+				ServerPlayerEntity player = context.player();
+				if (player != null) {
+					// Находим посох в руках игрока
+					net.minecraft.item.ItemStack mainHandStack = player.getMainHandStack();
+					net.minecraft.item.ItemStack offHandStack = player.getOffHandStack();
+
+					net.minecraft.item.ItemStack staffStack = null;
+					if (mainHandStack.getItem() instanceof MagicStaffItem) {
+						staffStack = mainHandStack;
+					} else if (offHandStack.getItem() instanceof MagicStaffItem) {
+						staffStack = offHandStack;
+					}
+
+					if (staffStack != null) {
+						// Устанавливаем выбранное заклинание
+						SpellType spell = SpellType.fromId(payload.spellId());
+						SpellManager.setSelectedSpell(staffStack, spell);
+
+						// Отправляем подтверждение игроку
+						player.sendMessage(
+								net.minecraft.text.Text.literal("Выбрано заклинание: ")
+										.append(net.minecraft.text.Text.literal(spell.getDisplayName())
+												.formatted(spell.getColor()))
+										.append(net.minecraft.text.Text
+												.literal(" (стоимость: " + spell.getManaCost() + " маны)")),
+								true);
+					}
+				}
+			});
 		});
 
 		// Регистрация сущности ледяного осколка
