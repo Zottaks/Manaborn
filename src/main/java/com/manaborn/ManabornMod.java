@@ -69,46 +69,46 @@ import com.manaborn.blocks.EtherConverterBlock;
 import com.manaborn.blocks.entity.EtherConverterBlockEntity;
 
 public class ManabornMod implements ModInitializer {
-    public static final String MOD_ID = "manaborn";
+	public static final String MOD_ID = "manaborn";
 
-    public static Item MANA_WAND;
-    public static Item MANA_POTION;
-    public static Item MAGIC_DUST;
-    public static Block MAGIC_ORE;
-    public static Item FIREBALL_SPELL_BOOK;
-    public static Item ICE_SHARD_SPELL_BOOK;
-    public static Item FIRE_WALL_SPELL_BOOK;
-    public static Item INNER_HEAT_SPELL_BOOK;
-    public static Item FROST_AURA_SPELL_BOOK;
-    public static Item ABSORBING_BARRIER_SPELL_BOOK;
-    public static Item WEAKNESS_CURSE_SPELL_BOOK;
-    public static Item ICE_WALL_SPELL_BOOK;
-    public static Item HEAT_WEAPON_SPELL_BOOK;
-    public static EntityType<IceShardEntity> ICE_SHARD_ENTITY;
-    public static Block LEARNING_ALTAR;
-    public static BlockEntityType<LearningAltarBlockEntity> LEARNING_ALTAR_BE;
-    public static ScreenHandlerType<LearningAltarScreenHandler> LEARNING_ALTAR_SH;
-    public static Block MANA_CONVERTER;
-    public static BlockEntityType<ManaConverterBlockEntity> MANA_CONVERTER_BE;
-    public static ScreenHandlerType<ManaConverterScreenHandler> MANA_CONVERTER_SH;
-    public static Item MANA_VESSEL;
-    public static Item MANOSCOPE;
-    public static EntityType<DustWispEntity> DUST_WISP_ENTITY;
-    public static Block MANA_MAGNET;
-    public static BlockEntityType<com.manaborn.blocks.entity.ManaMagnetBlockEntity> MANA_MAGNET_ENTITY;
-    public static Item ETHER;
-    public static Block ETHER_CONVERTER;
-    public static BlockEntityType<EtherConverterBlockEntity> ETHER_CONVERTER_BE;
-    public static ScreenHandlerType<EtherConverterScreenHandler> ETHER_CONVERTER_SH;
+	public static Item MANA_WAND;
+	public static Item MANA_POTION;
+	public static Item MAGIC_DUST;
+	public static Block MAGIC_ORE;
+	public static Item FIREBALL_SPELL_BOOK;
+	public static Item ICE_SHARD_SPELL_BOOK;
+	public static Item FIRE_WALL_SPELL_BOOK;
+	public static Item INNER_HEAT_SPELL_BOOK;
+	public static Item FROST_AURA_SPELL_BOOK;
+	public static Item ABSORBING_BARRIER_SPELL_BOOK;
+	public static Item WEAKNESS_CURSE_SPELL_BOOK;
+	public static Item ICE_WALL_SPELL_BOOK;
+	public static Item HEAT_WEAPON_SPELL_BOOK;
+	public static EntityType<IceShardEntity> ICE_SHARD_ENTITY;
+	public static Block LEARNING_ALTAR;
+	public static BlockEntityType<LearningAltarBlockEntity> LEARNING_ALTAR_BE;
+	public static ScreenHandlerType<LearningAltarScreenHandler> LEARNING_ALTAR_SH;
+	public static Block MANA_CONVERTER;
+	public static BlockEntityType<ManaConverterBlockEntity> MANA_CONVERTER_BE;
+	public static ScreenHandlerType<ManaConverterScreenHandler> MANA_CONVERTER_SH;
+	public static Item MANA_VESSEL;
+	public static Item MANOSCOPE;
+	public static EntityType<DustWispEntity> DUST_WISP_ENTITY;
+	public static Block MANA_MAGNET;
+	public static BlockEntityType<com.manaborn.blocks.entity.ManaMagnetBlockEntity> MANA_MAGNET_ENTITY;
+	public static Item ETHER;
+	public static Block ETHER_CONVERTER;
+	public static BlockEntityType<EtherConverterBlockEntity> ETHER_CONVERTER_BE;
+	public static ScreenHandlerType<EtherConverterScreenHandler> ETHER_CONVERTER_SH;
 
-    // Lev: тут происходят инициализации
-    @Override
-    public void onInitialize() {
-        // Регистрация типов S2C пакетов
-        PayloadTypeRegistry.playS2C().register(ManaSyncS2CPacket.ID, ManaSyncS2CPacket.CODEC);
-        PayloadTypeRegistry.playS2C().register(LearnedSpellsSyncS2CPacket.ID, LearnedSpellsSyncS2CPacket.CODEC);
-        // Регистрация типа C2S пакета для запроса синхронизации изученных заклинаний
-        PayloadTypeRegistry.playC2S().register(RequestLearnedSpellsC2SPacket.ID, RequestLearnedSpellsC2SPacket.CODEC);
+	// Lev: тут происходят инициализации
+	@Override
+	public void onInitialize() {
+		// Регистрация типов S2C пакетов
+		PayloadTypeRegistry.playS2C().register(ManaSyncS2CPacket.ID, ManaSyncS2CPacket.CODEC);
+		PayloadTypeRegistry.playS2C().register(LearnedSpellsSyncS2CPacket.ID, LearnedSpellsSyncS2CPacket.CODEC);
+		// Регистрация типа C2S пакета для запроса синхронизации изученных заклинаний
+		PayloadTypeRegistry.playC2S().register(RequestLearnedSpellsC2SPacket.ID, RequestLearnedSpellsC2SPacket.CODEC);
 
 		// Обработчик запроса с клиента — отправляем текущий список изученных заклинаний
 		ServerPlayNetworking.registerGlobalReceiver(RequestLearnedSpellsC2SPacket.ID, (payload, context) -> {
@@ -371,7 +371,8 @@ public class ManabornMod implements ModInitializer {
 				Registries.BLOCK_ENTITY_TYPE,
 				RegistryKey.of(Registries.BLOCK_ENTITY_TYPE.getKey(), Identifier.of(MOD_ID, "ether_converter")),
 				FabricBlockEntityTypeBuilder.create(EtherConverterBlockEntity::new, ETHER_CONVERTER).build());
-		Factory<EtherConverterScreenHandler> etherFactory = (syncId, inv) -> new EtherConverterScreenHandler(syncId, inv);
+		Factory<EtherConverterScreenHandler> etherFactory = (syncId, inv) -> new EtherConverterScreenHandler(syncId,
+				inv);
 		ETHER_CONVERTER_SH = Registry.register(
 				Registries.SCREEN_HANDLER,
 				Identifier.of(MOD_ID, "ether_converter"),
@@ -393,6 +394,13 @@ public class ManabornMod implements ModInitializer {
 		Registry.register(Registries.ITEM, magnetItemKey,
 				new BlockItem(MANA_MAGNET, new Item.Settings().registryKey(magnetItemKey)));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.add(MANA_MAGNET));
+
+		// Регистрация BlockEntityType для Mana Magnet
+		MANA_MAGNET_ENTITY = Registry.register(
+				Registries.BLOCK_ENTITY_TYPE,
+				RegistryKey.of(Registries.BLOCK_ENTITY_TYPE.getKey(), Identifier.of(MOD_ID, "mana_magnet")),
+				FabricBlockEntityTypeBuilder.create(com.manaborn.blocks.entity.ManaMagnetBlockEntity::new, MANA_MAGNET)
+						.build());
 
 		// Регистрация Mana Vessel
 		RegistryKey<Item> vesselKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "mana_vessel"));
