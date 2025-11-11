@@ -54,8 +54,8 @@ public class ManaMagnetBlock extends BlockWithEntity {
                     return ActionResult.SUCCESS;
                 } else {
                     // Нет пыли - тихий звук
-                    world.playSound(null, pos, net.minecraft.sound.SoundEvents.BLOCK_STONE_BUTTON_CLICK_OFF, 
-                            net.minecraft.sound.SoundCategory.BLOCKS, 0.3f, 0.8f);
+                    world.playSound(null, pos, net.minecraft.sound.SoundEvents.BLOCK_ENCHANTMENT_TABLE_USE,
+                            net.minecraft.sound.SoundCategory.BLOCKS, 0.6f, 1.1f);
                 }
             }
         }

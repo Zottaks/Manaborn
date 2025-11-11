@@ -9,6 +9,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -33,6 +34,20 @@ public class ManaMagnetBlockEntity extends BlockEntity {
         if (blockEntity.timer >= PRODUCTION_INTERVAL) {
             blockEntity.timer = 0;
             blockEntity.produceDust((ServerWorld) world, pos);
+        }
+        
+        if (!blockEntity.inventory.getStack(0).isEmpty()) {
+            if (world.getTime() % 10L == 0L) {
+                ((ServerWorld) world).spawnParticles(
+                        ParticleTypes.ENCHANT,
+                        pos.getX() + 0.5,
+                        pos.getY() + 1.0,
+                        pos.getZ() + 0.5,
+                        4,
+                        0.2, 0.2, 0.2,
+                        0.0
+                );
+            }
         }
         
         blockEntity.markDirty();
