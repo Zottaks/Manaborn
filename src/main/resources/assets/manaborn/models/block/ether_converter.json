@@ -1,9 +1,9 @@
 {
   "ambientocclusion": false,
   "textures": {
-    "top": "manaborn:block/mana_converter_top",
-    "side": "manaborn:block/mana_converter_side",
-    "particle": "manaborn:block/mana_converter_side"
+    "top": "manaborn:block/ether_converter_top",
+    "side": "manaborn:block/ether_converter_side",
+    "particle": "manaborn:block/ether_converter_side"
   },
   "elements": [
     {

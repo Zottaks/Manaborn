@@ -93,6 +93,7 @@ public class ManabornClient implements ClientModInitializer {
         HandledScreens.register(ManabornMod.LEARNING_ALTAR_SH, LearningAltarScreen::new);
         HandledScreens.register(ManabornMod.MANA_CONVERTER_SH, com.manaborn.client.ui.ManaConverterScreen::new);
         HandledScreens.register(ManabornMod.ETHER_CONVERTER_SH, com.manaborn.client.ui.EtherConverterScreen::new);
+        HandledScreens.register(ManabornMod.MAGIC_CRAFTING_TABLE_SH, com.manaborn.client.ui.MagicCraftingTableScreen::new);
 
         // Регистрируем обработчик радиального меню для магического посоха
         MagicStaffClientHandler.register();

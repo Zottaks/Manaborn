@@ -118,8 +118,15 @@ public class MagicStaffItem extends Item {
         }
 
         ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
-        if (!com.manaborn.mana.ManaManager.tryConsume(serverPlayer, manaCost)) {
-            serverPlayer.sendMessage(Text.literal("Недостаточно маны: нужно " + manaCost), true);
+        
+        // Apply Ether Scepter discount if applicable
+        int finalManaCost = manaCost;
+        if (stack.getItem() instanceof EtherScepterItem) {
+            finalManaCost = Math.max(0, manaCost - EtherScepterItem.MANA_DISCOUNT);
+        }
+        
+        if (!com.manaborn.mana.ManaManager.tryConsume(serverPlayer, finalManaCost)) {
+            serverPlayer.sendMessage(Text.literal("Недостаточно маны: нужно " + finalManaCost), true);
             return false;
         }
 

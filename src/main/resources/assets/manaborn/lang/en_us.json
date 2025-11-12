@@ -20,8 +20,12 @@
   "block.manaborn.mana_magnet": "mana magnet",
   "item.manaborn.mana_magnet": "mana magnet",
   "item.manaborn.ether": "Ether",
+  "item.manaborn.ether_scepter": "Ether Scepter",
   "block.manaborn.ether_converter": "Ether Converter",
   "item.manaborn.ether_converter": "Ether Converter",
+  "block.manaborn.magic_crafting_table": "Magic Crafting Table",
+  "item.manaborn.magic_crafting_table": "Magic Crafting Table",
+  "container.manaborn.magic_crafting_table": "Magic Crafting",
   "advancement.manaborn.magic_staff.title": "Magical Power!",
   "advancement.manaborn.magic_staff.description": "Obtain a mana wand"
 }

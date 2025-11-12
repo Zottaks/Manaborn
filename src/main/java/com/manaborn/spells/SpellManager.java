@@ -106,9 +106,16 @@ public class SpellManager {
                 return;
             }
 
-            if (!ManaManager.tryConsume(serverPlayer, spell.getManaCost())) {
+            // Calculate mana cost with Ether Scepter discount
+            int baseCost = spell.getManaCost();
+            int finalCost = baseCost;
+            if (stack.getItem() instanceof com.manaborn.items.EtherScepterItem) {
+                finalCost = Math.max(0, baseCost - com.manaborn.items.EtherScepterItem.MANA_DISCOUNT);
+            }
+
+            if (!ManaManager.tryConsume(serverPlayer, finalCost)) {
                 serverPlayer.sendMessage(
-                        net.minecraft.text.Text.literal("Недостаточно маны: нужно " + spell.getManaCost()), true);
+                        net.minecraft.text.Text.literal("Недостаточно маны: нужно " + finalCost), true);
                 return;
             }
 

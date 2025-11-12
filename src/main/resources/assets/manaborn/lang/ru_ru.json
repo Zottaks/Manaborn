@@ -20,8 +20,12 @@
   "block.manaborn.mana_magnet": "mana magnet",
   "item.manaborn.mana_magnet": "mana magnet",
   "item.manaborn.ether": "Эфир",
+  "item.manaborn.ether_scepter": "Эфирный скипетр",
   "block.manaborn.ether_converter": "Преобразователь",
   "item.manaborn.ether_converter": "Преобразователь",
+  "block.manaborn.magic_crafting_table": "Магический верстак",
+  "item.manaborn.magic_crafting_table": "Магический верстак",
+  "container.manaborn.magic_crafting_table": "Магический крафт",
   "advancement.manaborn.magic_staff.title": "Магическая сила!",
   "advancement.manaborn.magic_staff.description": "Получите волшебную палочку"
 }

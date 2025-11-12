@@ -1,6 +1,7 @@
 package com.manaborn;
 
 import com.manaborn.items.MagicStaffItem;
+import com.manaborn.items.EtherScepterItem;
 import com.manaborn.items.ManaPotionItem;
 import com.manaborn.items.MagicDustItem;
 import com.manaborn.items.SpellBookItem;
@@ -97,9 +98,13 @@ public class ManabornMod implements ModInitializer {
 	public static Block MANA_MAGNET;
 	public static BlockEntityType<com.manaborn.blocks.entity.ManaMagnetBlockEntity> MANA_MAGNET_ENTITY;
 	public static Item ETHER;
+	public static Item ETHER_SCEPTER;
 	public static Block ETHER_CONVERTER;
 	public static BlockEntityType<EtherConverterBlockEntity> ETHER_CONVERTER_BE;
 	public static ScreenHandlerType<EtherConverterScreenHandler> ETHER_CONVERTER_SH;
+	public static Block MAGIC_CRAFTING_TABLE;
+	public static BlockEntityType<com.manaborn.blocks.entity.MagicCraftingTableBlockEntity> MAGIC_CRAFTING_TABLE_BE;
+	public static ScreenHandlerType<com.manaborn.screen.MagicCraftingTableScreenHandler> MAGIC_CRAFTING_TABLE_SH;
 
 	// Lev: тут происходят инициализации
 	@Override
@@ -215,6 +220,13 @@ public class ManabornMod implements ModInitializer {
 				new Item(new Item.Settings().maxCount(64).registryKey(etherKey)));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(entries -> entries.add(ETHER));
 		System.out.println(" [DEBUG] Ether зарегистрирован с ID: " + etherKey.getValue());
+
+		// Регистрация Ether Scepter (Эфирный скипетр)
+		RegistryKey<Item> etherScepterKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "ether_scepter"));
+		ETHER_SCEPTER = Registry.register(Registries.ITEM, etherScepterKey,
+				new EtherScepterItem(new Item.Settings().maxCount(1).registryKey(etherScepterKey)));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(ETHER_SCEPTER));
+		System.out.println(" [DEBUG] Ether Scepter зарегистрирован с ID: " + etherScepterKey.getValue());
 
 		// Регистрация Fireball Spell Book
 		RegistryKey<Item> fireballBookKey = RegistryKey.of(Registries.ITEM.getKey(),
@@ -377,6 +389,33 @@ public class ManabornMod implements ModInitializer {
 				Registries.SCREEN_HANDLER,
 				Identifier.of(MOD_ID, "ether_converter"),
 				new ScreenHandlerType<>(etherFactory, FeatureFlags.VANILLA_FEATURES));
+
+		// Регистрация Magic Crafting Table (Магический верстак)
+		RegistryKey<Block> magicCraftingTableKey = RegistryKey.of(Registries.BLOCK.getKey(),
+				Identifier.of(MOD_ID, "magic_crafting_table"));
+		MAGIC_CRAFTING_TABLE = Registry.register(
+				Registries.BLOCK,
+				magicCraftingTableKey,
+				new com.manaborn.blocks.MagicCraftingTableBlock(AbstractBlock.Settings.create()
+						.strength(2.5f, 3.0f)
+						.sounds(BlockSoundGroup.WOOD)
+						.registryKey(magicCraftingTableKey)));
+		RegistryKey<Item> magicCraftingTableItemKey = RegistryKey.of(Registries.ITEM.getKey(),
+				Identifier.of(MOD_ID, "magic_crafting_table"));
+		Registry.register(Registries.ITEM, magicCraftingTableItemKey,
+				new BlockItem(MAGIC_CRAFTING_TABLE, new Item.Settings().registryKey(magicCraftingTableItemKey)));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.add(MAGIC_CRAFTING_TABLE));
+		System.out.println(" [DEBUG] Magic Crafting Table зарегистрирован с ID: " + magicCraftingTableKey.getValue());
+
+		// BE и ScreenHandler для Magic Crafting Table
+		MAGIC_CRAFTING_TABLE_BE = Registry.register(
+				Registries.BLOCK_ENTITY_TYPE,
+				RegistryKey.of(Registries.BLOCK_ENTITY_TYPE.getKey(), Identifier.of(MOD_ID, "magic_crafting_table")),
+				FabricBlockEntityTypeBuilder.create(com.manaborn.blocks.entity.MagicCraftingTableBlockEntity::new, MAGIC_CRAFTING_TABLE).build());
+		MAGIC_CRAFTING_TABLE_SH = Registry.register(
+				Registries.SCREEN_HANDLER,
+				Identifier.of(MOD_ID, "magic_crafting_table"),
+				new ScreenHandlerType<>((syncId, inv) -> new com.manaborn.screen.MagicCraftingTableScreenHandler(syncId, inv), FeatureFlags.VANILLA_FEATURES));
 
 		// Регистрация Mana Magnet блока
 		RegistryKey<Block> magnetBlockKey = RegistryKey.of(Registries.BLOCK.getKey(),

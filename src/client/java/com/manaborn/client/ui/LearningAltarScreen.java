@@ -133,6 +133,37 @@ public class LearningAltarScreen extends HandledScreen<LearningAltarScreenHandle
                 context.fill(px1, py1, px1 + 1, py1 + 1, pcol);
             }
         }
+        
+        // === ВЫДЕЛЕНИЕ ИНВЕНТАРЯ ИГРОКА ===
+        // Основной инвентарь 9x3 (x=8, y=84)
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 9; col++) {
+                int slotX = x + 8 + col * 18;
+                int slotY = y + 84 + row * 18;
+                drawSlot(context, slotX, slotY, 0xFF8B8B8B);
+            }
+        }
+        
+        // Хотбар 9x1 (x=8, y=142)
+        for (int col = 0; col < 9; col++) {
+            int slotX = x + 8 + col * 18;
+            int slotY = y + 142;
+            drawSlot(context, slotX, slotY, 0xFF9A9A9A);
+        }
+    }
+    
+    /**
+     * Рисует рамку слота
+     */
+    private void drawSlot(DrawContext context, int x, int y, int color) {
+        // Внешняя рамка
+        context.fill(x - 1, y - 1, x + 17, y, color);        // Верх
+        context.fill(x - 1, y + 16, x + 17, y + 17, color);  // Низ
+        context.fill(x - 1, y - 1, x, y + 17, color);        // Лево
+        context.fill(x + 16, y - 1, x + 17, y + 17, color);  // Право
+        
+        // Внутренний темный фон
+        context.fill(x, y, x + 16, y + 16, 0xAA000000);
     }
 
     @Override
