@@ -94,24 +94,42 @@ public class MagicCraftingTableScreenHandler extends ScreenHandler {
             if (!world.isClient()) {
                 ServerPlayerEntity serverPlayer = (ServerPlayerEntity) this.player;
                 ItemStack result = ItemStack.EMPTY;
-                
-                // Создаем CraftingRecipeInput из текущего содержимого сетки
-                CraftingRecipeInput input = this.craftingInventory.createRecipeInput();
-                
-                // Ищем рецепт
-                Optional<RecipeEntry<CraftingRecipe>> optional = world.getServer()
-                        .getRecipeManager()
-                        .getFirstMatch(RecipeType.CRAFTING, input, world);
-                
-                if (optional.isPresent()) {
-                    RecipeEntry<CraftingRecipe> recipeEntry = optional.get();
-                    CraftingRecipe recipe = recipeEntry.value();
-                    
-                    if (this.resultInventory.shouldCraftRecipe(serverPlayer, recipeEntry)) {
-                        result = recipe.craft(input, world.getRegistryManager());
+
+                // Жестко заданные рецепты для магического верстака
+                // Шаблоны (индексы: r*3+c):
+                // mana_wand:      [2:'A', 4:'S', 6:'S'] с остальными пустыми
+                // ether_scepter:  [2:'E', 4:'S', 6:'S'] с остальными пустыми
+
+                ItemStack s0 = this.craftingInventory.getStack(0);
+                ItemStack s1 = this.craftingInventory.getStack(1);
+                ItemStack s2 = this.craftingInventory.getStack(2);
+                ItemStack s3 = this.craftingInventory.getStack(3);
+                ItemStack s4 = this.craftingInventory.getStack(4);
+                ItemStack s5 = this.craftingInventory.getStack(5);
+                ItemStack s6 = this.craftingInventory.getStack(6);
+                ItemStack s7 = this.craftingInventory.getStack(7);
+                ItemStack s8 = this.craftingInventory.getStack(8);
+
+                boolean othersEmpty = s0.isEmpty() && s1.isEmpty() && s3.isEmpty() && s5.isEmpty() && s7.isEmpty() && s8.isEmpty();
+
+                boolean isStickCenter = !s4.isEmpty() && s4.getItem() == net.minecraft.item.Items.STICK;
+                boolean isStickDownLeft = !s6.isEmpty() && s6.getItem() == net.minecraft.item.Items.STICK;
+
+                // manaborn items
+                var dustItem = ManabornMod.MAGIC_DUST;
+                var etherItem = ManabornMod.ETHER;
+                var wandItem = ManabornMod.MANA_WAND;
+                var scepterItem = ManabornMod.ETHER_SCEPTER;
+
+                if (othersEmpty && isStickCenter && isStickDownLeft) {
+                    // Check top-right slot for catalyst
+                    if (!s2.isEmpty() && s2.getItem() == dustItem) {
+                        result = new ItemStack(wandItem);
+                    } else if (!s2.isEmpty() && s2.getItem() == etherItem) {
+                        result = new ItemStack(scepterItem);
                     }
                 }
-                
+
                 this.resultInventory.setStack(0, result);
                 serverPlayer.networkHandler.sendPacket(
                         new ScreenHandlerSlotUpdateS2CPacket(this.syncId, 0, 0, result));
