@@ -73,9 +73,20 @@ public class ActiveEffectManager {
 
     public static class HeatWeaponData {
         int attackCount;
+        int level; // Уровень заклинания (1-3)
 
-        HeatWeaponData() {
+        HeatWeaponData(int level) {
             this.attackCount = 0;
+            this.level = level;
+        }
+        
+        // Получить максимальное количество атак для уровня
+        public int getMaxAttacks() {
+            return switch (level) {
+                case 1 -> 5;
+                case 2 -> 7;
+                default -> 10; // level 3
+            };
         }
     }
 
@@ -361,8 +372,8 @@ public class ActiveEffectManager {
     }
 
     // Heat Weapon management
-    public static void addHeatWeapon(UUID playerId) {
-        activeHeatWeapons.put(playerId, new HeatWeaponData());
+    public static void addHeatWeapon(UUID playerId, int level) {
+        activeHeatWeapons.put(playerId, new HeatWeaponData(level));
     }
 
     public static void onPlayerAttack(ServerPlayerEntity player, LivingEntity target, World world) {
@@ -371,6 +382,13 @@ public class ActiveEffectManager {
 
         if (data == null)
             return;
+        
+        // Проверка типа оружия в зависимости от уровня
+        net.minecraft.item.ItemStack weapon = player.getMainHandStack();
+        if (!isWeaponAllowedForLevel(weapon, data.level)) {
+            player.sendMessage(Text.literal("§cЭто оружие слишком слабое для вашего уровня заклинания!"), true);
+            return;
+        }
 
         data.attackCount++;
         target.setOnFireFor(3);
@@ -381,30 +399,75 @@ public class ActiveEffectManager {
                     5, 0.2, 0.3, 0.2, 0.01);
         }
 
-        if (data.attackCount >= 10) {
-            world.createExplosion(player, target.getX(), target.getY(), target.getZ(), 3.0f,
-                    World.ExplosionSourceType.NONE);
+        int maxAttacks = data.getMaxAttacks();
+        
+        if (data.attackCount >= maxAttacks) {
+            // Взрыв только на 3 уровне
+            if (data.level >= 3) {
+                world.createExplosion(player, target.getX(), target.getY(), target.getZ(), 3.0f,
+                        World.ExplosionSourceType.NONE);
 
-            if (world instanceof ServerWorld serverWorld) {
-                for (int i = 0; i < 20; i++) {
-                    double offsetX = (serverWorld.random.nextDouble() - 0.5) * 2.0;
-                    double offsetY = serverWorld.random.nextDouble() * 1.5;
-                    double offsetZ = (serverWorld.random.nextDouble() - 0.5) * 2.0;
-                    serverWorld.spawnParticles(ParticleTypes.EXPLOSION,
-                            target.getX() + offsetX, target.getY() + offsetY, target.getZ() + offsetZ,
-                            1, 0.0, 0.0, 0.0, 0.0);
+                if (world instanceof ServerWorld serverWorld) {
+                    for (int i = 0; i < 20; i++) {
+                        double offsetX = (serverWorld.random.nextDouble() - 0.5) * 2.0;
+                        double offsetY = serverWorld.random.nextDouble() * 1.5;
+                        double offsetZ = (serverWorld.random.nextDouble() - 0.5) * 2.0;
+                        serverWorld.spawnParticles(ParticleTypes.EXPLOSION,
+                                target.getX() + offsetX, target.getY() + offsetY, target.getZ() + offsetZ,
+                                1, 0.0, 0.0, 0.0, 0.0);
+                    }
                 }
+
+                world.playSound(null, target.getBlockPos(), SoundEvents.ENTITY_GENERIC_EXPLODE.value(),
+                        SoundCategory.PLAYERS, 1.0f, 1.0f);
+
+                activeHeatWeapons.remove(playerId);
+                player.sendMessage(Text.literal("Взрыв! Нагрев оружия завершен."), true);
+            } else {
+                activeHeatWeapons.remove(playerId);
+                player.sendMessage(Text.literal("Нагрев оружия завершен."), true);
             }
-
-            world.playSound(null, target.getBlockPos(), SoundEvents.ENTITY_GENERIC_EXPLODE.value(),
-                    SoundCategory.PLAYERS, 1.0f, 1.0f);
-
-            activeHeatWeapons.remove(playerId);
-            player.sendMessage(Text.literal("Взрыв! Нагрев оружия завершен."), true);
         } else {
-            int remaining = 10 - data.attackCount;
-            player.sendMessage(Text.literal("Атака " + data.attackCount + "/10. Осталось атак: " + remaining), true);
+            int remaining = maxAttacks - data.attackCount;
+            player.sendMessage(Text.literal("Атака " + data.attackCount + "/" + maxAttacks + ". Осталось: " + remaining), true);
         }
+    }
+    
+    /**
+     * Проверяет, разрешено ли использовать данное оружие для указанного уровня заклинания
+     * Level 1: только каменное оружие
+     * Level 2: до железа включительно
+     * Level 3: любое оружие
+     */
+    private static boolean isWeaponAllowedForLevel(net.minecraft.item.ItemStack weapon, int level) {
+        if (weapon.isEmpty()) return false;
+        
+        net.minecraft.item.Item item = weapon.getItem();
+        
+        // Level 3 - любое оружие
+        if (level >= 3) return true;
+        
+        // Проверяем материал оружия
+        String itemName = net.minecraft.registry.Registries.ITEM.getId(item).getPath();
+        
+        // Level 1 - только каменное
+        if (level == 1) {
+            return itemName.contains("stone_sword") || 
+                   itemName.contains("stone_axe") ||
+                   itemName.contains("stone_shovel") ||
+                   itemName.contains("stone_pickaxe") ||
+                   itemName.contains("stone_hoe");
+        }
+        
+        // Level 2 - до железа
+        if (level == 2) {
+            return itemName.contains("stone_") || 
+                   itemName.contains("iron_") ||
+                   itemName.contains("golden_") ||
+                   itemName.contains("wooden_");
+        }
+        
+        return false;
     }
 
     // Cleanup all effects

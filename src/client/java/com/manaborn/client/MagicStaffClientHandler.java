@@ -60,10 +60,11 @@ public class MagicStaffClientHandler {
                     GLFW.glfwGetKey(client.getWindow().getHandle(), GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS;
 
             SpellMenuMode config = SpellMenuMode.getInstance();
-            boolean isKeyDown = KeyBindings.OPEN_SPELL_MENU.isPressed();
+            boolean isRadialMenuOpen = client.currentScreen instanceof com.manaborn.client.ui.RadialSpellMenuScreen;
 
             if (config.isPressMode) {
                 // === РЕЖИМ: НАЖАТИЕ (Press) ===
+                // Открываем по нажатию Shift + клавиша, меню остается открытым
                 if (isShiftDown && client.currentScreen == null) {
                     while (KeyBindings.OPEN_SPELL_MENU.wasPressed()) {
                         RadialMenuHandler.openRadialMenu();
@@ -71,23 +72,23 @@ public class MagicStaffClientHandler {
                 }
             } else {
                 // === РЕЖИМ: УДЕРЖАНИЕ (Hold) ===
-                // Если Shift + клавиша зажаты и экран не открыт
-                if (isShiftDown && isKeyDown && client.currentScreen == null) {
-                    if (!wasKeyHeld) {
-                        // Первый кадр зажатия - открываем меню
-                        RadialMenuHandler.openRadialMenu();
-                        wasKeyHeld = true;
-                    }
-                    // Меню остаётся открытым, пока клавиша зажата
-                } else {
-                    // Клавиша отпущена или Shift отпущен
-                    if (wasKeyHeld) {
-                        // Закрываем меню
-                        if (client.currentScreen instanceof com.manaborn.client.ui.RadialSpellMenuScreen) {
-                            client.currentScreen.close();
+                // Зажал Shift + клавишу = меню открыто, отпустил Shift = закрыто
+                if (isShiftDown) {
+                    // Shift зажат - открываем меню при нажатии клавиши
+                    if (!wasKeyHeld && !isRadialMenuOpen) {
+                        // Проверяем нажатие клавиши меню
+                        while (KeyBindings.OPEN_SPELL_MENU.wasPressed()) {
+                            RadialMenuHandler.openRadialMenu();
+                            wasKeyHeld = true;
                         }
-                        wasKeyHeld = false;
                     }
+                    // Пока Shift зажат, меню остается открытым
+                } else {
+                    // Shift отпущен - закрываем меню
+                    if (wasKeyHeld && isRadialMenuOpen) {
+                        client.currentScreen.close();
+                    }
+                    wasKeyHeld = false;
                 }
             }
         });

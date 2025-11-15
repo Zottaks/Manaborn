@@ -9,6 +9,7 @@ import net.minecraft.util.math.MathHelper;
 import com.manaborn.items.MagicStaffItem;
 import com.manaborn.spells.SpellManager;
 import com.manaborn.spells.SpellType;
+import com.manaborn.client.state.ClientSpellLevelsState;
 
 /**
  * Progress bar for Ice Wall spell charging
@@ -38,14 +39,23 @@ public final class IceWallProgressOverlay {
         if (!player.isUsingItem())
             return;
 
-        // Calculate progress (cap at 3 seconds = 60 ticks)
+        // Получаем уровень заклинания Ice Wall
+        int spellLevel = ClientSpellLevelsState.getSpellLevel(SpellType.ICE_WALL);
+        
+        // Максимальное время зарядки зависит от уровня:
+        // Уровень 1: до 1.5с (30 тиков) - только малая стена
+        // Уровень 2: до 3.0с (60 тиков) - малая + средняя
+        // Уровень 3: до 3.0с (60 тиков) - все 3 вариации
+        int maxChargeTicks = (spellLevel == 1) ? 30 : 60;
+        
+        // Calculate progress
         int maxUseTime = ((MagicStaffItem) mainHandStack.getItem()).getMaxUseTime(mainHandStack, player);
         int remainingUseTicks = player.getItemUseTimeLeft();
         int usedTicksRaw = maxUseTime - remainingUseTicks;
         if (usedTicksRaw < 0)
             usedTicksRaw = 0;
-        int usedTicks = Math.min(usedTicksRaw, 60);
-        float progress = MathHelper.clamp(usedTicks / 60.0f, 0.0f, 1.0f);
+        int usedTicks = Math.min(usedTicksRaw, maxChargeTicks);
+        float progress = MathHelper.clamp(usedTicks / (float) maxChargeTicks, 0.0f, 1.0f);
 
         // Get screen dimensions
         int screenWidth = drawContext.getScaledWindowWidth();
@@ -61,10 +71,10 @@ public final class IceWallProgressOverlay {
         drawProgressBarBackground(drawContext, x, y, barWidth, barHeight);
 
         // Draw progress bar fill
-        drawProgressBarFill(drawContext, x, y, barWidth, barHeight, progress);
+        drawProgressBarFill(drawContext, x, y, barWidth, barHeight, progress, spellLevel);
 
         // Draw progress text
-        drawProgressText(drawContext, x, y, barWidth, barHeight, progress, usedTicks);
+        drawProgressText(drawContext, x, y, barWidth, barHeight, progress, usedTicks, spellLevel);
     }
 
     /**
@@ -90,22 +100,22 @@ public final class IceWallProgressOverlay {
     /**
      * Draw progress bar fill with gradient based on charge level
      */
-    private static void drawProgressBarFill(DrawContext context, int x, int y, int width, int height, float progress) {
+    private static void drawProgressBarFill(DrawContext context, int x, int y, int width, int height, float progress, int spellLevel) {
         if (progress <= 0)
             return;
 
         int fillWidth = (int) (width * progress);
 
-        // Determine color based on charge level
+        // Determine color based on charge level and spell level
         int fillColor;
-        if (progress >= 1.0f) {
-            // Large wall - bright cyan
+        if (spellLevel >= 3 && progress >= 1.0f) {
+            // Level 3: Large wall - bright cyan
             fillColor = 0xFF00FFFF;
-        } else if (progress >= 0.5f) {
-            // Medium wall - light blue
+        } else if (spellLevel >= 2 && progress >= 0.5f) {
+            // Level 2+: Medium wall - light blue
             fillColor = 0xFF00AAFF;
         } else {
-            // Small wall - ice blue
+            // Level 1 or low charge: Small wall - ice blue
             fillColor = 0xFF0088DD;
         }
 
@@ -116,8 +126,8 @@ public final class IceWallProgressOverlay {
             context.fill(x + i, y, x + i + 1, y + height, color);
         }
 
-        // Add glow effect for high charge
-        if (progress >= 1.0f) {
+        // Add glow effect for high charge (только для уровня 3)
+        if (spellLevel >= 3 && progress >= 1.0f) {
             float glowPulse = (float) Math.sin(System.currentTimeMillis() * 0.005) * 0.3f + 0.7f;
             int glowAlpha = (int) (glowPulse * 100);
             int glowColor = addAlpha(0x00FFFF, glowAlpha);
@@ -130,21 +140,27 @@ public final class IceWallProgressOverlay {
      * Draw progress text showing wall size and charge time
      */
     private static void drawProgressText(DrawContext context, int x, int y, int width, int height, float progress,
-            int usedTicks) {
+            int usedTicks, int spellLevel) {
         float usedSeconds = usedTicks / 20.0f;
         String wallType;
         String chargeInfo;
 
-        float shownSeconds = Math.min(usedSeconds, 3.0f);
-        if (usedSeconds >= 3.0f) {
+        // Максимальное время для текущего уровня
+        float maxSeconds = (spellLevel == 1) ? 1.5f : 3.0f;
+        float shownSeconds = Math.min(usedSeconds, maxSeconds);
+        
+        // Определяем тип стены в зависимости от уровня заклинания
+        if (spellLevel >= 3 && usedSeconds >= 3.0f) {
             wallType = "Highground";
             chargeInfo = String.format("%.1f/3.0с", shownSeconds);
-        } else if (usedSeconds >= 1.5f) {
+        } else if (spellLevel >= 2 && usedSeconds >= 1.5f) {
             wallType = "Средняя стена 3x4";
             chargeInfo = String.format("%.1f/3.0с", shownSeconds);
         } else {
             wallType = "Малая стена 2x2";
-            chargeInfo = String.format("%.1f/1.5с", shownSeconds);
+            // Для уровня 1 показываем максимум 1.5с
+            String maxTime = (spellLevel == 1) ? "1.5с" : "3.0с";
+            chargeInfo = String.format("%.1f/%s", shownSeconds, maxTime);
         }
 
         int textX = x + width / 2;
@@ -152,7 +168,15 @@ public final class IceWallProgressOverlay {
 
         // Draw wall type
         String wallText = wallType;
-        int wallColor = progress >= 1.0f ? 0xFF00FFFF : progress >= 0.5f ? 0xFF00AAFF : 0xFF0088DD;
+        // Цвет зависит от уровня и прогресса
+        int wallColor;
+        if (spellLevel >= 3 && progress >= 1.0f) {
+            wallColor = 0xFF00FFFF; // Cyan для Highground
+        } else if (spellLevel >= 2 && progress >= 0.5f) {
+            wallColor = 0xFF00AAFF; // Light blue для средней
+        } else {
+            wallColor = 0xFF0088DD; // Ice blue для малой
+        }
         drawCenteredText(context, wallText, textX, textY, wallColor);
 
         // Draw charge info

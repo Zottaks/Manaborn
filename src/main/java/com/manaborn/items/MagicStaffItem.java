@@ -86,6 +86,11 @@ public class MagicStaffItem extends Item {
         if (world.isClient())
             return false;
 
+        ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
+        
+        // Получаем уровень заклинания Ice Wall у игрока
+        int spellLevel = com.manaborn.spells.SpellLevelManager.getSpellLevel(serverPlayer.getUuid(), SpellType.ICE_WALL);
+        
         int usedTicks = getMaxUseTime(stack, user) - remainingUseTicks;
         if (usedTicks < 0) {
             usedTicks = 0;
@@ -95,29 +100,28 @@ public class MagicStaffItem extends Item {
         usedTicks = Math.min(usedTicks, 60);
         float usedSeconds = usedTicks / 20.0f;
 
-        // Пороговые уровни заряда (ускоренные)
+        // Пороговые уровни заряда в зависимости от уровня заклинания
         int width, height, durationTicks, manaCost;
-        if (usedSeconds >= 3.0f) {
-            // Большая стена 4x6, держится 10с, 45 маны
+        
+        if (spellLevel >= 3 && usedSeconds >= 3.0f) {
+            // Уровень 3: Highground (большая стена 4x6), держится 10с, 45 маны
             width = 4;
             height = 6;
             durationTicks = 10 * 20;
             manaCost = 45;
-        } else if (usedSeconds >= 1.5f) {
-            // Средняя стена 3x4, держится 20с, 25 маны
+        } else if (spellLevel >= 2 && usedSeconds >= 1.5f) {
+            // Уровень 2+: Средняя стена 3x4, держится 20с, 25 маны
             width = 3;
             height = 4;
             durationTicks = 20 * 20;
             manaCost = 25;
         } else {
-            // Малая стена 2x2, держится 35с, 10 маны
+            // Уровень 1 ИЛИ недостаточно времени: Малая стена 2x2, держится 35с, 10 маны
             width = 2;
             height = 2;
             durationTicks = 35 * 20;
             manaCost = 10;
         }
-
-        ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
         
         // Apply Ether Scepter discount if applicable
         int finalManaCost = manaCost;

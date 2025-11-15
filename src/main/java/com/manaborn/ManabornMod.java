@@ -37,8 +37,10 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.EquippableComponent;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.text.Text;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -587,6 +589,35 @@ public class ManabornMod implements ModInitializer {
 				com.manaborn.spells.SpellManager.onPlayerAttack(serverPlayer, livingTarget, world);
 			}
 			return ActionResult.PASS;
+		});
+
+		// Обработка урона игрока для восстановления маны (Absorbing Barrier)
+		ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {
+			if (entity instanceof ServerPlayerEntity player) {
+				// Проверяем, активен ли Absorbing Barrier
+				if (com.manaborn.spells.ActiveEffectManager.hasAbsorbingBarrier(player.getUuid())) {
+					// Получаем уровень заклинания
+					int level = com.manaborn.spells.SpellLevelManager.getSpellLevel(
+						player.getUuid(), 
+						SpellType.ABSORBING_BARRIER
+					);
+					
+					// Восстанавливаем ману в зависимости от уровня
+					float hearts = amount / 2.0f; // Конвертируем урон в сердца
+					int manaRestore = switch (level) {
+						case 1 -> 0; // Level 1: БЕЗ восстановления
+						case 2 -> (int)(hearts * 2.5f); // Level 2: 50% (2.5 маны за сердце)
+						default -> (int)(hearts * 5.0f); // Level 3: 100% (5 маны за сердце)
+					};
+					
+					if (manaRestore > 0) {
+						ManaManager.addMana(player, manaRestore);
+						ManaManager.sendSync(player);
+						player.sendMessage(Text.literal("§b+" + manaRestore + " маны восстановлено"), true);
+					}
+				}
+			}
+			return true; // Разрешить урон
 		});
 
 		// Добавление книг заклинаний в loot tables сундуков

@@ -30,8 +30,11 @@ public class HeatWeaponSpell implements LeveledSpell {
             return true;
         }
 
-        // Activate heat weapon for 30 seconds (600 ticks)
-        ActiveEffectManager.addHeatWeapon(serverPlayer.getUuid());
+        // Получаем уровень заклинания
+        int level = SpellLevelManager.getSpellLevel(serverPlayer.getUuid(), SpellType.HEAT_WEAPON);
+        
+        // Activate heat weapon with level-based parameters
+        ActiveEffectManager.addHeatWeapon(serverPlayer.getUuid(), level);
 
         // Visual effects: fire particles around player's hands
         if (world instanceof net.minecraft.server.world.ServerWorld serverWorld) {
@@ -53,7 +56,19 @@ public class HeatWeaponSpell implements LeveledSpell {
         }
 
         world.playSound(null, user.getBlockPos(), SoundEvents.ITEM_FIRECHARGE_USE, SoundCategory.PLAYERS, 1.0f, 1.5f);
-        serverPlayer.sendMessage(Text.literal("Нагрев оружия активирован! Следующие 10 атак поджигают цели."), true);
+        
+        // Сообщение в зависимости от уровня
+        int maxAttacks = switch (level) {
+            case 1 -> 5;
+            case 2 -> 7;
+            default -> 10;
+        };
+        String weaponType = switch (level) {
+            case 1 -> " (только каменное оружие)";
+            case 2 -> " (до железа)";
+            default -> "";
+        };
+        serverPlayer.sendMessage(Text.literal("Нагрев оружия активирован! Следующие " + maxAttacks + " атак поджигают цели." + weaponType), true);
 
         return true;
     }
