@@ -14,15 +14,19 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import com.manaborn.spells.Spell;
+import java.util.List;
+import com.manaborn.spells.LeveledSpell;
+import com.manaborn.spells.SpellLevelManager;
 import com.manaborn.spells.SpellType;
 
-import java.util.List;
-
 /**
- * Weakness Curse spell implementation
+ * Weakness Curse spell implementation with level-based scaling
+ * 
+ * Level 1 (слабый): Weakness I, 10с, дальность 10, кд 30с, мана 25
+ * Level 2 (средний): Weakness II, 15с, дальность 11, кд 52.5с, мана 30
+ * Level 3 (ОРИГИНАЛ): Weakness III, 20с, дальность 12, кд 75с, мана 35
  */
-public class WeaknessCurseSpell implements Spell {
+public class WeaknessCurseSpell implements LeveledSpell {
 
     @Override
     public boolean cast(World world, PlayerEntity user, Hand hand) {
@@ -30,12 +34,19 @@ public class WeaknessCurseSpell implements Spell {
             return true;
         }
 
-        double range = 12.0;
+        int level = SpellLevelManager.getSpellLevel(user.getUuid(), SpellType.WEAKNESS_CURSE);
+
+        // Level-based parameters
+        double maxRange = switch (level) {
+            case 1 -> 10.0;
+            case 2 -> 11.0;
+            default -> 12.0; // level 3 (original)
+        };
         Vec3d eye = user.getEyePos();
         Vec3d look = user.getRotationVector().normalize();
 
         // Search for targets in expanded box
-        Box search = user.getBoundingBox().expand(range, range * 0.5, range);
+        Box search = user.getBoundingBox().expand(maxRange, maxRange * 0.5, maxRange);
         List<LivingEntity> candidates = serverWorld.getEntitiesByClass(
                 LivingEntity.class,
                 search,
@@ -48,7 +59,7 @@ public class WeaknessCurseSpell implements Spell {
         for (LivingEntity e : candidates) {
             Vec3d to = e.getEyePos().subtract(eye);
             double dist = to.length();
-            if (dist > range || dist < 0.1)
+            if (dist > maxRange || dist < 0.1)
                 continue;
             Vec3d dir = to.normalize();
             double dot = dir.dotProduct(look);
@@ -69,8 +80,19 @@ public class WeaknessCurseSpell implements Spell {
             return true;
         }
 
-        int duration = 400; // 20 seconds
-        int amplifier = 2; // Strong weakness
+        // Apply weakness effect based on level
+        int duration = switch (level) {
+            case 1 -> 200;  // 10 seconds
+            case 2 -> 300;  // 15 seconds
+            default -> 400; // 20 seconds (original)
+        };
+        
+        int amplifier = switch (level) {
+            case 1 -> 0; // Weakness I
+            case 2 -> 1; // Weakness II
+            default -> 2; // Weakness III (original)
+        };
+        
         best.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, duration, amplifier, false, true, true),
                 user);
 
@@ -103,12 +125,30 @@ public class WeaknessCurseSpell implements Spell {
 
     @Override
     public int getManaCost() {
-        return 35;
+        return 25; // Level 1 cost
+    }
+    
+    @Override
+    public int getManaCost(int level) {
+        return switch (level) {
+            case 1 -> 25;
+            case 2 -> 30;
+            default -> 35; // level 3 (original)
+        };
     }
 
     @Override
     public int getCooldown() {
-        return 1500; // 75 seconds
+        return 600; // Level 1: 30 seconds
+    }
+    
+    @Override
+    public int getCooldown(int level) {
+        return switch (level) {
+            case 1 -> 600;  // 30 seconds
+            case 2 -> 1050; // 52.5 seconds
+            default -> 1500; // 75 seconds (level 3, original)
+        };
     }
 
     @Override

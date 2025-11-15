@@ -8,14 +8,19 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import com.manaborn.spells.Spell;
+import com.manaborn.spells.LeveledSpell;
 import com.manaborn.spells.SpellType;
 import com.manaborn.spells.ActiveEffectManager;
+import com.manaborn.spells.SpellLevelManager;
 
 /**
- * Fire Wall spell implementation
+ * Fire Wall spell implementation with level-based scaling
+ * 
+ * Level 1 (слабый): 3x3, 7с, кд 15с, мана 30
+ * Level 2 (средний): 4.5x3.5, 8.5с, кд 17.5с, мана 35
+ * Level 3 (ОРИГИНАЛ): 6x4, 10с, кд 20с, мана 40
  */
-public class FireWallSpell implements Spell {
+public class FireWallSpell implements LeveledSpell {
 
     @Override
     public boolean cast(World world, PlayerEntity user, Hand hand) {
@@ -39,10 +44,38 @@ public class FireWallSpell implements Spell {
             perpZ /= length;
         }
 
-        double wallWidth = 6.0;
-        double wallHeight = 4.0;
-        int cloudsHorizontal = 9;
-        int cloudsVertical = 6;
+        int level = SpellLevelManager.getSpellLevel(user.getUuid(), SpellType.FIRE_WALL);
+        
+        // Level-based wall dimensions
+        double wallWidth = switch (level) {
+            case 1 -> 3.0;
+            case 2 -> 4.5;
+            default -> 6.0; // level 3 (original)
+        };
+        
+        double wallHeight = switch (level) {
+            case 1 -> 3.0;
+            case 2 -> 3.5;
+            default -> 4.0; // level 3 (original)
+        };
+        
+        int cloudsHorizontal = switch (level) {
+            case 1 -> 5;
+            case 2 -> 7;
+            default -> 9; // level 3 (original)
+        };
+        
+        int cloudsVertical = switch (level) {
+            case 1 -> 5;
+            case 2 -> 5;
+            default -> 6; // level 3 (original)
+        };
+        
+        int duration = switch (level) {
+            case 1 -> 140;  // 7 seconds
+            case 2 -> 170;  // 8.5 seconds
+            default -> 200; // 10 seconds (original)
+        };
 
         double minX = Double.MAX_VALUE, maxX = Double.MIN_VALUE;
         double minY = centerY, maxY = centerY + wallHeight;
@@ -67,7 +100,7 @@ public class FireWallSpell implements Spell {
 
                 AreaEffectCloudEntity cloud = new AreaEffectCloudEntity(world, cloudX, cloudY, cloudZ);
                 cloud.setRadius(0.5f);
-                cloud.setDuration(200);
+                cloud.setDuration(duration);
                 cloud.setRadiusOnUse(0);
                 cloud.setRadiusGrowth(0);
                 cloud.setWaitTime(0);
@@ -88,7 +121,7 @@ public class FireWallSpell implements Spell {
 
                 AreaEffectCloudEntity cloud = new AreaEffectCloudEntity(world, cloudX, cloudY, cloudZ);
                 cloud.setRadius(0.5f);
-                cloud.setDuration(200);
+                cloud.setDuration(duration);
                 cloud.setRadiusOnUse(0);
                 cloud.setRadiusGrowth(0);
                 cloud.setWaitTime(0);
@@ -118,12 +151,30 @@ public class FireWallSpell implements Spell {
 
     @Override
     public int getManaCost() {
-        return 40;
+        return 30; // Level 1 cost
+    }
+    
+    @Override
+    public int getManaCost(int level) {
+        return switch (level) {
+            case 1 -> 30;
+            case 2 -> 35;
+            default -> 40; // level 3 (original)
+        };
     }
 
     @Override
     public int getCooldown() {
-        return 400; // 20 seconds
+        return 300; // Level 1: 15 seconds
+    }
+    
+    @Override
+    public int getCooldown(int level) {
+        return switch (level) {
+            case 1 -> 300; // 15 seconds
+            case 2 -> 350; // 17.5 seconds
+            default -> 400; // 20 seconds (level 3, original)
+        };
     }
 
     @Override

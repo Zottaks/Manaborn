@@ -9,13 +9,18 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Hand;
 import net.minecraft.world.World;
-import com.manaborn.spells.Spell;
+import com.manaborn.spells.LeveledSpell;
 import com.manaborn.spells.SpellType;
+import com.manaborn.spells.SpellLevelManager;
 
 /**
- * Inner Heat spell implementation - gives speed effect
+ * Inner Heat spell implementation with level-based scaling
+ * 
+ * Level 1 (слабый): Speed I, 5с, кд 35с, мана 25
+ * Level 2 (средний): Speed I, 7.5с, кд 32.5с, мана 27
+ * Level 3 (ОРИГИНАЛ): Speed II, 10с, кд 30с, мана 30
  */
-public class InnerHeatSpell implements Spell {
+public class InnerHeatSpell implements LeveledSpell {
 
     @Override
     public boolean cast(World world, PlayerEntity user, Hand hand) {
@@ -23,9 +28,21 @@ public class InnerHeatSpell implements Spell {
             return true;
         }
 
-        // Give speed effect: 10 seconds, level 1 (Speed II)
-        int duration = 200; // 10 seconds
-        int amplifier = 1; // Speed II
+        int level = SpellLevelManager.getSpellLevel(user.getUuid(), SpellType.INNER_HEAT);
+        
+        // Level-based duration and amplifier
+        int duration = switch (level) {
+            case 1 -> 100;  // 5 seconds
+            case 2 -> 150;  // 7.5 seconds
+            default -> 200; // 10 seconds (original)
+        };
+        
+        int amplifier = switch (level) {
+            case 1 -> 0; // Speed I
+            case 2 -> 0; // Speed I
+            default -> 1; // Speed II (original)
+        };
+        
         serverPlayer
                 .addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, duration, amplifier, false, true, true));
 
@@ -55,12 +72,30 @@ public class InnerHeatSpell implements Spell {
 
     @Override
     public int getManaCost() {
-        return 30;
+        return 25; // Level 1 cost
+    }
+    
+    @Override
+    public int getManaCost(int level) {
+        return switch (level) {
+            case 1 -> 25;
+            case 2 -> 27;
+            default -> 30; // level 3 (original)
+        };
     }
 
     @Override
     public int getCooldown() {
-        return 600; // 30 seconds
+        return 700; // Level 1: 35 seconds
+    }
+    
+    @Override
+    public int getCooldown(int level) {
+        return switch (level) {
+            case 1 -> 700;  // 35 seconds
+            case 2 -> 650;  // 32.5 seconds
+            default -> 600; // 30 seconds (level 3, original)
+        };
     }
 
     @Override

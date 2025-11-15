@@ -8,14 +8,21 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.world.World;
-import com.manaborn.spells.Spell;
+import com.manaborn.spells.LeveledSpell;
 import com.manaborn.spells.SpellType;
 import com.manaborn.spells.ActiveEffectManager;
+import com.manaborn.spells.SpellLevelManager;
 
 /**
- * Absorbing Barrier spell implementation
+ * Absorbing Barrier spell implementation with level-based scaling
+ * 
+ * Level 1 (слабый): 5с, кд 55с, мана 50, БЕЗ восстановления маны
+ * Level 2 (средний): 7.5с, кд 65с, мана 55, восстановление 50% урона
+ * Level 3 (ОРИГИНАЛ): 10с, кд 75с, мана 60, восстановление 100% урона
+ * 
+ * ВАЖНО: Восстановление маны обрабатывается в ActiveEffectManager
  */
-public class AbsorbingBarrierSpell implements Spell {
+public class AbsorbingBarrierSpell implements LeveledSpell {
 
     @Override
     public boolean cast(World world, PlayerEntity user, Hand hand) {
@@ -23,7 +30,15 @@ public class AbsorbingBarrierSpell implements Spell {
             return true;
         }
 
-        int duration = 200; // 10 seconds
+        int level = SpellLevelManager.getSpellLevel(user.getUuid(), SpellType.ABSORBING_BARRIER);
+        
+        // Level-based duration
+        int duration = switch (level) {
+            case 1 -> 100;  // 5 seconds
+            case 2 -> 150;  // 7.5 seconds
+            default -> 200; // 10 seconds (original)
+        };
+        
         ActiveEffectManager.addAbsorbingBarrier(serverPlayer.getUuid(), duration);
         world.playSound(null, user.getBlockPos(), SoundEvents.BLOCK_ENCHANTMENT_TABLE_USE, SoundCategory.PLAYERS, 1.0f,
                 0.8f);
@@ -45,12 +60,30 @@ public class AbsorbingBarrierSpell implements Spell {
 
     @Override
     public int getManaCost() {
-        return 60;
+        return 50; // Level 1 cost
+    }
+    
+    @Override
+    public int getManaCost(int level) {
+        return switch (level) {
+            case 1 -> 50;
+            case 2 -> 55;
+            default -> 60; // level 3 (original)
+        };
     }
 
     @Override
     public int getCooldown() {
-        return 1500; // 75 seconds
+        return 1100; // Level 1: 55 seconds
+    }
+    
+    @Override
+    public int getCooldown(int level) {
+        return switch (level) {
+            case 1 -> 1100; // 55 seconds
+            case 2 -> 1300; // 65 seconds
+            default -> 1500; // 75 seconds (level 3, original)
+        };
     }
 
     @Override

@@ -2,8 +2,10 @@ package com.manaborn.client;
 
 import com.manaborn.client.state.ClientManaState;
 import com.manaborn.client.state.ClientLearnedSpellsState;
+import com.manaborn.client.state.ClientSpellLevelsState;
 import com.manaborn.client.ui.SpellTreeScreen;
 import com.manaborn.client.ui.LearningAltarScreen;
+import com.manaborn.client.ui.SpellEnhancementAltarScreen;
 import com.manaborn.network.ManaSyncS2CPacket;
 import com.manaborn.network.LearnedSpellsSyncS2CPacket;
 import com.manaborn.network.RequestLearnedSpellsC2SPacket;
@@ -72,6 +74,11 @@ public class ManabornClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(LearnedSpellsSyncS2CPacket.ID, (payload, context) -> {
             context.client().execute(() -> ClientLearnedSpellsState.setLearnedSpells(payload.spellIds()));
         });
+        
+        // Обработчик пакета синхронизации уровней заклинаний
+        ClientPlayNetworking.registerGlobalReceiver(com.manaborn.network.SpellLevelSyncS2CPacket.ID, (payload, context) -> {
+            context.client().execute(() -> ClientSpellLevelsState.setLevels(payload.levels()));
+        });
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player != null) {
@@ -97,6 +104,7 @@ public class ManabornClient implements ClientModInitializer {
         HandledScreens.register(ManabornMod.MANA_CONVERTER_SH, com.manaborn.client.ui.ManaConverterScreen::new);
         HandledScreens.register(ManabornMod.ETHER_CONVERTER_SH, com.manaborn.client.ui.EtherConverterScreen::new);
         HandledScreens.register(ManabornMod.MAGIC_CRAFTING_TABLE_SH, com.manaborn.client.ui.MagicCraftingTableScreen::new);
+        HandledScreens.register(ManabornMod.SPELL_ENHANCEMENT_ALTAR_SH, SpellEnhancementAltarScreen::new);
 
         // Регистрируем обработчик радиального меню для магического посоха
         MagicStaffClientHandler.register();

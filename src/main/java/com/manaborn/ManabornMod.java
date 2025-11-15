@@ -23,6 +23,8 @@ import com.manaborn.network.ManaSyncS2CPacket;
 import com.manaborn.network.LearnedSpellsSyncS2CPacket;
 import com.manaborn.network.RequestLearnedSpellsC2SPacket;
 import com.manaborn.network.SelectSpellC2SPacket;
+import com.manaborn.network.SpellLevelSyncS2CPacket;
+import com.manaborn.network.SpellUpgradeC2SPacket;
 import com.manaborn.spells.LearnedSpellsManager;
 import com.manaborn.spells.SpellManager;
 import com.manaborn.spells.SpellType;
@@ -31,11 +33,13 @@ import com.manaborn.entities.DustWispEntity;
 import com.manaborn.world.DustWispManager;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.EquippableComponent;
 import net.minecraft.entity.EquipmentSlot;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -105,6 +109,9 @@ public class ManabornMod implements ModInitializer {
 	public static Block MAGIC_CRAFTING_TABLE;
 	public static BlockEntityType<com.manaborn.blocks.entity.MagicCraftingTableBlockEntity> MAGIC_CRAFTING_TABLE_BE;
 	public static ScreenHandlerType<com.manaborn.screen.MagicCraftingTableScreenHandler> MAGIC_CRAFTING_TABLE_SH;
+	public static Block SPELL_ENHANCEMENT_ALTAR;
+	public static BlockEntityType<com.manaborn.blocks.entity.SpellEnhancementAltarBlockEntity> SPELL_ENHANCEMENT_ALTAR_BE;
+	public static ScreenHandlerType<com.manaborn.screen.SpellEnhancementAltarScreenHandler> SPELL_ENHANCEMENT_ALTAR_SH;
 
 	// Lev: тут происходят инициализации
 	@Override
@@ -112,8 +119,16 @@ public class ManabornMod implements ModInitializer {
 		// Регистрация типов S2C пакетов
 		PayloadTypeRegistry.playS2C().register(ManaSyncS2CPacket.ID, ManaSyncS2CPacket.CODEC);
 		PayloadTypeRegistry.playS2C().register(LearnedSpellsSyncS2CPacket.ID, LearnedSpellsSyncS2CPacket.CODEC);
+		PayloadTypeRegistry.playS2C().register(SpellLevelSyncS2CPacket.ID, SpellLevelSyncS2CPacket.CODEC);
+		
 		// Регистрация типа C2S пакета для запроса синхронизации изученных заклинаний
 		PayloadTypeRegistry.playC2S().register(RequestLearnedSpellsC2SPacket.ID, RequestLearnedSpellsC2SPacket.CODEC);
+		PayloadTypeRegistry.playC2S().register(SpellUpgradeC2SPacket.ID, SpellUpgradeC2SPacket.CODEC);
+		
+		// Регистрация команд
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+			com.manaborn.commands.ResetSpellsCommand.register(dispatcher, registryAccess, environment);
+		});
 
 		// Обработчик запроса с клиента — отправляем текущий список изученных заклинаний
 		ServerPlayNetworking.registerGlobalReceiver(RequestLearnedSpellsC2SPacket.ID, (payload, context) -> {
@@ -156,6 +171,51 @@ public class ManabornMod implements ModInitializer {
 										.append(net.minecraft.text.Text
 												.literal(" (стоимость: " + spell.getManaCost() + " маны)")),
 								true);
+					}
+				}
+			});
+		});
+		
+		// Обработчик запроса улучшения заклинания с клиента
+		ServerPlayNetworking.registerGlobalReceiver(SpellUpgradeC2SPacket.ID, (payload, context) -> {
+			context.server().execute(() -> {
+				ServerPlayerEntity player = context.player();
+				if (player != null) {
+					SpellType spell = SpellType.fromId(payload.spellId());
+					if (spell == null) {
+						player.sendMessage(net.minecraft.text.Text.literal("Неизвестное заклинание!"), false);
+						return;
+					}
+					
+					// Находим ближайший Spell Enhancement Altar в радиусе 10 блоков
+					BlockPos playerPos = player.getBlockPos();
+					boolean foundAltar = false;
+					net.minecraft.server.world.ServerWorld world = (net.minecraft.server.world.ServerWorld) player.getEntityWorld();
+					
+					for (int x = -10; x <= 10; x++) {
+						for (int y = -5; y <= 5; y++) {
+							for (int z = -10; z <= 10; z++) {
+								BlockPos checkPos = playerPos.add(x, y, z);
+								if (world.getBlockState(checkPos).getBlock() == SPELL_ENHANCEMENT_ALTAR) {
+									if (world.getBlockEntity(checkPos) instanceof com.manaborn.blocks.entity.SpellEnhancementAltarBlockEntity altar) {
+										// Пытаемся улучшить заклинание
+										boolean success = altar.tryUpgradeSpell(player, spell);
+										foundAltar = true;
+										if (!success) {
+											// Сообщение об ошибке уже отправлено в tryUpgradeSpell
+										} else {
+											// Отправляем обновленные уровни на клиент
+											com.manaborn.spells.SpellLevelManager.sendSync(player);
+										}
+										return;
+									}
+								}
+							}
+						}
+					}
+					
+					if (!foundAltar) {
+						player.sendMessage(net.minecraft.text.Text.literal("Нет Spell Enhancement Altar рядом!"), false);
 					}
 				}
 			});
@@ -441,6 +501,35 @@ public class ManabornMod implements ModInitializer {
 				FabricBlockEntityTypeBuilder.create(com.manaborn.blocks.entity.ManaMagnetBlockEntity::new, MANA_MAGNET)
 						.build());
 
+		// Регистрация Spell Enhancement Altar (Алтарь Улучшения Заклинаний)
+		RegistryKey<Block> spellEnhancementAltarKey = RegistryKey.of(Registries.BLOCK.getKey(),
+				Identifier.of(MOD_ID, "spell_enhancement_altar"));
+		SPELL_ENHANCEMENT_ALTAR = Registry.register(
+				Registries.BLOCK,
+				spellEnhancementAltarKey,
+				new com.manaborn.blocks.SpellEnhancementAltarBlock(AbstractBlock.Settings.create()
+						.strength(3.0f)
+						.luminance(state -> 10)
+						.sounds(BlockSoundGroup.AMETHYST_BLOCK)
+						.requiresTool()
+						.registryKey(spellEnhancementAltarKey)));
+		RegistryKey<Item> spellEnhancementAltarItemKey = RegistryKey.of(Registries.ITEM.getKey(),
+				Identifier.of(MOD_ID, "spell_enhancement_altar"));
+		Registry.register(Registries.ITEM, spellEnhancementAltarItemKey,
+				new BlockItem(SPELL_ENHANCEMENT_ALTAR, new Item.Settings().registryKey(spellEnhancementAltarItemKey)));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.add(SPELL_ENHANCEMENT_ALTAR));
+		
+		// BE и ScreenHandler для Spell Enhancement Altar
+		SPELL_ENHANCEMENT_ALTAR_BE = Registry.register(
+				Registries.BLOCK_ENTITY_TYPE,
+				RegistryKey.of(Registries.BLOCK_ENTITY_TYPE.getKey(), Identifier.of(MOD_ID, "spell_enhancement_altar")),
+				FabricBlockEntityTypeBuilder.create(com.manaborn.blocks.entity.SpellEnhancementAltarBlockEntity::new, SPELL_ENHANCEMENT_ALTAR).build());
+		SPELL_ENHANCEMENT_ALTAR_SH = Registry.register(
+				Registries.SCREEN_HANDLER,
+				Identifier.of(MOD_ID, "spell_enhancement_altar"),
+				new ScreenHandlerType<>((syncId, inv) -> new com.manaborn.screen.SpellEnhancementAltarScreenHandler(syncId, inv), FeatureFlags.VANILLA_FEATURES));
+		System.out.println(" [DEBUG] Spell Enhancement Altar зарегистрирован с ID: " + spellEnhancementAltarKey.getValue());
+
 		// Регистрация Mana Vessel
 		RegistryKey<Item> vesselKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "mana_vessel"));
 		MANA_VESSEL = Registry.register(Registries.ITEM, vesselKey,
@@ -487,6 +576,9 @@ public class ManabornMod implements ModInitializer {
 			// Инициализация и синхронизация изученных заклинаний
 			LearnedSpellsManager.ensureInitialized(player);
 			LearnedSpellsManager.sendSync(player);
+			
+			// Синхронизация уровней заклинаний
+			com.manaborn.spells.SpellLevelManager.sendSync(player);
 		});
 
 		// Обработка атак для заклинания Heat Weapon

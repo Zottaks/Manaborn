@@ -22,6 +22,9 @@ public class SpellDataPersistence {
             return null;
         }
         NbtCompound nbt = customData.copyNbt();
+        if (!nbt.contains(SPELL_NBT_KEY)) {
+            return null;
+        }
         String spellId = nbt.getString(SPELL_NBT_KEY).orElse("");
         if (spellId.isEmpty()) {
             return null;
@@ -47,7 +50,11 @@ public class SpellDataPersistence {
         if (customData == null)
             return 0L;
         NbtCompound nbt = customData.copyNbt();
-        return nbt.getLong(cooldownKey(spell)).orElse(0L);
+        String key = cooldownKey(spell);
+        if (!nbt.contains(key)) {
+            return 0L;
+        }
+        return nbt.getLong(key).orElse(0L);
     }
 
     /**

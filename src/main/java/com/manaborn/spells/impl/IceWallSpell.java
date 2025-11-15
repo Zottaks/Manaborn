@@ -13,17 +13,27 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import com.manaborn.spells.Spell;
+import com.manaborn.spells.LeveledSpell;
 import com.manaborn.spells.SpellType;
 import com.manaborn.spells.ActiveEffectManager;
+import com.manaborn.spells.SpellLevelManager;
 
 import java.util.List;
 import java.util.ArrayList;
 
 /**
- * Ice Wall spell implementation
+ * Ice Wall spell implementation with level-based scaling
+ * 
+ * Level 1 (слабый): Только малая (2x2, 35с), мана 10
+ * Level 2 (средний): Малая + Средняя (3x4, 20с), мана 10/25
+ * Level 3 (ОРИГИНАЛ): Все 3 режима + телепорт (Highground), мана 10/25/45
+ * 
+ * Зарядка: 0-1.5с (малая), 1.5-3с (средняя), 3с+ (большая)
+ * Кулдаун: 2с для всех уровней
+ * 
+ * ВАЖНО: Режимы и зарядка обрабатываются в MagicStaffItem
  */
-public class IceWallSpell implements Spell {
+public class IceWallSpell implements LeveledSpell {
 
     @Override
     public boolean cast(World world, PlayerEntity user, Hand hand) {
@@ -173,12 +183,24 @@ public class IceWallSpell implements Spell {
 
     @Override
     public int getManaCost() {
-        return 50;
+        return 10; // Level 1 cost (minimal wall)
+    }
+    
+    @Override
+    public int getManaCost(int level) {
+        // Базовая стоимость маленькой стены
+        // Реальная стоимость зависит от времени зарядки (10/25/45)
+        return 10; // all levels
     }
 
     @Override
     public int getCooldown() {
-        return 200; // 10 seconds (but handled differently for hold mechanic)
+        return 40; // 2 seconds (but handled differently for hold mechanic)
+    }
+    
+    @Override
+    public int getCooldown(int level) {
+        return 40; // 2 seconds for all levels
     }
 
     @Override

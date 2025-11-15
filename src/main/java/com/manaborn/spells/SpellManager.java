@@ -106,8 +106,21 @@ public class SpellManager {
                 return;
             }
 
-            // Calculate mana cost with Ether Scepter discount
-            int baseCost = spell.getManaCost();
+            // Get spell level for player
+            int spellLevel = SpellLevelManager.getSpellLevel(serverPlayer.getUuid(), selectedSpell);
+            
+            // Calculate mana cost based on level
+            int baseCost;
+            int cooldown;
+            if (spell instanceof LeveledSpell leveledSpell) {
+                baseCost = leveledSpell.getManaCost(spellLevel);
+                cooldown = leveledSpell.getCooldown(spellLevel);
+            } else {
+                baseCost = spell.getManaCost();
+                cooldown = spell.getCooldown();
+            }
+            
+            // Apply Ether Scepter discount
             int finalCost = baseCost;
             if (stack.getItem() instanceof com.manaborn.items.EtherScepterItem) {
                 finalCost = Math.max(0, baseCost - com.manaborn.items.EtherScepterItem.MANA_DISCOUNT);
@@ -123,7 +136,7 @@ public class SpellManager {
             boolean success = spell.cast(world, user, hand);
             if (success) {
                 user.incrementStat(Stats.USED.getOrCreateStat(stack.getItem()));
-                setCooldown(stack, world, selectedSpell, spell.getCooldown());
+                setCooldown(stack, world, selectedSpell, cooldown);
             }
         } else {
             user.incrementStat(Stats.USED.getOrCreateStat(stack.getItem()));

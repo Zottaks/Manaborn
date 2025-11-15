@@ -280,8 +280,18 @@ public class ActiveEffectManager {
                     hearts = 1.0;
                 }
 
-                int manaRestore = (int) Math.round(hearts * 5.0);
-                com.manaborn.mana.ManaManager.addMana(owner, manaRestore);
+                // Восстановление маны зависит от уровня заклинания
+                int spellLevel = SpellLevelManager.getSpellLevel(owner.getUuid(), SpellType.ABSORBING_BARRIER);
+                double manaMultiplier = switch (spellLevel) {
+                    case 1 -> 0.0;   // Нет восстановления
+                    case 2 -> 2.5;   // 50% от оригинала
+                    default -> 5.0;  // 100% (оригинал)
+                };
+                
+                int manaRestore = (int) Math.round(hearts * manaMultiplier);
+                if (manaRestore > 0) {
+                    com.manaborn.mana.ManaManager.addMana(owner, manaRestore);
+                }
 
                 Vec3d newVel = vel.multiply(-1.2);
                 p.setVelocity(newVel.x, newVel.y, newVel.z);

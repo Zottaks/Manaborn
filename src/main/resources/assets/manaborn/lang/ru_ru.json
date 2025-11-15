@@ -26,6 +26,9 @@
   "block.manaborn.magic_crafting_table": "Магический верстак",
   "item.manaborn.magic_crafting_table": "Магический верстак",
   "container.manaborn.magic_crafting_table": "Магический крафт",
+  "block.manaborn.spell_enhancement_altar": "Алтарь Улучшения Заклинаний",
+  "item.manaborn.spell_enhancement_altar": "Алтарь Улучшения Заклинаний",
+  "container.manaborn.spell_enhancement_altar": "Улучшение Заклинаний",
   "advancement.manaborn.magic_staff.title": "Магическая сила!",
   "advancement.manaborn.magic_staff.description": "Получите волшебную палочку",
   

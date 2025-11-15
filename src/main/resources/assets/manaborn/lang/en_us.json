@@ -29,6 +29,9 @@
   "block.manaborn.magic_crafting_table": "Magic Crafting Table",
   "item.manaborn.magic_crafting_table": "Magic Crafting Table",
   "container.manaborn.magic_crafting_table": "Magic Crafting",
+  "block.manaborn.spell_enhancement_altar": "Spell Enhancement Altar",
+  "item.manaborn.spell_enhancement_altar": "Spell Enhancement Altar",
+  "container.manaborn.spell_enhancement_altar": "Spell Enhancement",
   "advancement.manaborn.magic_staff.title": "Magical Power!",
   "advancement.manaborn.magic_staff.description": "Obtain a mana wand"
 }

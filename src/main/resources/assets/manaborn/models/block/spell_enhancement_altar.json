@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "manaborn:block/spell_enhancement_altar_side",
+    "down": "manaborn:block/spell_enhancement_altar_side",
+    "up": "manaborn:block/spell_enhancement_altar_top",
+    "north": "manaborn:block/spell_enhancement_altar_side",
+    "east": "manaborn:block/spell_enhancement_altar_side",
+    "south": "manaborn:block/spell_enhancement_altar_side",
+    "west": "manaborn:block/spell_enhancement_altar_side"
+  }
+}
