@@ -27,5 +27,9 @@
   "item.manaborn.magic_crafting_table": "Магический верстак",
   "container.manaborn.magic_crafting_table": "Магический крафт",
   "advancement.manaborn.magic_staff.title": "Магическая сила!",
-  "advancement.manaborn.magic_staff.description": "Получите волшебную палочку"
+  "advancement.manaborn.magic_staff.description": "Получите волшебную палочку",
+  
+  "category.manaborn.general": "Manaborn",
+  "key.manaborn.open_spell_menu": "Открыть меню заклинаний (+ Shift)",
+  "key.manaborn.toggle_spell_menu_mode": "Переключить режим меню (нажатие/удержание)"
 }

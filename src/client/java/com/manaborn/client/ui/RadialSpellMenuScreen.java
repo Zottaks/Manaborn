@@ -25,7 +25,8 @@ public class RadialSpellMenuScreen extends Screen {
 
     private final List<SpellType> learnedSpells;
     private SpellType hoveredSpell = null;
-    private boolean rightMousePressed = true; // Изначально зажата ПКМ
+    private boolean wasLeftPressed = false;
+    private boolean wasRightPressed = false;
 
     // Callback для выбора заклинания
     private final SpellSelectionCallback callback;
@@ -78,6 +79,48 @@ public class RadialSpellMenuScreen extends Screen {
         }
 
         super.render(context, mouseX, mouseY, delta);
+    }
+
+    public boolean handleKeyPress(int keyCode) {
+        // ESC - закрыть меню
+        if (keyCode == 256) { // GLFW.GLFW_KEY_ESCAPE
+            this.close();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        
+        // Проверяем клики мыши и клавиши через GLFW
+        if (this.client != null) {
+            // Обработка ESC
+            boolean escPressed = GLFW.glfwGetKey(this.client.getWindow().getHandle(), GLFW.GLFW_KEY_ESCAPE) == GLFW.GLFW_PRESS;
+            if (escPressed) {
+                this.close();
+                return;
+            }
+            
+            boolean leftClick = GLFW.glfwGetMouseButton(this.client.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+            boolean rightClick = GLFW.glfwGetMouseButton(this.client.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_RIGHT) == GLFW.GLFW_PRESS;
+            
+            // Обработка кликов с edge detection
+            if (leftClick && !this.wasLeftPressed) {
+                // ЛКМ — выбрать заклинание и закрыть
+                if (hoveredSpell != null && callback != null) {
+                    callback.onSpellSelected(hoveredSpell);
+                }
+                this.close();
+            } else if (rightClick && !this.wasRightPressed) {
+                // ПКМ — закрыть без выбора
+                this.close();
+            }
+            
+            this.wasLeftPressed = leftClick;
+            this.wasRightPressed = rightClick;
+        }
     }
 
     private void updateHoveredSpell(int mouseX, int mouseY, int centerX, int centerY) {
@@ -277,27 +320,8 @@ public class RadialSpellMenuScreen extends Screen {
         }
     }
 
-    @Override
-    public void tick() {
-        super.tick();
-
-        // Проверяем, отпущена ли ПКМ
-        if (this.client != null) {
-            boolean isRightMouseDown = GLFW.glfwGetMouseButton(
-                    this.client.getWindow().getHandle(),
-                    GLFW.GLFW_MOUSE_BUTTON_RIGHT) == GLFW.GLFW_PRESS;
-
-            // Если ПКМ была зажата, а теперь отпущена - выбираем заклинание
-            if (rightMousePressed && !isRightMouseDown) {
-                if (hoveredSpell != null && callback != null) {
-                    callback.onSpellSelected(hoveredSpell);
-                }
-                this.close();
-            }
-
-            rightMousePressed = isRightMouseDown;
-        }
-    }
+    // Убираем логику закрытия по отпусканию ПКМ — меню остаётся открытым,
+    // пока пользователь явно не нажмёт ЛКМ (выбор) или ПКМ (закрыть)
 
     @Override
     public boolean shouldPause() {

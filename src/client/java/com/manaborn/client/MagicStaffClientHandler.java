@@ -1,26 +1,45 @@
 package com.manaborn.client;
 
+import com.manaborn.client.config.SpellMenuMode;
 import com.manaborn.items.MagicStaffItem;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.item.ItemStack;
+import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
 /**
  * Клиентский обработчик для магического посоха
  * 
- * Отслеживает нажатие Shift + ПКМ для открытия радиального меню
+ * Одна клавиша с двумя режимами:
+ * - Press (нажатие): Shift + клавиша → меню остаётся открытым
+ * - Hold (удержание): Shift + клавиша зажаты → меню открыто, отпустил → закрылось
+ * 
+ * Режим переключается отдельной клавишей (TOGGLE_SPELL_MENU_MODE)
  */
 public class MagicStaffClientHandler {
-    private static boolean wasShiftRightClickPressed = false;
+    private static boolean wasKeyHeld = false;
 
     /**
      * Регистрирует обработчик клиентских событий для посоха
      */
     public static void register() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (client.player == null || client.currentScreen != null) {
-                wasShiftRightClickPressed = false;
+            if (client.player == null) {
+                wasKeyHeld = false;
                 return;
+            }
+
+            // Проверяем переключение режима
+            while (KeyBindings.TOGGLE_SPELL_MENU_MODE.wasPressed()) {
+                SpellMenuMode config = SpellMenuMode.getInstance();
+                config.toggle();
+                
+                // Показываем сообщение о смене режима
+                String modeName = config.isPressMode ? "Press (нажатие)" : "Hold (удержание)";
+                client.player.sendMessage(
+                    Text.literal("§6[Manaborn] §fРежим меню: §e" + modeName),
+                    true // actionBar
+                );
             }
 
             // Проверяем, что в руке посох
@@ -31,26 +50,46 @@ public class MagicStaffClientHandler {
                     offHandStack.getItem() instanceof MagicStaffItem;
 
             if (!hasStaff) {
-                wasShiftRightClickPressed = false;
+                wasKeyHeld = false;
                 return;
             }
 
-            // Проверяем Shift + ПКМ
+            // Проверяем, что Shift зажат
             boolean isShiftDown = GLFW.glfwGetKey(client.getWindow().getHandle(),
                     GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS ||
                     GLFW.glfwGetKey(client.getWindow().getHandle(), GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS;
 
-            boolean isRightMouseDown = GLFW.glfwGetMouseButton(client.getWindow().getHandle(),
-                    GLFW.GLFW_MOUSE_BUTTON_RIGHT) == GLFW.GLFW_PRESS;
+            SpellMenuMode config = SpellMenuMode.getInstance();
+            boolean isKeyDown = KeyBindings.OPEN_SPELL_MENU.isPressed();
 
-            boolean isShiftRightClick = isShiftDown && isRightMouseDown;
-
-            // Edge detection: открываем меню только при нажатии, а не при удержании
-            if (isShiftRightClick && !wasShiftRightClickPressed) {
-                RadialMenuHandler.openRadialMenu();
+            if (config.isPressMode) {
+                // === РЕЖИМ: НАЖАТИЕ (Press) ===
+                if (isShiftDown && client.currentScreen == null) {
+                    while (KeyBindings.OPEN_SPELL_MENU.wasPressed()) {
+                        RadialMenuHandler.openRadialMenu();
+                    }
+                }
+            } else {
+                // === РЕЖИМ: УДЕРЖАНИЕ (Hold) ===
+                // Если Shift + клавиша зажаты и экран не открыт
+                if (isShiftDown && isKeyDown && client.currentScreen == null) {
+                    if (!wasKeyHeld) {
+                        // Первый кадр зажатия - открываем меню
+                        RadialMenuHandler.openRadialMenu();
+                        wasKeyHeld = true;
+                    }
+                    // Меню остаётся открытым, пока клавиша зажата
+                } else {
+                    // Клавиша отпущена или Shift отпущен
+                    if (wasKeyHeld) {
+                        // Закрываем меню
+                        if (client.currentScreen instanceof com.manaborn.client.ui.RadialSpellMenuScreen) {
+                            client.currentScreen.close();
+                        }
+                        wasKeyHeld = false;
+                    }
+                }
             }
-
-            wasShiftRightClickPressed = isShiftRightClick;
         });
     }
 }
