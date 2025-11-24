@@ -1,0 +1,85 @@
+╔═══════════════════════════════════════════════════════════════╗
+║         БЫСТРАЯ ИНСТРУКЦИЯ - СТРУКТУРА MANABORN               ║
+╚═══════════════════════════════════════════════════════════════╝
+
+📝 ЧТО ДЕЛАТЬ В ИГРЕ:
+
+1. Поставь Structure Block в ЛЕВЫЙ НИЖНИЙ УГОЛ постройки
+
+2. ПКМ по блоку → Настрой:
+   ┌─────────────────────────────────────────┐
+   │ Mode: SAVE                              │
+   │ Structure Name: manaborn:magic_shrine   │
+   │ ☑ Show air                              │
+   │ ☑ Show bounding box                     │
+   │ ☑ Include entities                      │
+   └─────────────────────────────────────────┘
+
+3. Нажми кнопку DETECT (авто размеры) ИЛИ укажи вручную:
+   - Size X: _____
+   - Size Y: _____
+   - Size Z: _____
+
+4. Нажми SAVE ✅
+
+═══════════════════════════════════════════════════════════════
+
+📂 КУДА СКОПИРОВАТЬ NBT:
+
+ИЗ:
+C:\Users\<USER>\AppData\Roaming\.minecraft\saves\<WORLD>\generated\minecraft\structures\manaborn\magic_shrine.nbt
+
+В:
+d:\minecraftModsD\Manaborn\src\main\resources\data\manaborn\structure\magic_shrine.nbt
+
+═══════════════════════════════════════════════════════════════
+
+🔧 ЧТО Я УЖЕ СОЗДАЛ:
+
+✅ src/main/resources/data/manaborn/worldgen/structure/magic_shrine.json
+✅ src/main/resources/data/manaborn/worldgen/template_pool/magic_shrine.json
+✅ src/main/resources/data/manaborn/worldgen/structure_set/magic_shrines.json
+✅ src/main/resources/data/manaborn/tags/worldgen/biome/has_structure/magic_shrine.json
+
+═══════════════════════════════════════════════════════════════
+
+🎮 ТЕСТИРОВАНИЕ:
+
+1. Скопируй NBT файл (см. выше)
+
+2. Запусти:
+   .\gradlew build
+   .\gradlew runClient
+
+3. Создай НОВЫЙ МИР (важно!)
+
+4. Найди структуру:
+   /locate structure manaborn:magic_shrine
+
+═══════════════════════════════════════════════════════════════
+
+⚙️ НАСТРОЙКИ:
+
+Частота генерации:
+src/main/resources/data/manaborn/worldgen/structure_set/magic_shrines.json
+
+"spacing": 24    ← Чем больше = РЕЖЕ (48 = очень редко)
+"separation": 8  ← Мин. расстояние между структурами
+
+Биомы где генерируется:
+src/main/resources/data/manaborn/tags/worldgen/biome/has_structure/magic_shrine.json
+
+Сейчас: Plains, Forest, Birch Forest, Dark Forest, Taiga, Meadow, Grove, Snowy Plains
+
+═══════════════════════════════════════════════════════════════
+
+💡 СОВЕТЫ:
+
+• Размер структуры лучше делать НЕЧЁТНЫМ (11x11 вместо 10x10)
+• Включай "Show air" чтобы сохранить пустоты внутри
+• Используй /locate для поиска структуры
+• Структуры НЕ появляются в старых мирах - только в новых!
+
+═══════════════════════════════════════════════════════════════
+
+✅ После копирования NBT - дай знать, я помогу с тестом!

@@ -91,6 +91,7 @@ public class ManabornMod implements ModInitializer {
 	public static Item WEAKNESS_CURSE_SPELL_BOOK;
 	public static Item ICE_WALL_SPELL_BOOK;
 	public static Item HEAT_WEAPON_SPELL_BOOK;
+	public static Item SOUND_STRIKE_SPELL_BOOK;
 	public static EntityType<IceShardEntity> ICE_SHARD_ENTITY;
 	public static Block LEARNING_ALTAR;
 	public static BlockEntityType<LearningAltarBlockEntity> LEARNING_ALTAR_BE;
@@ -364,6 +365,14 @@ public class ManabornMod implements ModInitializer {
 				new Item.Settings().maxCount(1).registryKey(heatWeaponBookKey), SpellType.HEAT_WEAPON));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(HEAT_WEAPON_SPELL_BOOK));
 		System.out.println(" [DEBUG] Heat Weapon Spell Book зарегистрирована с ID: " + heatWeaponBookKey.getValue());
+
+		// Регистрация Sound Strike Spell Book
+		RegistryKey<Item> soundStrikeBookKey = RegistryKey.of(Registries.ITEM.getKey(),
+				Identifier.of(MOD_ID, "sound_strike_spell_book"));
+		SOUND_STRIKE_SPELL_BOOK = Registry.register(Registries.ITEM, soundStrikeBookKey, new SpellBookItem(
+				new Item.Settings().maxCount(1).registryKey(soundStrikeBookKey), SpellType.SOUND_STRIKE));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(SOUND_STRIKE_SPELL_BOOK));
+		System.out.println(" [DEBUG] Sound Strike Spell Book зарегистрирована с ID: " + soundStrikeBookKey.getValue());
 
 		// Регистрация Learning Altar блока
 		RegistryKey<Block> altarBlockKey = RegistryKey.of(Registries.BLOCK.getKey(),

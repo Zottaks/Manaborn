@@ -21,6 +21,7 @@ public class SpellRegistry {
         register(SpellType.WEAKNESS_CURSE, new WeaknessCurseSpell());
         register(SpellType.ICE_WALL, new IceWallSpell());
         register(SpellType.HEAT_WEAPON, new HeatWeaponSpell());
+        register(SpellType.SOUND_STRIKE, new SoundStrikeSpell());
     }
 
     private static void register(SpellType type, Spell spell) {

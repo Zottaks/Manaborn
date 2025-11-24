@@ -198,6 +198,7 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
             case WEAKNESS_CURSE -> 20;
             case ICE_WALL -> 9;
             case HEAT_WEAPON -> 15;
+            case SOUND_STRIKE -> 25; // Магия звука - 25 XP
         };
     }
 
@@ -224,6 +225,7 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
             case WEAKNESS_CURSE -> 75 * 20; // 75 seconds
             case ICE_WALL -> 40 * 20; // 40 seconds (средний показатель для UI)
             case HEAT_WEAPON -> 30 * 20; // 30 seconds
+            case SOUND_STRIKE -> 40 * 20; // 40 seconds (магия звука)
         };
     }
 
