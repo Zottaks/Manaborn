@@ -121,6 +121,10 @@ public final class SpellHudOverlay {
                 // Стена льда: используем ледяной стиль
                 renderIceShardStyle(drawContext, x, y, width, height, time, client, alpha);
                 break;
+            case SOUND_STRIKE:
+                // Звуковой удар: бело-жёлтый звуковой стиль
+                renderSoundStrikeStyle(drawContext, x, y, width, height, time, client, alpha);
+                break;
         }
         
         // Применяем прозрачность к тексту
@@ -403,5 +407,83 @@ public final class SpellHudOverlay {
             int flameColor = blendColors(orange, brightGold, flameTime);
             ctx.fill(flameX, flameY, flameX + 3, y + height - 10, flameColor);
         }
+    }
+    
+    /**
+     * Рендерит UI в стиле звуковой магии
+     * Бело-жёлтые цвета с музыкальными нотами
+     */
+    private static void renderSoundStrikeStyle(DrawContext ctx, int x, int y, int width, int height, float time, MinecraftClient client, float alpha) {
+        // Цвета звуковой магии с прозрачностью (БЕЗ пульсаций)
+        int alphaValue = (int) (alpha * 192);
+        int darkGray = (alphaValue << 24) | 0x1A1A1A;      // Темно-серый фон
+        int lightGray = ((int)(alpha * 255) << 24) | 0x333333;    // Светло-серый
+        int white = ((int)(alpha * 255) << 24) | 0xFFFFFF;        // Белый
+        int yellow = ((int)(alpha * 255) << 24) | 0xFFFF00;       // Жёлтый
+        int gold = ((int)(alpha * 255) << 24) | 0xFFDD00;         // Золотой
+        
+        // Основной фон с градиентом
+        drawGradientRect(ctx, x, y, x + width, y + height, darkGray, lightGray);
+        
+        // Внешняя рамка (статичная жёлтая)
+        ctx.fill(x - 2, y - 2, x + width + 2, y - 1, yellow);
+        ctx.fill(x - 2, y + height + 1, x + width + 2, y + height + 2, yellow);
+        ctx.fill(x - 2, y - 1, x - 1, y + height + 1, yellow);
+        ctx.fill(x + width + 1, y - 1, x + width + 2, y + height + 1, yellow);
+        
+        // Внутренняя рамка (белая)
+        ctx.fill(x - 1, y - 1, x + width + 1, y, white);
+        ctx.fill(x - 1, y + height, x + width + 1, y + height + 1, white);
+        ctx.fill(x - 1, y, x, y + height, white);
+        ctx.fill(x + width, y, x + width + 1, y + height, white);
+        
+        // Рисуем музыкальные ноты (меньше, чтобы не мешали глазу)
+        // Статичные ноты в углах
+        drawMusicNote(ctx, x + 8, y + 8, white, alpha * 0.5f);
+        drawMusicNote(ctx, x + width - 14, y + height - 14, yellow, alpha * 0.5f);
+        
+        // Анимированные плывущие ноты (МЕНЬШЕ - только 5)
+        int noteCount = 5;
+        for (int i = 0; i < noteCount; i++) {
+            float noteTime = (time * 0.5f + i / (float) noteCount) % 1.0f; // Медленнее
+            int noteX = x + 15 + (i * 22);
+            int noteY = y + 12 + (int) (noteTime * (height - 24));
+            
+            if (noteY < y + height - 12) {
+                // Цвета чередуются
+                int noteColor = (i % 2 == 0) ? white : yellow;
+                
+                // Затухание в конце пути
+                float noteAlphaFactor = 1.0f - (noteTime * 0.6f);
+                drawMusicNote(ctx, noteX, noteY, noteColor, alpha * noteAlphaFactor * 0.8f);
+            }
+        }
+        
+        // Горизонтальные "нотные линии" (как на нотном стане)
+        int lineCount = 3;
+        int lineSpacing = height / (lineCount + 1);
+        for (int i = 1; i <= lineCount; i++) {
+            int lineY = y + lineSpacing * i;
+            int lineAlphaValue = (int) (alpha * 60);
+            int lineColor = (lineAlphaValue << 24) | 0xFFFFFF;
+            ctx.fill(x + 5, lineY, x + width - 5, lineY + 1, lineColor);
+        }
+    }
+    
+    /**
+     * Рисует музыкальную ноту ♪
+     */
+    private static void drawMusicNote(DrawContext ctx, int x, int y, int baseColor, float alpha) {
+        int alphaValue = (int) (alpha * 255);
+        int color = (alphaValue << 24) | (baseColor & 0xFFFFFF);
+        
+        // Головка ноты (круг)
+        ctx.fill(x, y + 4, x + 4, y + 8, color);
+        
+        // Штиль ноты (вертикальная линия)
+        ctx.fill(x + 3, y, x + 5, y + 5, color);
+        
+        // Флажок (маленький)
+        ctx.fill(x + 4, y, x + 7, y + 3, color);
     }
 }

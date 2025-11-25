@@ -128,6 +128,17 @@ public class SoundStrikeSpell implements LeveledSpell {
         // Звуковая волна - визуальный эффект
         if (world instanceof ServerWorld serverWorld) {
             spawnSoundWaveParticles(serverWorld, start, actualEnd, level);
+            
+            // SONIC_BOOM только на 3-м уровне и только у игрока (показывает силу заклинания)
+            if (level >= 3) {
+                serverWorld.spawnParticles(
+                    ParticleTypes.SONIC_BOOM,
+                    user.getX(), user.getY() + 1.0, user.getZ(),
+                    3,
+                    0.3, 0.3, 0.3,
+                    0.0
+                );
+            }
         }
 
         // Звуковой эффект
@@ -160,33 +171,44 @@ public class SoundStrikeSpell implements LeveledSpell {
         for (int i = 0; i < particleCount; i++) {
             Vec3d pos = start.add(step.multiply(i));
             
-            // Основная волна - note particles
+            // Основная волна - белые искры END_ROD
             world.spawnParticles(
-                ParticleTypes.NOTE,
+                ParticleTypes.END_ROD,
+                pos.x, pos.y, pos.z,
+                2,
+                0.05, 0.05, 0.05,
+                0.02
+            );
+            
+            // Жёлтые акценты - ELECTRIC_SPARK
+            world.spawnParticles(
+                ParticleTypes.ELECTRIC_SPARK,
                 pos.x, pos.y, pos.z,
                 1,
-                0.1, 0.1, 0.1,
-                0.0
+                0.08, 0.08, 0.08,
+                0.01
             );
             
             // Дополнительные частицы в зависимости от уровня
             if (level >= 2) {
+                // Дополнительное свечение
                 world.spawnParticles(
-                    ParticleTypes.SONIC_BOOM,
+                    ParticleTypes.GLOW,
                     pos.x, pos.y, pos.z,
                     1,
-                    0.05, 0.05, 0.05,
-                    0.0
+                    0.1, 0.1, 0.1,
+                    0.01
                 );
             }
             
             if (level >= 3) {
+                // Белые фейерверки
                 world.spawnParticles(
-                    ParticleTypes.ENCHANT,
+                    ParticleTypes.FIREWORK,
                     pos.x, pos.y, pos.z,
-                    2,
-                    0.15, 0.15, 0.15,
-                    0.01
+                    1,
+                    0.1, 0.1, 0.1,
+                    0.02
                 );
             }
         }
@@ -196,14 +218,33 @@ public class SoundStrikeSpell implements LeveledSpell {
      * Создает частицы при попадании в цель
      */
     private void spawnHitParticles(ServerWorld world, Vec3d pos) {
-        // Взрыв нот при попадании
-        for (int i = 0; i < 20; i++) {
-            double offsetX = (world.random.nextDouble() - 0.5) * 0.8;
-            double offsetY = (world.random.nextDouble() - 0.5) * 0.8;
-            double offsetZ = (world.random.nextDouble() - 0.5) * 0.8;
+        // Взрыв белых фейерверков при попадании
+        for (int i = 0; i < 15; i++) {
+            double offsetX = (world.random.nextDouble() - 0.5) * 1.0;
+            double offsetY = (world.random.nextDouble() - 0.5) * 1.0;
+            double offsetZ = (world.random.nextDouble() - 0.5) * 1.0;
             
             world.spawnParticles(
-                ParticleTypes.NOTE,
+                ParticleTypes.FIREWORK,
+                pos.x + offsetX,
+                pos.y + offsetY,
+                pos.z + offsetZ,
+                1,
+                offsetX * 0.15,
+                offsetY * 0.15,
+                offsetZ * 0.15,
+                0.08
+            );
+        }
+        
+        // Жёлтое свечение
+        for (int i = 0; i < 10; i++) {
+            double offsetX = (world.random.nextDouble() - 0.5) * 0.6;
+            double offsetY = (world.random.nextDouble() - 0.5) * 0.6;
+            double offsetZ = (world.random.nextDouble() - 0.5) * 0.6;
+            
+            world.spawnParticles(
+                ParticleTypes.GLOW,
                 pos.x + offsetX,
                 pos.y + offsetY,
                 pos.z + offsetZ,
@@ -214,15 +255,6 @@ public class SoundStrikeSpell implements LeveledSpell {
                 0.05
             );
         }
-        
-        // Ударная волна
-        world.spawnParticles(
-            ParticleTypes.SONIC_BOOM,
-            pos.x, pos.y, pos.z,
-            1,
-            0, 0, 0,
-            0
-        );
     }
 
     @Override

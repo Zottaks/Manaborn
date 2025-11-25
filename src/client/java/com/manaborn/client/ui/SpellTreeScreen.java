@@ -1,6 +1,7 @@
 package com.manaborn.client.ui;
 
 import com.manaborn.client.state.ClientLearnedSpellsState;
+import com.manaborn.client.state.ClientSpellLevelsState;
 import com.manaborn.spells.SpellType;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -18,17 +19,18 @@ public class SpellTreeScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-        // Создаем кнопки вкладок (Огонь, Лед, Тьма)
+        // Создаем кнопки вкладок (Огонь, Лед, Тьма, Звук)
         int w = this.width;
         int boxTop = 32;
         int tabBarY = boxTop + 8;
-        int tabWidth = 80;
+        int tabWidth = 70;
         int tabHeight = 14;
-        int gap = 8;
-        int tabsStartX = (w - (tabWidth * 3 + gap * 2)) / 2;
+        int gap = 6;
+        int tabsStartX = (w - (tabWidth * 4 + gap * 3)) / 2;
         int fireTabX = tabsStartX;
         int iceTabX = tabsStartX + tabWidth + gap;
         int darkTabX = tabsStartX + (tabWidth + gap) * 2;
+        int soundTabX = tabsStartX + (tabWidth + gap) * 3;
 
         this.clearChildren();
         this.addDrawableChild(
@@ -42,6 +44,10 @@ public class SpellTreeScreen extends Screen {
         this.addDrawableChild(
                 ButtonWidget.builder(Text.literal("Тьма"), b -> selectedTab = Tab.DARK)
                         .dimensions(darkTabX, tabBarY, tabWidth, tabHeight)
+                        .build());
+        this.addDrawableChild(
+                ButtonWidget.builder(Text.literal("Звук"), b -> selectedTab = Tab.SOUND)
+                        .dimensions(soundTabX, tabBarY, tabWidth, tabHeight)
                         .build());
     }
 
@@ -88,48 +94,59 @@ public class SpellTreeScreen extends Screen {
         context.drawTextWithShadow(this.textRenderer, dbg, w - 8 - dbgW, 8, 0xFFAAAAAA);
 
         int tabBarY = boxTop + 8;
-        int tabWidth = 80;
+        int tabWidth = 70;
         int tabHeight = 14;
-        int gap = 8;
-        int tabsStartX = (w - (tabWidth * 3 + gap * 2)) / 2;
+        int gap = 6;
+        int tabsStartX = (w - (tabWidth * 4 + gap * 3)) / 2;
         int fireTabX = tabsStartX;
         int iceTabX = tabsStartX + tabWidth + gap;
         int darkTabX = tabsStartX + (tabWidth + gap) * 2;
+        int soundTabX = tabsStartX + (tabWidth + gap) * 3;
 
         int fireTabBg = selectedTab == Tab.FIRE ? 0xFF7A3A00 : 0xFF2A2A2A;
         int iceTabBg = selectedTab == Tab.ICE ? 0xFF004A6A : 0xFF2A2A2A;
         int darkTabBg = selectedTab == Tab.DARK ? 0xFF2A1B46 : 0xFF2A2A2A;
+        int soundTabBg = selectedTab == Tab.SOUND ? 0xFF6A5A00 : 0xFF2A2A2A;
         int selBorder = 0xFFFFFFFF;
         int unselBorder = 0xFF4A4A4A;
 
         context.fill(fireTabX, tabBarY, fireTabX + tabWidth, tabBarY + tabHeight, fireTabBg);
         context.fill(iceTabX, tabBarY, iceTabX + tabWidth, tabBarY + tabHeight, iceTabBg);
         context.fill(darkTabX, tabBarY, darkTabX + tabWidth, tabBarY + tabHeight, darkTabBg);
+        context.fill(soundTabX, tabBarY, soundTabX + tabWidth, tabBarY + tabHeight, soundTabBg);
         int fb = selectedTab == Tab.FIRE ? selBorder : unselBorder;
         int ib = selectedTab == Tab.ICE ? selBorder : unselBorder;
         int db = selectedTab == Tab.DARK ? selBorder : unselBorder;
+        int sb = selectedTab == Tab.SOUND ? selBorder : unselBorder;
         drawBorder(context, fireTabX, tabBarY, tabWidth, tabHeight, fb);
         drawBorder(context, iceTabX, tabBarY, tabWidth, tabHeight, ib);
         drawBorder(context, darkTabX, tabBarY, tabWidth, tabHeight, db);
+        drawBorder(context, soundTabX, tabBarY, tabWidth, tabHeight, sb);
         if (selectedTab == Tab.FIRE) {
             context.fill(fireTabX, tabBarY + tabHeight, fireTabX + tabWidth, tabBarY + tabHeight + 2, 0xFFFFA64D);
         } else if (selectedTab == Tab.ICE) {
             context.fill(iceTabX, tabBarY + tabHeight, iceTabX + tabWidth, tabBarY + tabHeight + 2, 0xFF66D0FF);
         } else if (selectedTab == Tab.DARK) {
             context.fill(darkTabX, tabBarY + tabHeight, darkTabX + tabWidth, tabBarY + tabHeight + 2, 0xFF8A6AD9);
+        } else if (selectedTab == Tab.SOUND) {
+            context.fill(soundTabX, tabBarY + tabHeight, soundTabX + tabWidth, tabBarY + tabHeight + 2, 0xFFFFDD00);
         }
 
         String fireTitle = "Огонь";
         String iceTitle = "Лед";
         String darkTitle = "Тьма";
+        String soundTitle = "Звук";
         int fireTitleW = this.textRenderer.getWidth(fireTitle);
         int iceTitleW = this.textRenderer.getWidth(iceTitle);
         int darkTitleW = this.textRenderer.getWidth(darkTitle);
+        int soundTitleW = this.textRenderer.getWidth(soundTitle);
         context.drawTextWithShadow(this.textRenderer, fireTitle, fireTabX + (tabWidth - fireTitleW) / 2, tabBarY + 3,
                 0xFFFFFFFF);
         context.drawTextWithShadow(this.textRenderer, iceTitle, iceTabX + (tabWidth - iceTitleW) / 2, tabBarY + 3,
                 0xFFFFFFFF);
         context.drawTextWithShadow(this.textRenderer, darkTitle, darkTabX + (tabWidth - darkTitleW) / 2, tabBarY + 3,
+                0xFFFFFFFF);
+        context.drawTextWithShadow(this.textRenderer, soundTitle, soundTabX + (tabWidth - soundTitleW) / 2, tabBarY + 3,
                 0xFFFFFFFF);
 
         int listStartY = tabBarY + tabHeight + 8;
@@ -138,6 +155,7 @@ public class SpellTreeScreen extends Screen {
         List<SpellType> fireSpells = Arrays.asList(SpellType.FIREBALL, SpellType.FIRE_WALL, SpellType.INNER_HEAT, SpellType.HEAT_WEAPON);
         List<SpellType> iceSpells = Arrays.asList(SpellType.ICE_SHARD, SpellType.ICE_WALL);
         List<SpellType> darkSpells = Arrays.asList(SpellType.ABSORBING_BARRIER, SpellType.WEAKNESS_CURSE);
+        List<SpellType> soundSpells = Arrays.asList(SpellType.SOUND_STRIKE);
 
         if (selectedTab == Tab.FIRE) {
             int bannerTop = listStartY;
@@ -180,6 +198,30 @@ public class SpellTreeScreen extends Screen {
             context.fill(bannerLeft, bannerTop + bannerHeight - 1, bannerRight, bannerTop + bannerHeight, 0xFF3A2A5F);
             context.drawTextWithShadow(this.textRenderer, "Магия тьмы", bannerLeft + 8, bannerTop + 9, 0xFFE6D8FF);
             listStartY = bannerTop + bannerHeight + 6;
+        } else if (selectedTab == Tab.SOUND) {
+            int bannerTop = listStartY;
+            int bannerHeight = 26;
+            int bannerLeft = boxLeft + 8;
+            int bannerRight = boxRight - 8;
+            context.fill(bannerLeft, bannerTop, bannerRight, bannerTop + bannerHeight, 0x40332600);
+            context.fill(bannerLeft, bannerTop, bannerRight, bannerTop + 1, 0xFF6A5A00);
+            context.fill(bannerLeft, bannerTop + bannerHeight - 1, bannerRight, bannerTop + bannerHeight, 0xFF6A5A00);
+            int sw = this.textRenderer.getWidth("♪ Магия звука");
+            context.drawTextWithShadow(this.textRenderer, "♪ Магия звука", bannerLeft + 8, bannerTop + 9, 0xFFFFEE99);
+            // Рисуем звуковые волны
+            int fx = bannerLeft + 8 + sw + 8;
+            int fy = bannerTop + 6;
+            long t = System.currentTimeMillis() / 150;
+            for (int i = 0; i < 5; i++) {
+                int px = fx + i * 12;
+                int waveOffset = (int) ((i + t) % 4);
+                int py1 = fy + 7 - waveOffset;
+                int py2 = fy + 7 + waveOffset;
+                int col = 0xFFDDCC00;
+                context.fill(px, py1, px + 2, py1 + 1, col);
+                context.fill(px, py2, px + 2, py2 + 1, col);
+            }
+            listStartY = bannerTop + bannerHeight + 6;
         }
 
         boolean any;
@@ -187,8 +229,10 @@ public class SpellTreeScreen extends Screen {
             any = renderBranch(context, fireSpells, listX, listStartY);
         } else if (selectedTab == Tab.ICE) {
             any = renderBranch(context, iceSpells, listX, listStartY);
-        } else {
+        } else if (selectedTab == Tab.DARK) {
             any = renderBranch(context, darkSpells, listX, listStartY);
+        } else {
+            any = renderBranch(context, soundSpells, listX, listStartY);
         }
 
         if (!any) {
@@ -228,8 +272,10 @@ public class SpellTreeScreen extends Screen {
             int accent;
             if (spell == SpellType.ICE_SHARD || spell == SpellType.ICE_WALL) {
                 accent = 0xFF66D0FF;
-            } else if (spell == SpellType.ABSORBING_BARRIER) {
+            } else if (spell == SpellType.ABSORBING_BARRIER || spell == SpellType.WEAKNESS_CURSE) {
                 accent = 0xFF8A6AD9;
+            } else if (spell == SpellType.SOUND_STRIKE) {
+                accent = 0xFFFFDD00;
             } else {
                 accent = 0xFFFFA64D;
             }
@@ -237,7 +283,15 @@ public class SpellTreeScreen extends Screen {
             drawBorder(context, x, y, cardWidth, cardHeight, stroke);
             context.fill(x + 1, y + 1, x + 5, y + cardHeight - 1, accent);
 
-            Text name = Text.literal(spell.getDisplayName()).formatted(spell.getColor());
+            // Получаем уровень заклинания
+            int spellLevel = ClientSpellLevelsState.getSpellLevel(spell);
+            String levelRoman = switch (spellLevel) {
+                case 2 -> "II";
+                case 3 -> "III";
+                default -> "I";
+            };
+            
+            Text name = Text.literal(spell.getDisplayName() + " " + levelRoman).formatted(spell.getColor());
             context.drawTextWithShadow(this.textRenderer, name, x + 10, y + 6, 0xFFFFFFFF);
 
             String cost = "Стоимость: " + spell.getManaCost() + " маны";
@@ -257,11 +311,23 @@ public class SpellTreeScreen extends Screen {
     }
 
     private String getDescription(SpellType spell) {
+        int level = ClientSpellLevelsState.getSpellLevel(spell);
+        
         switch (spell) {
             case FIREBALL:
-                return "Запускает огненный шар, нанося урон при попадании.";
+                float fbDamage = switch (level) {
+                    case 1 -> 0.25f;
+                    case 2 -> 1.25f;
+                    default -> 2.0f;
+                };
+                return "Запускает огненный шар, взрываясь при попадании.\nУрон взрыва: " + fbDamage + " ❤";
             case ICE_SHARD:
-                return "Быстрый ледяной осколок, поражающий цель на расстоянии.";
+                float isDamage = switch (level) {
+                    case 1 -> 2.0f;
+                    case 2 -> 3.0f;
+                    default -> 4.0f;
+                };
+                return "Быстрый ледяной осколок. Урон: " + (isDamage / 2.0f) + " ❤\nЗамедляет цель.";
             case ICE_WALL:
                 return "Создает стену из льда. Удерживайте ПКМ для увеличения размера.";
             case FIRE_WALL:
@@ -269,12 +335,18 @@ public class SpellTreeScreen extends Screen {
             case INNER_HEAT:
                 return "Наполняет вас огненной энергией, временно увеличивая скорость.";
             case HEAT_WEAPON:
-                // ВАЖНО: Использовать перенос строк \n для длинных описаний, чтобы текст влезал в UI
                 return "Нагревает ваши атаки, поджигая цели.\n10-я атака вызывает взрыв без урона владельцу.";
             case ABSORBING_BARRIER:
                 return "Темный барьер отражает вражеские снаряды и восстанавливает ману.";
             case WEAKNESS_CURSE:
                 return "Проклинает цель, значительно снижая наносимый ею урон.";
+            case SOUND_STRIKE:
+                float ssDamage = switch (level) {
+                    case 1 -> 1.0f;
+                    case 2 -> 3.0f;
+                    default -> 4.0f;
+                };
+                return "Точный звуковой удар. Урон: " + (ssDamage / 2.0f) + " ❤\nОглушает цель. Требует неподвижности кастующего.";
             default:
                 return "Заклинание.";
         }
@@ -293,7 +365,7 @@ public class SpellTreeScreen extends Screen {
     }
 
     private enum Tab {
-        FIRE, ICE, DARK
+        FIRE, ICE, DARK, SOUND
     }
 
     private Tab selectedTab = Tab.FIRE;

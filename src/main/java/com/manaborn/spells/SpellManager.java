@@ -91,12 +91,7 @@ public class SpellManager {
 
             // Check cooldown before mana cost
             if (isOnCooldown(stack, world, selectedSpell)) {
-                long now = world.getTime();
-                long end = SpellDataPersistence.getSpellCooldownEnd(stack, selectedSpell);
-                long ticksLeft = Math.max(0, end - now);
-                double seconds = ticksLeft / 20.0;
-                serverPlayer.sendMessage(net.minecraft.text.Text.literal(String.format("Кулдаун %.1fс", seconds)),
-                        true);
+                // Кулдаун теперь отображается в HUD - не выводим сообщение
                 return;
             }
 

@@ -228,6 +228,31 @@ public class RadialSpellMenuScreen extends Screen {
             // Если заклинание выбрано - рисуем текст цветом заклинания
             int textColor = isHovered ? (spell.getColor().getColorValue() | 0xFF000000) : 0xFFFFFFFF;
             context.drawText(this.textRenderer, spellName, textX, textY, textColor, true);
+            
+            // Рисуем мини-иконки категорий над заклинаниями
+            Text categoryIcon = null;
+            int iconColor = 0xFFFFFFFF;
+            
+            if (spell == SpellType.SOUND_STRIKE) {
+                categoryIcon = Text.literal("♪"); // Нота для звуковой магии
+                iconColor = 0xFFFFFF00;
+            } else if (spell == SpellType.FIREBALL || spell == SpellType.FIRE_WALL || 
+                       spell == SpellType.INNER_HEAT || spell == SpellType.HEAT_WEAPON) {
+                categoryIcon = Text.literal("🔥"); // Огонь
+                iconColor = 0xFFFF6600;
+            } else if (spell == SpellType.ICE_SHARD || spell == SpellType.ICE_WALL || 
+                       spell == SpellType.FROST_AURA) {
+                categoryIcon = Text.literal("❄"); // Снежинка для льда
+                iconColor = 0xFF66D0FF;
+            } else if (spell == SpellType.ABSORBING_BARRIER || spell == SpellType.WEAKNESS_CURSE) {
+                categoryIcon = Text.literal("◆"); // Ромб для тьмы
+                iconColor = 0xFF8A6AD9;
+            }
+            
+            if (categoryIcon != null) {
+                int iconWidth = this.textRenderer.getWidth(categoryIcon);
+                context.drawText(this.textRenderer, categoryIcon, spellX - iconWidth / 2, spellY - 16, iconColor, true);
+            }
 
             // Рисуем линию от центра к заклинанию (если выбрано)
             if (isHovered) {
@@ -238,22 +263,46 @@ public class RadialSpellMenuScreen extends Screen {
 
     private void drawSpellInfo(DrawContext context, SpellType spell) {
         // Рисуем информацию о заклинании внизу экрана
-        int infoY = this.height - 60;
+        int infoY = this.height - 70;
 
         Text nameText = Text.literal(spell.getDisplayName()).formatted(spell.getColor());
         Text costText = Text.literal("Стоимость: " + spell.getManaCost() + " маны");
+        
+        // Добавляем категорию для магии звука
+        Text categoryText = null;
+        if (spell == SpellType.SOUND_STRIKE) {
+            categoryText = Text.literal("♪ Магия звука").formatted(spell.getColor());
+        }
 
         int nameWidth = this.textRenderer.getWidth(nameText);
         int costWidth = this.textRenderer.getWidth(costText);
+        int categoryWidth = categoryText != null ? this.textRenderer.getWidth(categoryText) : 0;
+        
+        int maxWidth = Math.max(nameWidth, Math.max(costWidth, categoryWidth));
 
         int nameX = (this.width - nameWidth) / 2;
         int costX = (this.width - costWidth) / 2;
+        int categoryX = categoryText != null ? (this.width - categoryWidth) / 2 : 0;
 
-        // Фон для текста
-        context.fill(nameX - 5, infoY - 5, nameX + nameWidth + 5, infoY + 25, 0xC0000000);
+        // Фон для текста (расширен если есть категория)
+        int bgHeight = categoryText != null ? 38 : 25;
+        context.fill(
+            (this.width - maxWidth) / 2 - 5, 
+            infoY - 5, 
+            (this.width + maxWidth) / 2 + 5, 
+            infoY + bgHeight, 
+            0xC0000000
+        );
 
-        context.drawText(this.textRenderer, nameText, nameX, infoY, 0xFFFFFFFF, true);
-        context.drawText(this.textRenderer, costText, costX, infoY + 12, 0xFFAAAAAA, true);
+        // Рисуем категорию сверху (если есть)
+        int currentY = infoY;
+        if (categoryText != null) {
+            context.drawText(this.textRenderer, categoryText, categoryX, currentY, 0xFFFFFF00, true);
+            currentY += 12;
+        }
+        
+        context.drawText(this.textRenderer, nameText, nameX, currentY, 0xFFFFFFFF, true);
+        context.drawText(this.textRenderer, costText, costX, currentY + 12, 0xFFAAAAAA, true);
     }
 
     private void drawCircle(DrawContext context, int centerX, int centerY, int radius, int color) {
