@@ -13,7 +13,8 @@ public enum SpellType {
     ICE_WALL("Стена льда", 10, "ice_wall", Formatting.AQUA),
     HEAT_WEAPON("Накаливание", 25, "heat_weapon", Formatting.GOLD),
     SOUND_STRIKE("Звуковой удар", 30, "sound_strike", Formatting.YELLOW),
-    BATTLE_HYMN("Боевой гимн", 30, "battle_hymn", Formatting.YELLOW);
+    BATTLE_HYMN("Боевой гимн", 30, "battle_hymn", Formatting.YELLOW),
+    SILENCE_ZONE("Область тишины", 80, "silence_zone", Formatting.GRAY);
     
     private final String displayName;
     private final int manaCost;

@@ -93,6 +93,7 @@ public class ManabornMod implements ModInitializer {
 	public static Item HEAT_WEAPON_SPELL_BOOK;
 	public static Item SOUND_STRIKE_SPELL_BOOK;
 	public static Item BATTLE_HYMN_SPELL_BOOK;
+	public static Item SILENCE_ZONE_SPELL_BOOK;
 	public static EntityType<IceShardEntity> ICE_SHARD_ENTITY;
 	public static Block LEARNING_ALTAR;
 	public static BlockEntityType<LearningAltarBlockEntity> LEARNING_ALTAR_BE;
@@ -392,6 +393,14 @@ public class ManabornMod implements ModInitializer {
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(BATTLE_HYMN_SPELL_BOOK));
 		System.out.println(" [DEBUG] Battle Hymn Spell Book зарегистрирована с ID: " + battleHymnBookKey.getValue());
 
+		// Регистрация Silence Zone Spell Book
+		RegistryKey<Item> silenceZoneBookKey = RegistryKey.of(Registries.ITEM.getKey(),
+				Identifier.of(MOD_ID, "silence_zone_spell_book"));
+		SILENCE_ZONE_SPELL_BOOK = Registry.register(Registries.ITEM, silenceZoneBookKey, new SpellBookItem(
+				new Item.Settings().maxCount(1).registryKey(silenceZoneBookKey), SpellType.SILENCE_ZONE));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(SILENCE_ZONE_SPELL_BOOK));
+		System.out.println(" [DEBUG] Silence Zone Spell Book зарегистрирована с ID: " + silenceZoneBookKey.getValue());
+
 		// Регистрация Learning Altar блока
 		RegistryKey<Block> altarBlockKey = RegistryKey.of(Registries.BLOCK.getKey(),
 				Identifier.of(MOD_ID, "learning_altar"));
@@ -595,6 +604,11 @@ public class ManabornMod implements ModInitializer {
 			com.manaborn.spells.SpellManager.tickIceWalls();
 			com.manaborn.spells.impl.BattleHymnSpell.tickBattleHymns(server.getPlayerManager().getPlayerList());
 			DustWispManager.tick(server.getPlayerManager().getPlayerList());
+			
+			// Тик зон тишины
+			for (var world : server.getWorlds()) {
+				com.manaborn.spells.impl.SilenceZoneSpell.tickSilenceZones(world);
+			}
 		});
 
 		// Синхронизация при входе

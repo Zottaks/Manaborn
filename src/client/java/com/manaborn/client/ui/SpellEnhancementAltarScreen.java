@@ -198,7 +198,7 @@ public class SpellEnhancementAltarScreen extends HandledScreen<SpellEnhancementA
             case ICE_SHARD, FROST_AURA -> 20;
             case FIRE_WALL, SOUND_STRIKE, BATTLE_HYMN -> 25;
             case WEAKNESS_CURSE, HEAT_WEAPON -> 30;
-            case ABSORBING_BARRIER, ICE_WALL -> 40;
+            case ABSORBING_BARRIER, ICE_WALL, SILENCE_ZONE -> 40;
         };
     }
 
@@ -207,7 +207,7 @@ public class SpellEnhancementAltarScreen extends HandledScreen<SpellEnhancementA
             case INNER_HEAT -> 1;
             case WEAKNESS_CURSE -> 2;
             case FIREBALL, ICE_SHARD, FROST_AURA, ICE_WALL, HEAT_WEAPON, SOUND_STRIKE, BATTLE_HYMN -> 3;
-            case FIRE_WALL, ABSORBING_BARRIER -> 4;
+            case FIRE_WALL, ABSORBING_BARRIER, SILENCE_ZONE -> 4;
         };
     }
 

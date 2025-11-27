@@ -23,6 +23,7 @@ public class SpellRegistry {
         register(SpellType.HEAT_WEAPON, new HeatWeaponSpell());
         register(SpellType.SOUND_STRIKE, new SoundStrikeSpell());
         register(SpellType.BATTLE_HYMN, new BattleHymnSpell());
+        register(SpellType.SILENCE_ZONE, new SilenceZoneSpell());
     }
 
     private static void register(SpellType type, Spell spell) {

@@ -130,6 +130,10 @@ public final class SpellHudOverlay {
                 // Боевой гимн: тот же звуковой стиль
                 renderSoundStrikeStyle(drawContext, x, y, width, height, time, client, alpha);
                 break;
+            case SILENCE_ZONE:
+                // Область тишины: серый/тёмный стиль
+                renderDarkBarrierStyle(drawContext, x, y, width, height, time, client, alpha);
+                break;
         }
         
         // Применяем прозрачность к тексту

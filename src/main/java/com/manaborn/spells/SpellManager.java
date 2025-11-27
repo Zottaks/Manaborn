@@ -94,6 +94,14 @@ public class SpellManager {
                 // Кулдаун теперь отображается в HUD - не выводим сообщение
                 return;
             }
+            
+            // Check if player is in Silence Zone (blocks all spells)
+            if (com.manaborn.spells.impl.SilenceZoneSpell.isPlayerInSilenceZone(user, world)) {
+                serverPlayer.sendMessage(
+                        net.minecraft.text.Text.literal("§7☽ Вы находитесь в Области тишины! Заклинания заблокированы."),
+                        true);
+                return;
+            }
 
             // Get spell from registry and cast
             Spell spell = SpellRegistry.getSpell(selectedSpell);
