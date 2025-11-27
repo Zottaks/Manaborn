@@ -92,6 +92,7 @@ public class ManabornMod implements ModInitializer {
 	public static Item ICE_WALL_SPELL_BOOK;
 	public static Item HEAT_WEAPON_SPELL_BOOK;
 	public static Item SOUND_STRIKE_SPELL_BOOK;
+	public static Item BATTLE_HYMN_SPELL_BOOK;
 	public static EntityType<IceShardEntity> ICE_SHARD_ENTITY;
 	public static Block LEARNING_ALTAR;
 	public static BlockEntityType<LearningAltarBlockEntity> LEARNING_ALTAR_BE;
@@ -106,6 +107,7 @@ public class ManabornMod implements ModInitializer {
 	public static BlockEntityType<com.manaborn.blocks.entity.ManaMagnetBlockEntity> MANA_MAGNET_ENTITY;
 	public static Item ETHER;
 	public static Item ETHER_SCEPTER;
+	public static Item SPELL_COOLDOWN_RESET;
 	public static Block ETHER_CONVERTER;
 	public static BlockEntityType<EtherConverterBlockEntity> ETHER_CONVERTER_BE;
 	public static ScreenHandlerType<EtherConverterScreenHandler> ETHER_CONVERTER_SH;
@@ -291,6 +293,14 @@ public class ManabornMod implements ModInitializer {
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(ETHER_SCEPTER));
 		System.out.println(" [DEBUG] Ether Scepter зарегистрирован с ID: " + etherScepterKey.getValue());
 
+		// Регистрация Spell Cooldown Reset (Свиток сброса кулдауна)
+		RegistryKey<Item> cooldownResetKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "spell_cooldown_reset"));
+		SPELL_COOLDOWN_RESET = Registry.register(Registries.ITEM, cooldownResetKey,
+				new com.manaborn.items.SpellCooldownResetItem(new Item.Settings().maxCount(16).registryKey(cooldownResetKey)));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(SPELL_COOLDOWN_RESET));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(SPELL_COOLDOWN_RESET));
+		System.out.println(" [DEBUG] Spell Cooldown Reset зарегистрирован с ID: " + cooldownResetKey.getValue());
+
 		// Регистрация Fireball Spell Book
 		RegistryKey<Item> fireballBookKey = RegistryKey.of(Registries.ITEM.getKey(),
 				Identifier.of(MOD_ID, "fireball_spell_book"));
@@ -373,6 +383,14 @@ public class ManabornMod implements ModInitializer {
 				new Item.Settings().maxCount(1).registryKey(soundStrikeBookKey), SpellType.SOUND_STRIKE));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(SOUND_STRIKE_SPELL_BOOK));
 		System.out.println(" [DEBUG] Sound Strike Spell Book зарегистрирована с ID: " + soundStrikeBookKey.getValue());
+
+		// Регистрация Battle Hymn Spell Book
+		RegistryKey<Item> battleHymnBookKey = RegistryKey.of(Registries.ITEM.getKey(),
+				Identifier.of(MOD_ID, "battle_hymn_spell_book"));
+		BATTLE_HYMN_SPELL_BOOK = Registry.register(Registries.ITEM, battleHymnBookKey, new SpellBookItem(
+				new Item.Settings().maxCount(1).registryKey(battleHymnBookKey), SpellType.BATTLE_HYMN));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(BATTLE_HYMN_SPELL_BOOK));
+		System.out.println(" [DEBUG] Battle Hymn Spell Book зарегистрирована с ID: " + battleHymnBookKey.getValue());
 
 		// Регистрация Learning Altar блока
 		RegistryKey<Block> altarBlockKey = RegistryKey.of(Registries.BLOCK.getKey(),
@@ -575,6 +593,7 @@ public class ManabornMod implements ModInitializer {
 			com.manaborn.spells.SpellManager.tickFrostAuras(server.getPlayerManager().getPlayerList());
 			com.manaborn.spells.SpellManager.tickAbsorbingBarriers(server.getPlayerManager().getPlayerList());
 			com.manaborn.spells.SpellManager.tickIceWalls();
+			com.manaborn.spells.impl.BattleHymnSpell.tickBattleHymns(server.getPlayerManager().getPlayerList());
 			DustWispManager.tick(server.getPlayerManager().getPlayerList());
 		});
 

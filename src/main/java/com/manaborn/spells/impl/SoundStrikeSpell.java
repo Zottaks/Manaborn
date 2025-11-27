@@ -46,8 +46,16 @@ public class SoundStrikeSpell implements LeveledSpell {
         // Проверка что игрок стоит на месте (нет движения)
         Vec3d velocity = user.getVelocity();
         if (Math.abs(velocity.x) > 0.01 || Math.abs(velocity.z) > 0.01) {
-            serverPlayer.sendMessage(Text.literal("§cВы должны стоять на месте для каста!"), true);
-            return false;
+            // Штраф 15 маны за движение (вместо полной стоимости)
+            try {
+                Class<?> manaManagerClass = Class.forName("com.manaborn.mana.ManaManager");
+                java.lang.reflect.Method tryConsumeMethod = manaManagerClass.getMethod("tryConsume", ServerPlayerEntity.class, int.class);
+                tryConsumeMethod.invoke(null, serverPlayer, 15);
+            } catch (Exception e) {
+                // Ignore reflection errors
+            }
+            serverPlayer.sendMessage(Text.literal("§cВы должны стоять на месте для каста! Штраф: 15 маны"), true);
+            return false; // Заклинание не кастуется, но мана снята
         }
 
         int level = SpellLevelManager.getSpellLevel(user.getUuid(), SpellType.SOUND_STRIKE);

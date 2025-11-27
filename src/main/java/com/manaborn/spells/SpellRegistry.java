@@ -22,6 +22,7 @@ public class SpellRegistry {
         register(SpellType.ICE_WALL, new IceWallSpell());
         register(SpellType.HEAT_WEAPON, new HeatWeaponSpell());
         register(SpellType.SOUND_STRIKE, new SoundStrikeSpell());
+        register(SpellType.BATTLE_HYMN, new BattleHymnSpell());
     }
 
     private static void register(SpellType type, Spell spell) {

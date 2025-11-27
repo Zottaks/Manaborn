@@ -1,5 +1,6 @@
 package com.manaborn.client;
 
+import com.manaborn.items.MagicStaffItem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderTickCounter;
@@ -35,14 +36,14 @@ public final class SpellHudOverlay {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.player == null || client.options.hudHidden) return;
 
-        // Проверяем, держит ли игрок волшебную палочку
+        // Проверяем, держит ли игрок волшебную палочку (MagicStaffItem или EtherScepterItem)
         ItemStack mainHand = client.player.getMainHandStack();
         ItemStack offHand = client.player.getOffHandStack();
         
         ItemStack staff = null;
-        if (mainHand.getItem().getClass().getSimpleName().equals("MagicStaffItem")) {
+        if (mainHand.getItem() instanceof MagicStaffItem) {
             staff = mainHand;
-        } else if (offHand.getItem().getClass().getSimpleName().equals("MagicStaffItem")) {
+        } else if (offHand.getItem() instanceof MagicStaffItem) {
             staff = offHand;
         }
         if (staff == null) {
@@ -123,6 +124,10 @@ public final class SpellHudOverlay {
                 break;
             case SOUND_STRIKE:
                 // Звуковой удар: бело-жёлтый звуковой стиль
+                renderSoundStrikeStyle(drawContext, x, y, width, height, time, client, alpha);
+                break;
+            case BATTLE_HYMN:
+                // Боевой гимн: тот же звуковой стиль
                 renderSoundStrikeStyle(drawContext, x, y, width, height, time, client, alpha);
                 break;
         }

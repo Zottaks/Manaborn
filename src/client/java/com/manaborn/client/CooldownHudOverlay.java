@@ -1,5 +1,6 @@
 package com.manaborn.client;
 
+import com.manaborn.items.MagicStaffItem;
 import com.manaborn.spells.SpellManager;
 import com.manaborn.spells.SpellType;
 import net.minecraft.client.MinecraftClient;
@@ -13,12 +14,12 @@ public final class CooldownHudOverlay {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.player == null || client.options.hudHidden) return;
 
-        // Ищем посох в руках
+        // Ищем посох в руках (MagicStaffItem или EtherScepterItem)
         ItemStack main = client.player.getMainHandStack();
         ItemStack off = client.player.getOffHandStack();
         ItemStack staff = null;
-        if (main.getItem().getClass().getSimpleName().equals("MagicStaffItem")) staff = main;
-        else if (off.getItem().getClass().getSimpleName().equals("MagicStaffItem")) staff = off;
+        if (main.getItem() instanceof MagicStaffItem) staff = main;
+        else if (off.getItem() instanceof MagicStaffItem) staff = off;
         if (staff == null) return;
 
         // Определяем выбранное заклинание
@@ -86,7 +87,7 @@ public final class CooldownHudOverlay {
                 ctx.fill(x - 1, y, x, y + h, 0xCC5C3B89);
                 ctx.fill(x + w, y, x + w + 1, y + h, 0xCC5C3B89);
             }
-            case SOUND_STRIKE -> {
+            case SOUND_STRIKE, BATTLE_HYMN -> {
                 // жёлто-белая окантовка (звуковая магия)
                 ctx.fill(x - 1, y - 1, x + w + 1, y, 0xCCFFFF00);
                 ctx.fill(x - 1, y + h, x + w + 1, y + h + 1, 0xCCFFFF00);

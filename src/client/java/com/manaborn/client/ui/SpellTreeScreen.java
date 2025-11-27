@@ -155,7 +155,7 @@ public class SpellTreeScreen extends Screen {
         List<SpellType> fireSpells = Arrays.asList(SpellType.FIREBALL, SpellType.FIRE_WALL, SpellType.INNER_HEAT, SpellType.HEAT_WEAPON);
         List<SpellType> iceSpells = Arrays.asList(SpellType.ICE_SHARD, SpellType.ICE_WALL);
         List<SpellType> darkSpells = Arrays.asList(SpellType.ABSORBING_BARRIER, SpellType.WEAKNESS_CURSE);
-        List<SpellType> soundSpells = Arrays.asList(SpellType.SOUND_STRIKE);
+        List<SpellType> soundSpells = Arrays.asList(SpellType.SOUND_STRIKE, SpellType.BATTLE_HYMN);
 
         if (selectedTab == Tab.FIRE) {
             int bannerTop = listStartY;
@@ -274,7 +274,7 @@ public class SpellTreeScreen extends Screen {
                 accent = 0xFF66D0FF;
             } else if (spell == SpellType.ABSORBING_BARRIER || spell == SpellType.WEAKNESS_CURSE) {
                 accent = 0xFF8A6AD9;
-            } else if (spell == SpellType.SOUND_STRIKE) {
+            } else if (spell == SpellType.SOUND_STRIKE || spell == SpellType.BATTLE_HYMN) {
                 accent = 0xFFFFDD00;
             } else {
                 accent = 0xFFFFA64D;
@@ -347,6 +347,24 @@ public class SpellTreeScreen extends Screen {
                     default -> 4.0f;
                 };
                 return "Точный звуковой удар. Урон: " + (ssDamage / 2.0f) + " ❤\nОглушает цель. Требует неподвижности кастующего.";
+            case BATTLE_HYMN:
+                int channelTime = switch (level) {
+                    case 1 -> 7;
+                    case 2 -> 6;
+                    default -> 5;
+                };
+                int radius = switch (level) {
+                    case 1 -> 3;
+                    case 2 -> 4;
+                    default -> 5;
+                };
+                String strength = level >= 3 ? "II" : "I";
+                int duration = switch (level) {
+                    case 1 -> 10;
+                    case 2 -> 20;
+                    default -> 15;
+                };
+                return "Каналируемое заклинание. Проигрывается " + channelTime + "с.\nДаёт игрокам в радиусе " + radius + " блоков Силу " + strength + " на " + duration + "с.\nТребует неподвижности. Уязвим во время каста.";
             default:
                 return "Заклинание.";
         }

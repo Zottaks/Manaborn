@@ -69,6 +69,16 @@ public class SpellDataPersistence {
     }
 
     /**
+     * Remove cooldown from a spell (set to 0)
+     */
+    public static void removeCooldown(ItemStack stack, SpellType spell) {
+        NbtComponent customData = stack.getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT);
+        NbtCompound nbt = customData.copyNbt();
+        nbt.putLong(cooldownKey(spell), 0L);
+        stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
+    }
+
+    /**
      * Check if spell is on cooldown
      */
     public static boolean isSpellOnCooldown(ItemStack stack, World world, SpellType spell) {

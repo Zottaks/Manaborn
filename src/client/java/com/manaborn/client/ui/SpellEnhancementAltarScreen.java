@@ -196,7 +196,7 @@ public class SpellEnhancementAltarScreen extends HandledScreen<SpellEnhancementA
         return switch (spell) {
             case FIREBALL, INNER_HEAT -> 15;
             case ICE_SHARD, FROST_AURA -> 20;
-            case FIRE_WALL, SOUND_STRIKE -> 25;
+            case FIRE_WALL, SOUND_STRIKE, BATTLE_HYMN -> 25;
             case WEAKNESS_CURSE, HEAT_WEAPON -> 30;
             case ABSORBING_BARRIER, ICE_WALL -> 40;
         };
@@ -206,7 +206,7 @@ public class SpellEnhancementAltarScreen extends HandledScreen<SpellEnhancementA
         return switch (spell) {
             case INNER_HEAT -> 1;
             case WEAKNESS_CURSE -> 2;
-            case FIREBALL, ICE_SHARD, FROST_AURA, ICE_WALL, HEAT_WEAPON, SOUND_STRIKE -> 3;
+            case FIREBALL, ICE_SHARD, FROST_AURA, ICE_WALL, HEAT_WEAPON, SOUND_STRIKE, BATTLE_HYMN -> 3;
             case FIRE_WALL, ABSORBING_BARRIER -> 4;
         };
     }
