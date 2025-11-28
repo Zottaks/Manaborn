@@ -95,8 +95,12 @@ public class SpellManager {
                 return;
             }
             
-            // Check if player is in Silence Zone (blocks all spells)
-            if (com.manaborn.spells.impl.SilenceZoneSpell.isPlayerInSilenceZone(user, world)) {
+            // Специальная обработка для Silence Zone - можно отменить свою зону даже в зоне тишины
+            boolean isCancelingSilenceZone = selectedSpell == SpellType.SILENCE_ZONE && 
+                com.manaborn.spells.impl.SilenceZoneSpell.hasActiveZone(serverPlayer.getUuid());
+            
+            // Check if player is in Silence Zone (blocks all spells, кроме отмены своей зоны)
+            if (!isCancelingSilenceZone && com.manaborn.spells.impl.SilenceZoneSpell.isPlayerInSilenceZone(user, world)) {
                 serverPlayer.sendMessage(
                         net.minecraft.text.Text.literal("§7☽ Вы находитесь в Области тишины! Заклинания заблокированы."),
                         true);
@@ -129,7 +133,8 @@ public class SpellManager {
                 finalCost = Math.max(0, baseCost - com.manaborn.items.EtherScepterItem.MANA_DISCOUNT);
             }
 
-            if (!ManaManager.tryConsume(serverPlayer, finalCost)) {
+            // При отмене зоны тишины не тратим ману
+            if (!isCancelingSilenceZone && !ManaManager.tryConsume(serverPlayer, finalCost)) {
                 serverPlayer.sendMessage(
                         net.minecraft.text.Text.literal("Недостаточно маны: нужно " + finalCost), true);
                 return;

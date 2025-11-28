@@ -155,7 +155,7 @@ public class SpellTreeScreen extends Screen {
         List<SpellType> fireSpells = Arrays.asList(SpellType.FIREBALL, SpellType.FIRE_WALL, SpellType.INNER_HEAT, SpellType.HEAT_WEAPON);
         List<SpellType> iceSpells = Arrays.asList(SpellType.ICE_SHARD, SpellType.ICE_WALL);
         List<SpellType> darkSpells = Arrays.asList(SpellType.ABSORBING_BARRIER, SpellType.WEAKNESS_CURSE);
-        List<SpellType> soundSpells = Arrays.asList(SpellType.SOUND_STRIKE, SpellType.BATTLE_HYMN);
+        List<SpellType> soundSpells = Arrays.asList(SpellType.SOUND_STRIKE, SpellType.BATTLE_HYMN, SpellType.SILENCE_ZONE);
 
         if (selectedTab == Tab.FIRE) {
             int bannerTop = listStartY;
@@ -274,7 +274,7 @@ public class SpellTreeScreen extends Screen {
                 accent = 0xFF66D0FF;
             } else if (spell == SpellType.ABSORBING_BARRIER || spell == SpellType.WEAKNESS_CURSE) {
                 accent = 0xFF8A6AD9;
-            } else if (spell == SpellType.SOUND_STRIKE || spell == SpellType.BATTLE_HYMN) {
+            } else if (spell == SpellType.SOUND_STRIKE || spell == SpellType.BATTLE_HYMN || spell == SpellType.SILENCE_ZONE) {
                 accent = 0xFFFFDD00;
             } else {
                 accent = 0xFFFFA64D;
@@ -365,6 +365,18 @@ public class SpellTreeScreen extends Screen {
                     default -> 15;
                 };
                 return "Каналируемое заклинание. Проигрывается " + channelTime + "с.\nДаёт игрокам в радиусе " + radius + " блоков Силу " + strength + " на " + duration + "с.\nТребует неподвижности. Уязвим во время каста.";
+            case SILENCE_ZONE:
+                int szDuration = switch (level) {
+                    case 1 -> 7;
+                    case 2 -> 8;
+                    default -> 10;
+                };
+                int szRadius = switch (level) {
+                    case 1 -> 5;
+                    case 2 -> 6;
+                    default -> 7;
+                };
+                return "Создаёт зону тишины радиусом " + szRadius + " блоков.\nДлительность: " + szDuration + " сек. Блокирует ВСЕ заклинания\nвнутри зоны (включая ваши).";
             default:
                 return "Заклинание.";
         }

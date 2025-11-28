@@ -594,6 +594,9 @@ public class ManabornMod implements ModInitializer {
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.BUILDING_BLOCKS).register(entries -> entries.add(MAGIC_ORE));
 		System.out.println(" [DEBUG] Magic Ore зарегистрирована с ID: " + oreBlockKey.getValue());
 
+		// Регистрация обработчика структуры дома мага
+		com.manaborn.world.MageHouseStructureHandler.register();
+
 		// Тик сервера: регенерация маны, обработка стен огня и ауры стужи, спавн
 		// пылинок
 		ServerTickEvents.END_SERVER_TICK.register(server -> {

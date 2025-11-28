@@ -55,6 +55,11 @@ public class SilenceZoneSpell implements LeveledSpell {
         if (!(user instanceof ServerPlayerEntity serverPlayer)) {
             return true;
         }
+        
+        // Проверяем, есть ли уже активная зона у этого игрока - если да, отменяем её
+        if (cancelPlayerZone(serverPlayer, world)) {
+            return false; // Не тратим ману и кулдаун при отмене
+        }
 
         int level = SpellLevelManager.getSpellLevel(user.getUuid(), SpellType.SILENCE_ZONE);
         
@@ -280,6 +285,55 @@ public class SilenceZoneSpell implements LeveledSpell {
      */
     public static void clearAllZones() {
         activeZones.clear();
+    }
+    
+    /**
+     * Отменяет зону тишины игрока (если она существует)
+     * @return true если зона была отменена
+     */
+    public static boolean cancelPlayerZone(ServerPlayerEntity player, World world) {
+        UUID playerId = player.getUuid();
+        
+        for (Map.Entry<BlockPos, SilenceZoneData> entry : activeZones.entrySet()) {
+            SilenceZoneData zone = entry.getValue();
+            
+            if (zone.casterUuid.equals(playerId)) {
+                // Нашли зону этого игрока - удаляем
+                BlockPos zonePos = entry.getKey();
+                activeZones.remove(zonePos);
+                
+                // Эффекты отмены
+                if (world instanceof ServerWorld serverWorld) {
+                    spawnDissipateParticles(serverWorld, zone.center, zone.radius);
+                    
+                    serverWorld.playSound(
+                        null,
+                        BlockPos.ofFloored(zone.center),
+                        SoundEvents.BLOCK_BEACON_ACTIVATE,
+                        SoundCategory.BLOCKS,
+                        0.8f,
+                        1.8f
+                    );
+                }
+                
+                player.sendMessage(Text.literal("§7☽ Область тишины отменена!"), true);
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Проверяет, есть ли у игрока активная зона тишины
+     */
+    public static boolean hasActiveZone(UUID playerId) {
+        for (SilenceZoneData zone : activeZones.values()) {
+            if (zone.casterUuid.equals(playerId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

@@ -1,5 +1,8 @@
 {
   "item.manaborn.mana_wand": "Mana Wand",
+  "item.manaborn.silence_zone_spell_book": "Spell Book: Silence Zone",
+  "spell.manaborn.silence_zone": "Silence Zone",
+  "spell.manaborn.silence_zone.description": "Creates a zone where all spells are blocked",
   "item.manaborn.mana_potion": "Mana Crystal",
   "item.manaborn.magic_dust": "Magic Dust",
   "block.manaborn.magic_ore": "Magic Ore",

@@ -131,8 +131,8 @@ public final class SpellHudOverlay {
                 renderSoundStrikeStyle(drawContext, x, y, width, height, time, client, alpha);
                 break;
             case SILENCE_ZONE:
-                // Область тишины: серый/тёмный стиль
-                renderDarkBarrierStyle(drawContext, x, y, width, height, time, client, alpha);
+                // Область тишины: звуковой стиль (магия звука)
+                renderSoundStrikeStyle(drawContext, x, y, width, height, time, client, alpha);
                 break;
         }
         

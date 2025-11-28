@@ -95,11 +95,11 @@ public final class CooldownHudOverlay {
                 ctx.fill(x + w, y, x + w + 1, y + h, 0xCCFFFFFF);
             }
             case SILENCE_ZONE -> {
-                // серая окантовка (область тишины)
-                ctx.fill(x - 1, y - 1, x + w + 1, y, 0xCC888888);
-                ctx.fill(x - 1, y + h, x + w + 1, y + h + 1, 0xCC888888);
-                ctx.fill(x - 1, y, x, y + h, 0xCC666666);
-                ctx.fill(x + w, y, x + w + 1, y + h, 0xCC666666);
+                // жёлто-белая окантовка (магия звука)
+                ctx.fill(x - 1, y - 1, x + w + 1, y, 0xCCFFFF00);
+                ctx.fill(x - 1, y + h, x + w + 1, y + h + 1, 0xCCFFFF00);
+                ctx.fill(x - 1, y, x, y + h, 0xCCFFFFFF);
+                ctx.fill(x + w, y, x + w + 1, y + h, 0xCCFFFFFF);
             }
         }
     }

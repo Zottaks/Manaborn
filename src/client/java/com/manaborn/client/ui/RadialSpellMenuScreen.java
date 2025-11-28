@@ -233,7 +233,7 @@ public class RadialSpellMenuScreen extends Screen {
             Text categoryIcon = null;
             int iconColor = 0xFFFFFFFF;
             
-            if (spell == SpellType.SOUND_STRIKE || spell == SpellType.BATTLE_HYMN) {
+            if (spell == SpellType.SOUND_STRIKE || spell == SpellType.BATTLE_HYMN || spell == SpellType.SILENCE_ZONE) {
                 categoryIcon = Text.literal("♪"); // Нота для звуковой магии
                 iconColor = 0xFFFFFF00;
             } else if (spell == SpellType.FIREBALL || spell == SpellType.FIRE_WALL || 

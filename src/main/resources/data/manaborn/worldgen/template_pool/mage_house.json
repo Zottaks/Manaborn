@@ -7,7 +7,7 @@
       "element": {
         "element_type": "minecraft:single_pool_element",
         "location": "manaborn:mage_house",
-        "processors": "minecraft:empty",
+        "processors": "manaborn:mage_house_processor",
         "projection": "rigid"
       }
     }
