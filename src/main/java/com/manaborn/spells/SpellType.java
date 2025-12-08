@@ -14,7 +14,8 @@ public enum SpellType {
     HEAT_WEAPON("Накаливание", 25, "heat_weapon", Formatting.GOLD),
     SOUND_STRIKE("Звуковой удар", 30, "sound_strike", Formatting.YELLOW),
     BATTLE_HYMN("Боевой гимн", 30, "battle_hymn", Formatting.YELLOW),
-    SILENCE_ZONE("Область тишины", 80, "silence_zone", Formatting.GRAY);
+    SILENCE_ZONE("Область тишины", 80, "silence_zone", Formatting.GRAY),
+    CLARIFYING_TONE("Проясняющий тон", 30, "clarifying_tone", Formatting.YELLOW);
     
     private final String displayName;
     private final int manaCost;

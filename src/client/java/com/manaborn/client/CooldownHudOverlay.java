@@ -87,7 +87,7 @@ public final class CooldownHudOverlay {
                 ctx.fill(x - 1, y, x, y + h, 0xCC5C3B89);
                 ctx.fill(x + w, y, x + w + 1, y + h, 0xCC5C3B89);
             }
-            case SOUND_STRIKE, BATTLE_HYMN -> {
+            case SOUND_STRIKE, BATTLE_HYMN, CLARIFYING_TONE -> {
                 // жёлто-белая окантовка (звуковая магия)
                 ctx.fill(x - 1, y - 1, x + w + 1, y, 0xCCFFFF00);
                 ctx.fill(x - 1, y + h, x + w + 1, y + h + 1, 0xCCFFFF00);

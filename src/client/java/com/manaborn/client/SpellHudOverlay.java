@@ -134,6 +134,10 @@ public final class SpellHudOverlay {
                 // Область тишины: звуковой стиль (магия звука)
                 renderSoundStrikeStyle(drawContext, x, y, width, height, time, client, alpha);
                 break;
+            case CLARIFYING_TONE:
+                // Проясняющий тон: звуковой стиль
+                renderSoundStrikeStyle(drawContext, x, y, width, height, time, client, alpha);
+                break;
         }
         
         // Применяем прозрачность к тексту

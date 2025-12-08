@@ -24,6 +24,7 @@ public class SpellRegistry {
         register(SpellType.SOUND_STRIKE, new SoundStrikeSpell());
         register(SpellType.BATTLE_HYMN, new BattleHymnSpell());
         register(SpellType.SILENCE_ZONE, new SilenceZoneSpell());
+        register(SpellType.CLARIFYING_TONE, new ClarifyingToneSpell());
     }
 
     private static void register(SpellType type, Spell spell) {

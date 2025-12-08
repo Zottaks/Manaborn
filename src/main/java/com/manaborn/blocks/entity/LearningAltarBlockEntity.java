@@ -201,6 +201,7 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
             case SOUND_STRIKE -> 25; // Магия звука - 25 XP
             case BATTLE_HYMN -> 10; // Боевой гимн - 10 XP
             case SILENCE_ZONE -> 30; // Область тишины - 30 XP
+            case CLARIFYING_TONE -> 20; // Проясняющий тон - 20 XP
         };
     }
 
@@ -230,6 +231,7 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
             case SOUND_STRIKE -> 40 * 20; // 40 seconds (магия звука)
             case BATTLE_HYMN -> 40 * 20; // 40 seconds (боевой гимн)
             case SILENCE_ZONE -> 70 * 20; // 70 seconds (область тишины - кулдаун)
+            case CLARIFYING_TONE -> 30 * 20; // 30 seconds (Проясняющий тон)
         };
     }
 

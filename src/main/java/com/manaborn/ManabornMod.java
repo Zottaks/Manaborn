@@ -94,6 +94,7 @@ public class ManabornMod implements ModInitializer {
 	public static Item SOUND_STRIKE_SPELL_BOOK;
 	public static Item BATTLE_HYMN_SPELL_BOOK;
 	public static Item SILENCE_ZONE_SPELL_BOOK;
+	public static Item CLARIFYING_TONE_SPELL_BOOK;
 	public static EntityType<IceShardEntity> ICE_SHARD_ENTITY;
 	public static Block LEARNING_ALTAR;
 	public static BlockEntityType<LearningAltarBlockEntity> LEARNING_ALTAR_BE;
@@ -392,6 +393,14 @@ public class ManabornMod implements ModInitializer {
 				new Item.Settings().maxCount(1).registryKey(battleHymnBookKey), SpellType.BATTLE_HYMN));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(BATTLE_HYMN_SPELL_BOOK));
 		System.out.println(" [DEBUG] Battle Hymn Spell Book зарегистрирована с ID: " + battleHymnBookKey.getValue());
+
+		// Регистрация Clarifying Tone Spell Book
+		RegistryKey<Item> clarifyingToneBookKey = RegistryKey.of(Registries.ITEM.getKey(),
+				Identifier.of(MOD_ID, "clarifying_tone_spell_book"));
+		CLARIFYING_TONE_SPELL_BOOK = Registry.register(Registries.ITEM, clarifyingToneBookKey, new SpellBookItem(
+				new Item.Settings().maxCount(1).registryKey(clarifyingToneBookKey), SpellType.CLARIFYING_TONE));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(CLARIFYING_TONE_SPELL_BOOK));
+		System.out.println(" [DEBUG] Clarifying Tone Spell Book зарегистрирована с ID: " + clarifyingToneBookKey.getValue());
 
 		// Регистрация Silence Zone Spell Book
 		RegistryKey<Item> silenceZoneBookKey = RegistryKey.of(Registries.ITEM.getKey(),

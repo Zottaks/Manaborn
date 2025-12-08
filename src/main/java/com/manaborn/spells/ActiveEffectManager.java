@@ -191,7 +191,14 @@ public class ActiveEffectManager {
                             && e.squaredDistanceTo(owner) <= radius * radius);
 
             for (LivingEntity target : targets) {
+                // Медлительность для всех целей
                 target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 20, 1, false, true, true));
+
+                // Обморожение-замерзание: имитируем поведение рыхлого снега для игроков, кроме владельца
+                if (target instanceof ServerPlayerEntity playerTarget && !playerTarget.getUuid().equals(owner.getUuid())) {
+                    int currentFrozen = playerTarget.getFrozenTicks();
+                    playerTarget.setFrozenTicks(currentFrozen + 40); // ~2 секунды дополнительного замерзания
+                }
             }
 
             // Damage every 2 seconds

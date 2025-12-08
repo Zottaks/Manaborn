@@ -3,6 +3,9 @@ package com.manaborn.client;
 import com.manaborn.client.state.ClientManaState;
 import com.manaborn.client.state.ClientLearnedSpellsState;
 import com.manaborn.client.state.ClientSpellLevelsState;
+import com.manaborn.items.MagicStaffItem;
+import com.manaborn.spells.SpellManager;
+import com.manaborn.spells.SpellType;
 import com.manaborn.client.ui.SpellTreeScreen;
 import com.manaborn.client.ui.LearningAltarScreen;
 import com.manaborn.client.ui.SpellEnhancementAltarScreen;
@@ -16,14 +19,18 @@ import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.render.entity.FlyingItemEntityRenderer;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 import net.minecraft.client.gui.screen.ingame.HandledScreens;
+import net.minecraft.item.ItemStack;
+import net.minecraft.particle.ParticleTypes;
 
 public class ManabornClient implements ClientModInitializer {
     private static boolean openMenuWasDown = false;
+    private static int clarifyingTonePreviewTick = 0;
 
     @Override
     public void onInitializeClient() {
@@ -86,6 +93,61 @@ public class ManabornClient implements ClientModInitializer {
             }
             // Отрисовка частиц пылинок (видны только с Маноскопом)
             DustWispParticleRenderer.tick(client);
+            
+            // Превью радиуса AoE для заклинания Проясняющий тон при зажатом Shift
+            if (client.player != null && client.world != null) {
+                clarifyingTonePreviewTick++;
+
+                ItemStack mainHand = client.player.getMainHandStack();
+                ItemStack offHand = client.player.getOffHandStack();
+
+                ItemStack staff = null;
+                if (mainHand.getItem() instanceof MagicStaffItem) {
+                    staff = mainHand;
+                } else if (offHand.getItem() instanceof MagicStaffItem) {
+                    staff = offHand;
+                }
+
+                if (staff != null && client.currentScreen == null) {
+                    // Проверяем, что выбран именно Проясняющий тон
+                    SpellType selected = SpellManager.getSelectedSpell(staff);
+                    if (selected == SpellType.CLARIFYING_TONE) {
+                        // Проверяем, что Shift зажат
+                        boolean isShiftDown = GLFW.glfwGetKey(client.getWindow().getHandle(),
+                                GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS ||
+                                GLFW.glfwGetKey(client.getWindow().getHandle(), GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS;
+
+                        // Рисуем кольцо только раз в несколько тиков, чтобы не оставлять плотный след при движении
+                        if (isShiftDown && (clarifyingTonePreviewTick % 4 == 0)) {
+                            int level = ClientSpellLevelsState.getSpellLevel(SpellType.CLARIFYING_TONE);
+                            int adjustedLevel = Math.max(1, Math.min(3, level));
+
+                            double radius = switch (adjustedLevel) {
+                                case 1 -> 2.0;
+                                case 2 -> 3.0;
+                                default -> 5.0;
+                            };
+
+                            // Рисуем кольцо частиц вокруг игрока
+                            double centerX = client.player.getX();
+                            double centerY = client.player.getY() + 0.1; // чуть выше ног
+                            double centerZ = client.player.getZ();
+
+                            int points = 40;
+                            for (int i = 0; i < points; i++) {
+                                double angle = (2 * Math.PI * i) / points;
+                                double px = centerX + Math.cos(angle) * radius;
+                                double pz = centerZ + Math.sin(angle) * radius;
+                                MinecraftClient.getInstance().particleManager.addParticle(
+                                        ParticleTypes.END_ROD,
+                                        px, centerY, pz,
+                                        0.0, 0.0, 0.0
+                                );
+                            }
+                        }
+                    }
+                }
+            }
             
             // Открытие меню заклинаний по клавише I
             if (client.player != null) {

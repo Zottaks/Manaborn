@@ -155,7 +155,7 @@ public class SpellTreeScreen extends Screen {
         List<SpellType> fireSpells = Arrays.asList(SpellType.FIREBALL, SpellType.FIRE_WALL, SpellType.INNER_HEAT, SpellType.HEAT_WEAPON);
         List<SpellType> iceSpells = Arrays.asList(SpellType.ICE_SHARD, SpellType.ICE_WALL);
         List<SpellType> darkSpells = Arrays.asList(SpellType.ABSORBING_BARRIER, SpellType.WEAKNESS_CURSE);
-        List<SpellType> soundSpells = Arrays.asList(SpellType.SOUND_STRIKE, SpellType.BATTLE_HYMN, SpellType.SILENCE_ZONE);
+        List<SpellType> soundSpells = Arrays.asList(SpellType.SOUND_STRIKE, SpellType.BATTLE_HYMN, SpellType.SILENCE_ZONE, SpellType.CLARIFYING_TONE);
 
         if (selectedTab == Tab.FIRE) {
             int bannerTop = listStartY;
@@ -274,7 +274,7 @@ public class SpellTreeScreen extends Screen {
                 accent = 0xFF66D0FF;
             } else if (spell == SpellType.ABSORBING_BARRIER || spell == SpellType.WEAKNESS_CURSE) {
                 accent = 0xFF8A6AD9;
-            } else if (spell == SpellType.SOUND_STRIKE || spell == SpellType.BATTLE_HYMN || spell == SpellType.SILENCE_ZONE) {
+            } else if (spell == SpellType.SOUND_STRIKE || spell == SpellType.BATTLE_HYMN || spell == SpellType.SILENCE_ZONE || spell == SpellType.CLARIFYING_TONE) {
                 accent = 0xFFFFDD00;
             } else {
                 accent = 0xFFFFA64D;
@@ -377,6 +377,18 @@ public class SpellTreeScreen extends Screen {
                     default -> 7;
                 };
                 return "Создаёт зону тишины радиусом " + szRadius + " блоков.\nДлительность: " + szDuration + " сек. Блокирует ВСЕ заклинания\nвнутри зоны (включая ваши).";
+            case CLARIFYING_TONE:
+                int ctRadius = switch (level) {
+                    case 1 -> 2;
+                    case 2 -> 3;
+                    default -> 5;
+                };
+                String levelDesc = switch (level) {
+                    case 1 -> "снимает лёгкие дебаффы (Слабость, Медлительность I, Голод, слабый яд)";
+                    case 2 -> "снимает лёгкие и средние дебаффы (до Медлительности II, Слепота, Усталость, усиленный яд)";
+                    default -> "снимает почти все отрицательные эффекты, кроме Обморожения";
+                };
+                return "Проясняющий звуковой тон.\nОдиночная цель по взгляду или вы сами.\nShift+ПКМ — область " + ctRadius + " блоков вокруг вас.\n" + levelDesc + ".";
             default:
                 return "Заклинание.";
         }

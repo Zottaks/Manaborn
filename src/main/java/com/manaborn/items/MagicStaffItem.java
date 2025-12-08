@@ -59,21 +59,15 @@ public class MagicStaffItem extends Item {
     public ActionResult use(World world, PlayerEntity user, Hand hand) {
         ItemStack stack = user.getStackInHand(hand);
 
-        if (user.isSneaking()) {
-            // Shift + ПКМ теперь обрабатывается на клиенте (открывает радиальное меню)
-            // На сервере просто возвращаем SUCCESS, чтобы не мешать клиентской логике
-            return ActionResult.SUCCESS;
-        } else {
-            // Если выбрана Стена Льда — начинаем удержание ПКМ (зарядка)
-            SpellType selected = SpellManager.getSelectedSpell(stack);
-            if (selected == SpellType.ICE_WALL) {
-                user.setCurrentHand(hand);
-                return ActionResult.CONSUME;
-            }
-            // Иначе — обычный мгновенный каст
-            SpellManager.castSpell(world, user, hand);
-            return ActionResult.SUCCESS;
+        // Если выбрана Стена Льда — начинаем удержание ПКМ (зарядка)
+        SpellType selected = SpellManager.getSelectedSpell(stack);
+        if (selected == SpellType.ICE_WALL) {
+            user.setCurrentHand(hand);
+            return ActionResult.CONSUME;
         }
+        // Для всех остальных заклинаний — обычный мгновенный каст, даже при зажатом Shift
+        SpellManager.castSpell(world, user, hand);
+        return ActionResult.SUCCESS;
     }
 
     @Override

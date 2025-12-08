@@ -233,7 +233,7 @@ public class RadialSpellMenuScreen extends Screen {
             Text categoryIcon = null;
             int iconColor = 0xFFFFFFFF;
             
-            if (spell == SpellType.SOUND_STRIKE || spell == SpellType.BATTLE_HYMN || spell == SpellType.SILENCE_ZONE) {
+            if (spell == SpellType.SOUND_STRIKE || spell == SpellType.BATTLE_HYMN || spell == SpellType.SILENCE_ZONE || spell == SpellType.CLARIFYING_TONE) {
                 categoryIcon = Text.literal("♪"); // Нота для звуковой магии
                 iconColor = 0xFFFFFF00;
             } else if (spell == SpellType.FIREBALL || spell == SpellType.FIRE_WALL || 
@@ -270,7 +270,7 @@ public class RadialSpellMenuScreen extends Screen {
         
         // Добавляем категорию для магии звука
         Text categoryText = null;
-        if (spell == SpellType.SOUND_STRIKE) {
+        if (spell == SpellType.SOUND_STRIKE || spell == SpellType.BATTLE_HYMN || spell == SpellType.SILENCE_ZONE || spell == SpellType.CLARIFYING_TONE) {
             categoryText = Text.literal("♪ Магия звука").formatted(spell.getColor());
         }
 
