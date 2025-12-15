@@ -25,6 +25,11 @@ import com.manaborn.network.RequestLearnedSpellsC2SPacket;
 import com.manaborn.network.SelectSpellC2SPacket;
 import com.manaborn.network.SpellLevelSyncS2CPacket;
 import com.manaborn.network.SpellUpgradeC2SPacket;
+import com.manaborn.network.PassiveSyncS2CPacket;
+import com.manaborn.network.PassiveSlotsUpdateC2SPacket;
+import com.manaborn.passives.PassiveManager;
+import com.manaborn.passives.PassiveType;
+import com.manaborn.passives.PassiveEffectsManager;
 import com.manaborn.spells.LearnedSpellsManager;
 import com.manaborn.spells.SpellManager;
 import com.manaborn.spells.SpellType;
@@ -127,14 +132,24 @@ public class ManabornMod implements ModInitializer {
 		PayloadTypeRegistry.playS2C().register(ManaSyncS2CPacket.ID, ManaSyncS2CPacket.CODEC);
 		PayloadTypeRegistry.playS2C().register(LearnedSpellsSyncS2CPacket.ID, LearnedSpellsSyncS2CPacket.CODEC);
 		PayloadTypeRegistry.playS2C().register(SpellLevelSyncS2CPacket.ID, SpellLevelSyncS2CPacket.CODEC);
+		PayloadTypeRegistry.playS2C().register(PassiveSyncS2CPacket.ID, PassiveSyncS2CPacket.CODEC);
 		
 		// Регистрация типа C2S пакета для запроса синхронизации изученных заклинаний
 		PayloadTypeRegistry.playC2S().register(RequestLearnedSpellsC2SPacket.ID, RequestLearnedSpellsC2SPacket.CODEC);
 		PayloadTypeRegistry.playC2S().register(SpellUpgradeC2SPacket.ID, SpellUpgradeC2SPacket.CODEC);
+		PayloadTypeRegistry.playC2S().register(PassiveSlotsUpdateC2SPacket.ID, PassiveSlotsUpdateC2SPacket.CODEC);
 		
 		// Регистрация команд
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			com.manaborn.commands.ResetSpellsCommand.register(dispatcher, registryAccess, environment);
+		});
+
+		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+			ServerPlayerEntity player = handler.player;
+			if (player != null) {
+				PassiveManager.loadOrInit(player);
+				PassiveManager.sendSync(player);
+			}
 		});
 
 		// Обработчик запроса с клиента — отправляем текущий список изученных заклинаний
@@ -144,6 +159,17 @@ public class ManabornMod implements ModInitializer {
 				LearnedSpellsManager.ensureInitialized(player);
 				LearnedSpellsManager.sendSync(player);
 			}
+		});
+
+		ServerPlayNetworking.registerGlobalReceiver(PassiveSlotsUpdateC2SPacket.ID, (payload, context) -> {
+			context.server().execute(() -> {
+				ServerPlayerEntity player = context.player();
+				if (player != null) {
+					PassiveType s0 = PassiveType.fromId(payload.slot0());
+					PassiveType s1 = PassiveType.fromId(payload.slot1());
+					PassiveManager.setActiveSlots(player, s0, s1);
+				}
+			});
 		});
 
 		// Регистрация типа C2S пакета для выбора заклинания
@@ -610,6 +636,7 @@ public class ManabornMod implements ModInitializer {
 		// пылинок
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			ManaManager.onServerTick(server.getPlayerManager().getPlayerList());
+			PassiveEffectsManager.onServerTick(server.getPlayerManager().getPlayerList());
 			com.manaborn.spells.SpellManager.tickFireWalls();
 			com.manaborn.spells.SpellManager.tickFrostAuras(server.getPlayerManager().getPlayerList());
 			com.manaborn.spells.SpellManager.tickAbsorbingBarriers(server.getPlayerManager().getPlayerList());

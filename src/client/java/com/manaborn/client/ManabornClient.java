@@ -12,6 +12,8 @@ import com.manaborn.client.ui.SpellEnhancementAltarScreen;
 import com.manaborn.network.ManaSyncS2CPacket;
 import com.manaborn.network.LearnedSpellsSyncS2CPacket;
 import com.manaborn.network.RequestLearnedSpellsC2SPacket;
+import com.manaborn.network.PassiveSyncS2CPacket;
+import com.manaborn.client.state.ClientPassivesState;
 import com.manaborn.ManabornMod;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -85,6 +87,10 @@ public class ManabornClient implements ClientModInitializer {
         // Обработчик пакета синхронизации уровней заклинаний
         ClientPlayNetworking.registerGlobalReceiver(com.manaborn.network.SpellLevelSyncS2CPacket.ID, (payload, context) -> {
             context.client().execute(() -> ClientSpellLevelsState.setLevels(payload.levels()));
+        });
+
+        ClientPlayNetworking.registerGlobalReceiver(PassiveSyncS2CPacket.ID, (payload, context) -> {
+            context.client().execute(() -> ClientPassivesState.setFromPacket(payload.learnedIds(), payload.slot0(), payload.slot1()));
         });
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
