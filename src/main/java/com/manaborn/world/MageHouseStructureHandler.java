@@ -1,6 +1,7 @@
 package com.manaborn.world;
 
 import com.manaborn.ManabornMod;
+import com.manaborn.entities.MageMerchantEntity;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.minecraft.block.entity.BarrelBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
@@ -77,6 +78,9 @@ public class MageHouseStructureHandler {
             // Помечаем бочку как обработанную
             processedBarrels.add(globalPos);
             
+            // Спавним маг-торговца рядом с бочкой (если ещё нет)
+            spawnMageMerchantNear(world, pos);
+            
             System.out.println("[Manaborn] Replaced spell book in barrel at " + pos + " with " + newBook);
         }
     }
@@ -97,6 +101,39 @@ public class MageHouseStructureHandler {
         } else {
             return ManabornMod.BATTLE_HYMN_SPELL_BOOK;
         }
+    }
+    
+    /**
+     * Спавнит маг-торговца рядом с указанной позицией (если в радиусе нет другого)
+     */
+    private static void spawnMageMerchantNear(ServerWorld world, BlockPos pos) {
+        // Проверяем, нет ли уже маг-торговца в радиусе 10 блоков
+        var existingMerchants = world.getEntitiesByClass(
+                MageMerchantEntity.class,
+                new net.minecraft.util.math.Box(pos).expand(10),
+                e -> true
+        );
+        
+        if (!existingMerchants.isEmpty()) {
+            return; // Уже есть торговец
+        }
+        
+        // Ищем свободное место для спавна (на 1-2 блока выше пола)
+        BlockPos spawnPos = pos.up();
+        for (int i = 0; i < 5; i++) {
+            if (world.isAir(spawnPos) && world.isAir(spawnPos.up())) {
+                break;
+            }
+            spawnPos = spawnPos.up();
+        }
+        
+        // Создаём и спавним маг-торговца
+        MageMerchantEntity merchant = new MageMerchantEntity(ManabornMod.MAGE_MERCHANT_ENTITY, world);
+        merchant.setPosition(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5);
+        merchant.setPersistent(); // Не деспавнится
+        world.spawnEntity(merchant);
+        
+        System.out.println("[Manaborn] Spawned Mage Merchant at " + spawnPos);
     }
     
     /**

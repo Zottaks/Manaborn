@@ -42,5 +42,7 @@
   "item.manaborn.spell_enhancement_altar": "Spell Enhancement Altar",
   "container.manaborn.spell_enhancement_altar": "Spell Enhancement",
   "advancement.manaborn.magic_staff.title": "Magical Power!",
-  "advancement.manaborn.magic_staff.description": "Obtain a mana wand"
+  "advancement.manaborn.magic_staff.description": "Obtain a mana wand",
+  "entity.manaborn.mage_merchant": "Mage Merchant",
+  "item.manaborn.mage_merchant_spawn_egg": "Mage Merchant Spawn Egg"
 }

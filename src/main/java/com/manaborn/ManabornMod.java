@@ -35,6 +35,7 @@ import com.manaborn.spells.SpellManager;
 import com.manaborn.spells.SpellType;
 import com.manaborn.entities.IceShardEntity;
 import com.manaborn.entities.DustWispEntity;
+import com.manaborn.entities.MageMerchantEntity;
 import com.manaborn.world.DustWispManager;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -52,6 +53,7 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.loot.v3.LootTableEvents;
+import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.minecraft.loot.LootPool;
 import net.minecraft.loot.entry.ItemEntry;
 import net.minecraft.loot.provider.number.ConstantLootNumberProvider;
@@ -110,6 +112,8 @@ public class ManabornMod implements ModInitializer {
 	public static Item MANA_VESSEL;
 	public static Item MANOSCOPE;
 	public static EntityType<DustWispEntity> DUST_WISP_ENTITY;
+	public static EntityType<MageMerchantEntity> MAGE_MERCHANT_ENTITY;
+	public static Item MAGE_MERCHANT_SPAWN_EGG;
 	public static Block MANA_MAGNET;
 	public static BlockEntityType<com.manaborn.blocks.entity.ManaMagnetBlockEntity> MANA_MAGNET_ENTITY;
 	public static Item ETHER;
@@ -273,6 +277,29 @@ public class ManabornMod implements ModInitializer {
 				EntityType.Builder.<DustWispEntity>create(DustWispEntity::new, SpawnGroup.MISC)
 						.dimensions(0.1f, 0.1f)
 						.build(wispKey));
+
+		// Регистрация сущности маг-торговца
+		RegistryKey<EntityType<?>> mageMerchantKey = RegistryKey.of(Registries.ENTITY_TYPE.getKey(),
+				Identifier.of(MOD_ID, "mage_merchant"));
+		MAGE_MERCHANT_ENTITY = Registry.register(
+				Registries.ENTITY_TYPE,
+				mageMerchantKey,
+				EntityType.Builder.<MageMerchantEntity>create(MageMerchantEntity::new, SpawnGroup.CREATURE)
+						.dimensions(0.6f, 1.95f) // Размер как у жителя
+						.build(mageMerchantKey));
+		
+		// Спавн-яйцо маг-торговца (кастомный item для обхода проблем с SpawnEggItem в 1.21+)
+		RegistryKey<Item> mageMerchantEggKey = RegistryKey.of(Registries.ITEM.getKey(), 
+				Identifier.of(MOD_ID, "mage_merchant_spawn_egg"));
+		MAGE_MERCHANT_SPAWN_EGG = Registry.register(Registries.ITEM, mageMerchantEggKey,
+				new com.manaborn.items.MageMerchantSpawnEggItem(new Item.Settings()
+						.registryKey(mageMerchantEggKey)
+						.maxCount(64)));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(entries -> entries.add(MAGE_MERCHANT_SPAWN_EGG));
+		
+		// Регистрируем атрибуты для маг-торговца (КРИТИЧНО - без этого сущность не спавнится!)
+		FabricDefaultAttributeRegistry.register(MAGE_MERCHANT_ENTITY, MageMerchantEntity.createMobAttributes());
+		System.out.println(" [DEBUG] Mage Merchant зарегистрирован с ID: " + mageMerchantKey.getValue());
 
 		// Регистрация Mana Wand
 		RegistryKey<Item> wandKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "mana_wand"));

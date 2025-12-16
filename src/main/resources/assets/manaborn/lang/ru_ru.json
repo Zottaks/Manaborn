@@ -34,5 +34,7 @@
   
   "category.manaborn.general": "Manaborn",
   "key.manaborn.open_spell_menu": "Открыть меню заклинаний (+ Shift)",
-  "key.manaborn.toggle_spell_menu_mode": "Переключить режим меню (нажатие/удержание)"
+  "key.manaborn.toggle_spell_menu_mode": "Переключить режим меню (нажатие/удержание)",
+  "entity.manaborn.mage_merchant": "Маг-торговец",
+  "item.manaborn.mage_merchant_spawn_egg": "Яйцо призыва маг-торговца"
 }
