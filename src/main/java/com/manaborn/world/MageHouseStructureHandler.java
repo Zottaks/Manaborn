@@ -25,14 +25,14 @@ public class MageHouseStructureHandler {
     private static final Random random = new Random();
     
     public static void register() {
-        // ВРЕМЕННО ОТКЛЮЧЕНО - вызывает зависание при загрузке чанков
-        // TODO: Переделать на асинхронную обработку или использовать другой подход
-        /*
+        // Используем отложенную обработку чанков для избежания зависаний
         ServerChunkEvents.CHUNK_LOAD.register((world, chunk) -> {
-            processChunk(world, chunk);
+            // Откладываем обработку на следующий тик сервера
+            world.getServer().execute(() -> {
+                processChunk(world, chunk);
+            });
         });
-        */
-        System.out.println("[Manaborn] MageHouseStructureHandler disabled (causes chunk loading issues)");
+        System.out.println("[Manaborn] MageHouseStructureHandler registered");
     }
     
     private static void processChunk(ServerWorld world, WorldChunk chunk) {
