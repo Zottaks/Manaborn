@@ -99,13 +99,9 @@ public class MageMerchantEntity extends MerchantEntity {
         offers.add(createBuyOffer2(Items.EMERALD, 8, ManabornMod.MAGIC_DUST, 16, 
                 ManabornMod.MANA_VESSEL, 1, 6, 5));
         
-        // Эфир за изумруды и пыль
-        offers.add(createBuyOffer2(Items.EMERALD, 6, ManabornMod.MAGIC_DUST, 8,
-                ManabornMod.ETHER, 4, 8, 4));
 
-        // === Книги заклинаний (редкие, ограниченные) ===
+        // === Книги заклинаний (случайные 1-3 книги) ===
         
-        // Случайно выбираем 2-3 книги для этого торговца
         Item[] spellBooks = {
                 ManabornMod.FIREBALL_SPELL_BOOK,
                 ManabornMod.ICE_SHARD_SPELL_BOOK,
@@ -115,38 +111,54 @@ public class MageMerchantEntity extends MerchantEntity {
                 ManabornMod.WEAKNESS_CURSE_SPELL_BOOK
         };
         
-        // Перемешиваем и берём 2-3 книги
+        // Перемешиваем и берём 1-3 книги
         java.util.List<Item> bookList = new java.util.ArrayList<>(java.util.Arrays.asList(spellBooks));
         java.util.Collections.shuffle(bookList, new java.util.Random(this.getUuid().hashCode()));
         
-        int bookCount = 2 + this.random.nextInt(2); // 2-3 книги
+        int bookCount = 1 + this.random.nextInt(3); // 1-3 книги
         for (int i = 0; i < Math.min(bookCount, bookList.size()); i++) {
             Item book = bookList.get(i);
-            // Книги стоят дорого: 16-24 изумрудов + эфир
-            int emeraldCost = 16 + this.random.nextInt(9);
-            offers.add(createBuyOffer2(Items.EMERALD, emeraldCost, ManabornMod.ETHER, 4,
-                    book, 1, 3, 10));
+            // Цены зависят от книги
+            if (book == ManabornMod.FIREBALL_SPELL_BOOK) {
+                // Fireball - 7 изумрудов + 50 пыли
+                offers.add(createBuyOffer2(Items.EMERALD, 7, ManabornMod.MAGIC_DUST, 50,
+                        book, 1, 3, 10));
+            } else if (book == ManabornMod.ICE_SHARD_SPELL_BOOK) {
+                // Ice Shard - 8 изумрудов + 40 пыли
+                offers.add(createBuyOffer2(Items.EMERALD, 8, ManabornMod.MAGIC_DUST, 40,
+                        book, 1, 3, 10));
+            } else if (book == ManabornMod.BATTLE_HYMN_SPELL_BOOK) {
+                // Battle Hymn - 15 изумрудов + 2 эфира
+                offers.add(createBuyOffer2(Items.EMERALD, 15, ManabornMod.ETHER, 2,
+                        book, 1, 3, 10));
+            } else if (book == ManabornMod.INNER_HEAT_SPELL_BOOK) {
+                // Inner Heat - 10 изумрудов + 1 эфир
+                offers.add(createBuyOffer2(Items.EMERALD, 10, ManabornMod.ETHER, 1,
+                        book, 1, 3, 10));
+            } else if (book == ManabornMod.FROST_AURA_SPELL_BOOK) {
+                // Frost Aura - 17 изумрудов + 1 эфир
+                offers.add(createBuyOffer2(Items.EMERALD, 17, ManabornMod.ETHER, 1,
+                        book, 1, 3, 10));
+            } else if (book == ManabornMod.WEAKNESS_CURSE_SPELL_BOOK) {
+                // Weakness Curse - 13 изумрудов + 2 эфира
+                offers.add(createBuyOffer2(Items.EMERALD, 13, ManabornMod.ETHER, 2,
+                        book, 1, 3, 10));
+            }
         }
 
         // === Особые товары ===
         
-        // Маноскоп (редкий)
-        offers.add(createBuyOffer2(Items.EMERALD, 32, ManabornMod.ETHER, 8,
-                ManabornMod.MANOSCOPE, 1, 1, 15));
-        
-        // Сброс кулдаунов (если есть)
-        if (ManabornMod.SPELL_COOLDOWN_RESET != null) {
-            offers.add(createBuyOffer2(Items.EMERALD, 12, ManabornMod.ETHER, 2,
-                    ManabornMod.SPELL_COOLDOWN_RESET, 1, 4, 8));
-        }
+        // Маноскоп - 10 изумрудов + 20 лазурита
+        offers.add(createBuyOffer2(Items.EMERALD, 10, Items.LAPIS_LAZULI, 20,
+                ManabornMod.MANOSCOPE, 1, 3, 10));
 
         // === Обратная торговля (покупка у игрока) ===
         
         // Покупаем магическую пыль за изумруды
         offers.add(createSellOffer(ManabornMod.MAGIC_DUST, 16, Items.EMERALD, 1, 16, 2));
         
-        // Покупаем эфир за изумруды
-        offers.add(createSellOffer(ManabornMod.ETHER, 8, Items.EMERALD, 3, 12, 3));
+        // Покупаем эфир за изумруды (1 эфир = 3 изумруда)
+        offers.add(createSellOffer(ManabornMod.ETHER, 1, Items.EMERALD, 3, 12, 3));
     }
 
     /**
