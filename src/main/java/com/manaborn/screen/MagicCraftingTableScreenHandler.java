@@ -46,7 +46,8 @@ public class MagicCraftingTableScreenHandler extends ScreenHandler {
         this.player = playerInventory.player;
 
         // Result slot (0) - с проверкой маны
-        this.addSlot(new CraftingResultSlot(playerInventory.player, this.craftingInventory, this.resultInventory, 0, 124, 35) {
+        // GUI размер: 200x195, слот результата на (120, 47)
+        this.addSlot(new CraftingResultSlot(playerInventory.player, this.craftingInventory, this.resultInventory, 0, 120, 47) {
             @Override
             public void onTakeItem(PlayerEntity player, ItemStack stack) {
                 // Проверяем и тратим ману на сервере
@@ -69,22 +70,26 @@ public class MagicCraftingTableScreenHandler extends ScreenHandler {
         });
 
         // Crafting grid slots (1-9)
+        // Сетка 3x3 начинается с (25, 35)
         for (int row = 0; row < 3; ++row) {
             for (int col = 0; col < 3; ++col) {
-                this.addSlot(new Slot(this.craftingInventory, col + row * 3, 30 + col * 18, 17 + row * 18));
+                this.addSlot(new Slot(this.craftingInventory, col + row * 3, 25 + col * 18, 35 + row * 18));
             }
         }
 
         // Player inventory (10-36)
+        // GUI размер 200, инвентарь 162px -> центрируем: (200-162)/2 = 19
+        int invX = 19;
+        int invY = 113;
         for (int row = 0; row < 3; ++row) {
             for (int col = 0; col < 9; ++col) {
-                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, 84 + row * 18));
+                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, invX + col * 18, invY + row * 18));
             }
         }
 
         // Player hotbar (37-45)
         for (int col = 0; col < 9; ++col) {
-            this.addSlot(new Slot(playerInventory, col, 8 + col * 18, 142));
+            this.addSlot(new Slot(playerInventory, col, invX + col * 18, invY + 58));
         }
     }
 

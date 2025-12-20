@@ -28,24 +28,27 @@ public class SpellEnhancementAltarScreenHandler extends ScreenHandler {
         this.inventory = inventory;
         inventory.onOpen(playerInventory.player);
 
-        // ОДИН слот для ресурсов - справа вверху (где был квадрат уровня)
-        int slotX = 140;  // Правый верхний угол
-        int slotY = 18;   // Верхняя часть
+        // ОДИН слот для ресурсов - справа в панели деталей
+        // GUI размер: 320x240, слот на позиции (245, 95) относительно GUI
+        int slotX = 245;
+        int slotY = 95;
         
         this.addSlot(new Slot(inventory, 0, slotX, slotY));
 
-        // Инвентарь игрока (начинается с Y=84)
-        int playerInvY = 84;
+        // Инвентарь игрока (внизу GUI, начинается с Y=175)
+        // GUI шириной 320, инвентарь центрирован X=72 (чтобы центрировать 9*18=162 в 320)
+        int playerInvX = 72;
+        int playerInvY = 175;
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
                 this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 
-                    8 + col * 18, playerInvY + row * 18));
+                    playerInvX + col * 18, playerInvY + row * 18));
             }
         }
 
         // Хотбар
         for (int col = 0; col < 9; col++) {
-            this.addSlot(new Slot(playerInventory, col, 8 + col * 18, playerInvY + 58));
+            this.addSlot(new Slot(playerInventory, col, playerInvX + col * 18, playerInvY + 58));
         }
     }
 

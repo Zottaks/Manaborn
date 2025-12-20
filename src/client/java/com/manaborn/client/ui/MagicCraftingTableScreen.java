@@ -7,18 +7,31 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 
 /**
- * Screen для магического верстака
+ * Магический верстак - улучшенный визуал
  */
 public class MagicCraftingTableScreen extends HandledScreen<MagicCraftingTableScreenHandler> {
+    // UI Constants
+    private static final int GUI_WIDTH = 200;
+    private static final int GUI_HEIGHT = 195;
+    
+    // Colors
+    private static final int COLOR_BG = 0xF0101020;
+    private static final int COLOR_BORDER_INNER = 0xFF3D2A5C;
+    private static final int COLOR_PANEL = 0xE0181830;
+    private static final int COLOR_TITLE = 0xFFE0B0FF;
+    
+    // Animation
+    private int glowPulse = 0;
 
     public MagicCraftingTableScreen(MagicCraftingTableScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
+        this.backgroundWidth = GUI_WIDTH;
+        this.backgroundHeight = GUI_HEIGHT;
     }
 
     @Override
     protected void init() {
         super.init();
-        this.titleX = 29;
     }
 
     @Override
@@ -29,86 +42,83 @@ public class MagicCraftingTableScreen extends HandledScreen<MagicCraftingTableSc
 
     @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
-        int x = this.x;
-        int y = this.y;
+        glowPulse = (glowPulse + 1) % 60;
         
-        // Фон
-        int bg = 0xCC0F0F13;
-        context.fill(x, y, x + backgroundWidth, y + backgroundHeight, bg);
+        int x = (this.width - GUI_WIDTH) / 2;
+        int y = (this.height - GUI_HEIGHT) / 2;
         
-        // Магическая рамка
-        context.fill(x, y, x + backgroundWidth, y + 2, 0xFFAA00FF);  // Верх - фиолетовый
-        context.fill(x, y + backgroundHeight - 2, x + backgroundWidth, y + backgroundHeight, 0xFFAA00FF);  // Низ
-        context.fill(x, y, x + 2, y + backgroundHeight, 0xFFAA00FF);  // Лево
-        context.fill(x + backgroundWidth - 2, y, x + backgroundWidth, y + backgroundHeight, 0xFFAA00FF);  // Право
+        // Основной фон
+        context.fill(x, y, x + GUI_WIDTH, y + GUI_HEIGHT, COLOR_BG);
         
-        // === ЗОНА КРАФТА ===
-        // Фон для зоны крафта
-        context.fill(x + 6, y + 14, x + 150, y + 74, 0x99000000);  // Полупрозрачный черный
+        // Внешняя рамка с пульсацией (как у алтарей)
+        int pulseOffset = (int)(Math.sin(glowPulse * 0.1) * 20);
+        int borderR = Math.min(255, 107 + pulseOffset);
+        int borderColor = 0xFF000000 | (borderR << 16) | (75 << 8) | 163;
+        drawBorder(context, x, y, GUI_WIDTH, GUI_HEIGHT, borderColor, 2);
         
-        // Рамка зоны крафта (серая)
-        context.fill(x + 6, y + 14, x + 150, y + 15, 0xFF6B6B6B);  // Верх
-        context.fill(x + 6, y + 73, x + 150, y + 74, 0xFF6B6B6B);  // Низ
-        context.fill(x + 6, y + 14, x + 7, y + 74, 0xFF6B6B6B);    // Лево
-        context.fill(x + 149, y + 14, x + 150, y + 74, 0xFF6B6B6B); // Право
+        // Внутренняя рамка
+        drawBorder(context, x + 3, y + 3, GUI_WIDTH - 6, GUI_HEIGHT - 6, COLOR_BORDER_INNER, 1);
         
-        // Слоты крафтинга 3x3 (x=30, y=17)
+        // === ПАНЕЛЬ КРАФТА ===
+        int craftPanelX = x + 10;
+        int craftPanelY = y + 25;
+        int craftPanelW = GUI_WIDTH - 20;
+        int craftPanelH = 70;
+        
+        context.fill(craftPanelX, craftPanelY, craftPanelX + craftPanelW, craftPanelY + craftPanelH, COLOR_PANEL);
+        drawBorder(context, craftPanelX, craftPanelY, craftPanelW, craftPanelH, COLOR_BORDER_INNER, 1);
+        
+        // Слоты крафтинга 3x3 (центрировано)
+        int gridStartX = x + 25;
+        int gridStartY = y + 35;
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
-                int slotX = x + 30 + col * 18;
-                int slotY = y + 17 + row * 18;
-                drawSlot(context, slotX, slotY, 0xFF8B8B8B);  // Серые слоты
+                int slotX = gridStartX + col * 18;
+                int slotY = gridStartY + row * 18;
+                drawSlotBorder(context, slotX, slotY, 16, 0xFF555555);
             }
         }
         
-        // Стрелка "→" между крафтом и результатом
-        context.fill(x + 90, y + 38, x + 110, y + 40, 0xFF999999);   // Горизонтальная линия
-        context.fill(x + 107, y + 35, x + 110, y + 38, 0xFF999999);  // Верхняя стрелка
-        context.fill(x + 107, y + 40, x + 110, y + 43, 0xFF999999);  // Нижняя стрелка
+        // Стрелка → (статичная)
+        context.drawText(this.textRenderer, "➜", x + 90, y + 52, 0xFFAAAAAA, false);
         
-        // Слот результата (x=124, y=35)
-        drawSlot(context, x + 124, y + 35, 0xFFAAAAAA);  // Светло-серый результат
+        // Слот результата с золотой рамкой (статичная)
+        drawSlotBorder(context, x + 120, y + 47, 16, 0xFFDDAA00);
         
-        // === РАЗДЕЛИТЕЛЬ ===
-        int separatorY = y + 78;
-        context.fill(x + 4, separatorY, x + backgroundWidth - 4, separatorY + 1, 0xFF666666);  // Линия
-        context.fill(x + 4, separatorY + 1, x + backgroundWidth - 4, separatorY + 2, 0x88888888);  // Подсветка
+        // === ИНВЕНТАРЬ ИГРОКА (центрировано) ===
+        int invWidth = 9 * 18;
+        int invX = x + (GUI_WIDTH - invWidth) / 2;
+        int invY = y + 113;
+        int invHeight = 4 * 18 + 4;
         
-        // === ИНВЕНТАРЬ ИГРОКА ===
-        // Фон для инвентаря
-        context.fill(x + 6, y + 81, x + backgroundWidth - 6, y + 160, 0x66000000);  // Темный фон
-        
-        // Основной инвентарь 9x3 (x=8, y=84)
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) {
-                int slotX = x + 8 + col * 18;
-                int slotY = y + 84 + row * 18;
-                drawSlot(context, slotX, slotY, 0xFF555555);  // Серые слоты
-            }
-        }
-        
-        // Разделитель перед хотбаром
-        context.fill(x + 8, y + 138, x + backgroundWidth - 8, y + 139, 0xFF444444);
-        
-        // Хотбар 9x1 (x=8, y=142)
-        for (int col = 0; col < 9; col++) {
-            int slotX = x + 8 + col * 18;
-            int slotY = y + 142;
-            drawSlot(context, slotX, slotY, 0xFF777777);  // Светло-серые слоты хотбара
-        }
+        context.fill(invX - 4, invY - 4, invX + invWidth + 4, invY + invHeight, 0x80000000);
+        drawBorder(context, invX - 4, invY - 4, invWidth + 8, invHeight + 4, COLOR_BORDER_INNER, 1);
     }
     
-    /**
-     * Рисует рамку слота
-     */
-    private void drawSlot(DrawContext context, int x, int y, int color) {
-        // Внешняя рамка
-        context.fill(x - 1, y - 1, x + 17, y, color);        // Верх
-        context.fill(x - 1, y + 16, x + 17, y + 17, color);  // Низ
-        context.fill(x - 1, y - 1, x, y + 17, color);        // Лево
-        context.fill(x + 16, y - 1, x + 17, y + 17, color);  // Право
+    @Override
+    protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
+        // Заголовок
+        String title = "✧ Магический Крафт ✧";
+        int titleWidth = this.textRenderer.getWidth(title);
+        context.drawText(this.textRenderer, title, (GUI_WIDTH - titleWidth) / 2, 8, COLOR_TITLE, true);
         
-        // Внутренний темный фон
-        context.fill(x, y, x + 16, y + 16, 0xAA000000);
+        // Подпись инвентаря (центрировано)
+        String invLabel = "Инвентарь";
+        int invLabelX = (GUI_WIDTH - this.textRenderer.getWidth(invLabel)) / 2;
+        context.drawText(this.textRenderer, invLabel, invLabelX, 103, 0xFF666666, false);
+    }
+    
+    private void drawBorder(DrawContext context, int x, int y, int w, int h, int color, int thickness) {
+        context.fill(x, y, x + w, y + thickness, color);
+        context.fill(x, y + h - thickness, x + w, y + h, color);
+        context.fill(x, y, x + thickness, y + h, color);
+        context.fill(x + w - thickness, y, x + w, y + h, color);
+    }
+    
+    private void drawSlotBorder(DrawContext context, int sx, int sy, int size, int color) {
+        context.fill(sx - 2, sy - 2, sx + size + 2, sy - 1, color);
+        context.fill(sx - 2, sy + size + 1, sx + size + 2, sy + size + 2, color);
+        context.fill(sx - 2, sy - 1, sx - 1, sy + size + 1, color);
+        context.fill(sx + size + 1, sy - 1, sx + size + 2, sy + size + 1, color);
     }
 }

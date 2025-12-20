@@ -27,8 +27,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class MageMerchantEntity extends MerchantEntity {
 
-    // Торговые предложения будут инициализированы при первом взаимодействии
-    private boolean tradingInitialized = false;
 
     public MageMerchantEntity(EntityType<? extends MerchantEntity> entityType, World world) {
         super(entityType, world);
@@ -59,6 +57,14 @@ public class MageMerchantEntity extends MerchantEntity {
     protected SoundEvent getDeathSound() {
         return SoundEvents.ENTITY_VILLAGER_DEATH;
     }
+    
+    @Override
+    protected void dropLoot(ServerWorld world, net.minecraft.entity.damage.DamageSource damageSource, boolean causedByPlayer) {
+        super.dropLoot(world, damageSource, causedByPlayer);
+        // Дроп магической пыли (1-6 штук)
+        int dustCount = 1 + this.random.nextInt(6);
+        this.dropStack(world, new ItemStack(ManabornMod.MAGIC_DUST, dustCount));
+    }
 
     @Override
     protected SoundEvent getTradingSound(boolean sold) {
@@ -82,26 +88,26 @@ public class MageMerchantEntity extends MerchantEntity {
 
     @Override
     protected void fillRecipes() {
-        if (tradingInitialized) return;
-        tradingInitialized = true;
-
         TradeOfferList offers = this.getOffers();
-
-        // === Базовые товары (всегда доступны) ===
         
-        // Магическая пыль за изумруды
-        offers.add(createBuyOffer(Items.EMERALD, 2, ManabornMod.MAGIC_DUST, 8, 16, 2));
+        // Если уже есть трейды - не добавляем новые
+        if (!offers.isEmpty()) return;
         
-        // Кристалл маны за изумруды
-        offers.add(createBuyOffer(Items.EMERALD, 4, ManabornMod.MANA_POTION, 2, 12, 3));
+        // Фиксированный набор трейдов (без рандома чтобы избежать дубликатов)
         
-        // Сосуд маны за изумруды и пыль
-        offers.add(createBuyOffer2(Items.EMERALD, 8, ManabornMod.MAGIC_DUST, 16, 
-                ManabornMod.MANA_VESSEL, 1, 6, 5));
+        // 1. Магическая пыль
+        offers.add(createBuyOffer(Items.EMERALD, 3, ManabornMod.MAGIC_DUST, 16, 16, 2));
         
-
-        // === Книги заклинаний (случайные 1-3 книги) ===
+        // 2. Зелье маны
+        offers.add(createBuyOffer(Items.EMERALD, 6, ManabornMod.MANA_POTION, 2, 12, 3));
         
+        // 3. Сосуд маны
+        offers.add(createBuyOffer(Items.EMERALD, 15, ManabornMod.MANA_VESSEL, 1, 6, 5));
+        
+        // 4. Маноскоп
+        offers.add(createBuyOffer(Items.EMERALD, 20, ManabornMod.MANOSCOPE, 1, 3, 10));
+        
+        // 5. Одна случайная книга (на основе UUID)
         Item[] spellBooks = {
                 ManabornMod.FIREBALL_SPELL_BOOK,
                 ManabornMod.ICE_SHARD_SPELL_BOOK,
@@ -110,55 +116,11 @@ public class MageMerchantEntity extends MerchantEntity {
                 ManabornMod.FROST_AURA_SPELL_BOOK,
                 ManabornMod.WEAKNESS_CURSE_SPELL_BOOK
         };
+        int bookIndex = Math.abs(this.getUuid().hashCode()) % spellBooks.length;
+        offers.add(createBuyOffer(Items.EMERALD, 25, spellBooks[bookIndex], 1, 3, 15));
         
-        // Перемешиваем и берём 1-3 книги
-        java.util.List<Item> bookList = new java.util.ArrayList<>(java.util.Arrays.asList(spellBooks));
-        java.util.Collections.shuffle(bookList, new java.util.Random(this.getUuid().hashCode()));
-        
-        int bookCount = 1 + this.random.nextInt(3); // 1-3 книги
-        for (int i = 0; i < Math.min(bookCount, bookList.size()); i++) {
-            Item book = bookList.get(i);
-            // Цены зависят от книги
-            if (book == ManabornMod.FIREBALL_SPELL_BOOK) {
-                // Fireball - 7 изумрудов + 50 пыли
-                offers.add(createBuyOffer2(Items.EMERALD, 7, ManabornMod.MAGIC_DUST, 50,
-                        book, 1, 3, 10));
-            } else if (book == ManabornMod.ICE_SHARD_SPELL_BOOK) {
-                // Ice Shard - 8 изумрудов + 40 пыли
-                offers.add(createBuyOffer2(Items.EMERALD, 8, ManabornMod.MAGIC_DUST, 40,
-                        book, 1, 3, 10));
-            } else if (book == ManabornMod.BATTLE_HYMN_SPELL_BOOK) {
-                // Battle Hymn - 15 изумрудов + 2 эфира
-                offers.add(createBuyOffer2(Items.EMERALD, 15, ManabornMod.ETHER, 2,
-                        book, 1, 3, 10));
-            } else if (book == ManabornMod.INNER_HEAT_SPELL_BOOK) {
-                // Inner Heat - 10 изумрудов + 1 эфир
-                offers.add(createBuyOffer2(Items.EMERALD, 10, ManabornMod.ETHER, 1,
-                        book, 1, 3, 10));
-            } else if (book == ManabornMod.FROST_AURA_SPELL_BOOK) {
-                // Frost Aura - 17 изумрудов + 1 эфир
-                offers.add(createBuyOffer2(Items.EMERALD, 17, ManabornMod.ETHER, 1,
-                        book, 1, 3, 10));
-            } else if (book == ManabornMod.WEAKNESS_CURSE_SPELL_BOOK) {
-                // Weakness Curse - 13 изумрудов + 2 эфира
-                offers.add(createBuyOffer2(Items.EMERALD, 13, ManabornMod.ETHER, 2,
-                        book, 1, 3, 10));
-            }
-        }
-
-        // === Особые товары ===
-        
-        // Маноскоп - 10 изумрудов + 20 лазурита
-        offers.add(createBuyOffer2(Items.EMERALD, 10, Items.LAPIS_LAZULI, 20,
-                ManabornMod.MANOSCOPE, 1, 3, 10));
-
-        // === Обратная торговля (покупка у игрока) ===
-        
-        // Покупаем магическую пыль за изумруды
-        offers.add(createSellOffer(ManabornMod.MAGIC_DUST, 16, Items.EMERALD, 1, 16, 2));
-        
-        // Покупаем эфир за изумруды (1 эфир = 3 изумруда)
-        offers.add(createSellOffer(ManabornMod.ETHER, 1, Items.EMERALD, 3, 12, 3));
+        // 6. Покупка эфира у игрока
+        offers.add(createSellOffer(ManabornMod.ETHER, 1, Items.EMERALD, 5, 12, 3));
     }
 
     /**
@@ -175,20 +137,6 @@ public class MageMerchantEntity extends MerchantEntity {
         );
     }
 
-    /**
-     * Создаёт предложение с двумя входными предметами
-     */
-    private TradeOffer createBuyOffer2(Item buyItem1, int buyCount1, Item buyItem2, int buyCount2,
-                                        Item sellItem, int sellCount, int maxUses, int merchantXp) {
-        return new TradeOffer(
-                new TradedItem(buyItem1, buyCount1),
-                java.util.Optional.of(new TradedItem(buyItem2, buyCount2)),
-                new ItemStack(sellItem, sellCount),
-                maxUses,
-                merchantXp,
-                0.05f
-        );
-    }
 
     /**
      * Создаёт предложение: торговец покупает у игрока

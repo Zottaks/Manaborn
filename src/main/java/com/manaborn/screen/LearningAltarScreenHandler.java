@@ -31,14 +31,15 @@ public class LearningAltarScreenHandler extends ScreenHandler {
         inventory.onOpen(playerInventory.player);
         this.addProperties(properties);
 
-        // Slots: 0 - wand, 1 - book
-        this.addSlot(new Slot(inventory, 0, 44, 35) {
+        // Slots: 0 - wand (слева), 1 - book (справа)
+        // GUI размер: 220x200, слоты на позициях (30, 45) и (170, 45)
+        this.addSlot(new Slot(inventory, 0, 30, 45) {
             @Override
             public boolean canInsert(ItemStack stack) {
                 return stack.getItem() == ManabornMod.MANA_WAND;
             }
         });
-        this.addSlot(new Slot(inventory, 1, 116, 35) {
+        this.addSlot(new Slot(inventory, 1, 170, 45) {
             @Override
             public boolean canInsert(ItemStack stack) {
                 return stack.getItem() instanceof com.manaborn.items.SpellBookItem;
@@ -46,15 +47,17 @@ public class LearningAltarScreenHandler extends ScreenHandler {
         });
 
         // Player inventory (27) and hotbar (9)
-        int m;
-        int l;
-        for (m = 0; m < 3; ++m) {
-            for (l = 0; l < 9; ++l) {
-                this.addSlot(new Slot(playerInventory, l + m * 9 + 9, 8 + l * 18, 84 + m * 18));
+        // GUI размер 220, инвентарь 162px -> центрируем: (220-162)/2 = 29
+        int invX = 29;
+        int invY = 118;
+        for (int row = 0; row < 3; ++row) {
+            for (int col = 0; col < 9; ++col) {
+                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, invX + col * 18, invY + row * 18));
             }
         }
-        for (m = 0; m < 9; ++m) {
-            this.addSlot(new Slot(playerInventory, m, 8 + m * 18, 142));
+        // Hotbar
+        for (int col = 0; col < 9; ++col) {
+            this.addSlot(new Slot(playerInventory, col, invX + col * 18, invY + 58));
         }
     }
 

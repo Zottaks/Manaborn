@@ -1,196 +1,233 @@
 package com.manaborn.client.ui;
 
+import com.manaborn.items.SpellBookItem;
 import com.manaborn.screen.LearningAltarScreenHandler;
+import com.manaborn.spells.SpellType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
-
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Util;
-import net.minecraft.util.math.MathHelper;
 
+/**
+ * Алтарь Изучения - улучшенный визуал
+ */
 public class LearningAltarScreen extends HandledScreen<LearningAltarScreenHandler> {
+    // UI Constants
+    private static final int GUI_WIDTH = 220;
+    private static final int GUI_HEIGHT = 200;
+    
+    // Colors
+    private static final int COLOR_BG = 0xF0101020;
+    private static final int COLOR_BORDER_INNER = 0xFF3D2A5C;
+    private static final int COLOR_PANEL = 0xE0181830;
+    private static final int COLOR_TITLE = 0xFFE0B0FF;
+    private static final int COLOR_TEXT = 0xFFCCCCCC;
+    private static final int COLOR_HIGHLIGHT = 0xFF4DA3FF;
+    
+    // Animation
+    private int glowPulse = 0;
+    
     private ButtonWidget learnButton;
 
     public LearningAltarScreen(LearningAltarScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
-        this.backgroundWidth = 176;
-        this.backgroundHeight = 166;
+        this.backgroundWidth = GUI_WIDTH;
+        this.backgroundHeight = GUI_HEIGHT;
     }
 
     @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
-        int x = (this.width - this.backgroundWidth) / 2;
-        int y = (this.height - this.backgroundHeight) / 2;
-        // Decorated background: dark panel with colored accents
-        int bg = 0xCC0F0F13; // deep bluish gray with alpha
-        context.fill(x, y, x + backgroundWidth, y + backgroundHeight, bg);
-        // top/bottom accent lines
-        context.fill(x, y, x + backgroundWidth, y + 2, 0xFF2A4A7A);
-        context.fill(x, y + backgroundHeight - 2, x + backgroundWidth, y + backgroundHeight, 0xFF2A4A7A);
-        // corner accents
-        context.fill(x + 4, y + 4, x + 20, y + 5, 0xFF4DA3FF);
-        context.fill(x + backgroundWidth - 20, y + 4, x + backgroundWidth - 4, y + 5, 0xFF4DA3FF);
-        context.fill(x + 4, y + backgroundHeight - 5, x + 20, y + backgroundHeight - 4, 0xFF4DA3FF);
-        context.fill(x + backgroundWidth - 20, y + backgroundHeight - 5, x + backgroundWidth - 4, y + backgroundHeight - 4, 0xFF4DA3FF);
-
-        // Progress bar (between slots): compute gap between wand and book slots
-        int progress = this.handler.getProgress();
-        int max = this.handler.getMaxProgress();
-        int wandSlotX = x + 44;
-        int wandSlotY = y + 35;
-        int bookSlotX = x + 116;
-        int bookSlotY = y + 35;
-        int slotSize = 18;
-        int gapLeft = wandSlotX + slotSize;
-        int gapRight = bookSlotX;
-        int available = Math.max(0, gapRight - gapLeft);
-        int barWidth = Math.max(32, Math.min(60, available - 4)); // keep small margins and sane limits
-        int filled = max > 0 ? (int)((progress / (float)max) * barWidth) : 0;
-        int barX = gapLeft + ((available - barWidth) / 2);
-        int barY = wandSlotY + (slotSize - 8) / 2; // vertically centered in slot row
-        // border
-        int bx = barX - 1, by = barY - 1, bw = barWidth + 2, bh = 10;
-        context.fill(bx, by, bx + bw, by + 1, 0xFF1F1F1F);
-        context.fill(bx, by + bh - 1, bx + bw, by + bh, 0xFF1F1F1F);
-        context.fill(bx, by, bx + 1, by + bh, 0xFF1F1F1F);
-        context.fill(bx + bw - 1, by, bx + bw, by + bh, 0xFF1F1F1F);
-        // background and fill
-        context.fill(barX, barY, barX + barWidth, barY + 8, 0xFF000000);
-        // animated shimmer for filled portion
-        int baseFill = 0xFF4DA3FF;
-        context.fill(barX, barY, barX + filled, barY + 8, baseFill);
-        if (filled > 0) {
-            long t = Util.getMeasuringTimeMs();
-            float phase = (t % 2000L) / 2000.0f; // 2s loop
-            int shimmerWidth = 18;
-            int shimmerX = barX + (int)MathHelper.lerp(phase, 0, Math.max(0, filled - shimmerWidth));
-            int shimmerColor = 0x66B9E5FF; // soft translucent highlight
-            context.fill(shimmerX, barY, shimmerX + shimmerWidth, barY + 8, shimmerColor);
-        }
-
-        // Slot outlines and labels
-        // Slot positions mirror handler: wand (44,35), book (116,35) relative to GUI origin (8, y baseline like vanilla). We'll draw near those positions.
-        // Outline 18x18 squares
-        int s = 18;
-        int oc = 0xFF444444;
-        context.fill(wandSlotX - 1, wandSlotY - 1, wandSlotX + s + 1, wandSlotY, oc);
-        context.fill(wandSlotX - 1, wandSlotY + s, wandSlotX + s + 1, wandSlotY + s + 1, oc);
-        context.fill(wandSlotX - 1, wandSlotY, wandSlotX, wandSlotY + s, oc);
-        context.fill(wandSlotX + s, wandSlotY, wandSlotX + s + 1, wandSlotY + s, oc);
-        context.fill(bookSlotX - 1, bookSlotY - 1, bookSlotX + s + 1, bookSlotY, oc);
-        context.fill(bookSlotX - 1, bookSlotY + s, bookSlotX + s + 1, bookSlotY + s + 1, oc);
-        context.fill(bookSlotX - 1, bookSlotY, bookSlotX, bookSlotY + s, oc);
-        context.fill(bookSlotX + s, bookSlotY, bookSlotX + s + 1, bookSlotY + s, oc);
-        // Soft glow around active slots (under items)
+        glowPulse = (glowPulse + 1) % 60;
+        
+        int x = (this.width - GUI_WIDTH) / 2;
+        int y = (this.height - GUI_HEIGHT) / 2;
+        
+        // Основной фон
+        context.fill(x, y, x + GUI_WIDTH, y + GUI_HEIGHT, COLOR_BG);
+        
+        // Внешняя рамка с пульсацией
+        int pulseOffset = (int)(Math.sin(glowPulse * 0.1) * 20);
+        int borderR = Math.min(255, 107 + pulseOffset);
+        int borderColor = 0xFF000000 | (borderR << 16) | (75 << 8) | 163;
+        drawBorder(context, x, y, GUI_WIDTH, GUI_HEIGHT, borderColor, 2);
+        
+        // Внутренняя рамка
+        drawBorder(context, x + 3, y + 3, GUI_WIDTH - 6, GUI_HEIGHT - 6, COLOR_BORDER_INNER, 1);
+        
+        // === ПАНЕЛЬ ИЗУЧЕНИЯ ===
+        int panelX = x + 10;
+        int panelY = y + 28;
+        int panelW = GUI_WIDTH - 20;
+        int panelH = 60;
+        
+        context.fill(panelX, panelY, panelX + panelW, panelY + panelH, COLOR_PANEL);
+        drawBorder(context, panelX, panelY, panelW, panelH, COLOR_BORDER_INNER, 1);
+        
+        // Слоты: палочка слева (30, 45), книга справа (170, 45)
+        int wandSlotX = x + 30;
+        int wandSlotY = y + 45;
+        int bookSlotX = x + 170;
+        int bookSlotY = y + 45;
+        int slotSize = 16;
+        
+        // Свечение активных слотов
+        boolean wandFilled = false;
+        boolean bookFilled = false;
+        SpellType bookSpell = null;
         try {
-            boolean wandFilled = this.handler.getSlot(0).hasStack();
-            boolean bookFilled = this.handler.getSlot(1).hasStack();
-            if (wandFilled) {
-                context.fill(wandSlotX - 3, wandSlotY - 3, wandSlotX + s + 3, wandSlotY, 0x303AA7FF);
-                context.fill(wandSlotX - 3, wandSlotY + s, wandSlotX + s + 3, wandSlotY + s + 3, 0x303AA7FF);
-                context.fill(wandSlotX - 3, wandSlotY, wandSlotX, wandSlotY + s, 0x303AA7FF);
-                context.fill(wandSlotX + s, wandSlotY, wandSlotX + s + 3, wandSlotY + s, 0x303AA7FF);
-            }
-            if (bookFilled) {
-                context.fill(bookSlotX - 3, bookSlotY - 3, bookSlotX + s + 3, bookSlotY, 0x303AA7FF);
-                context.fill(bookSlotX - 3, bookSlotY + s, bookSlotX + s + 3, bookSlotY + s + 3, 0x303AA7FF);
-                context.fill(bookSlotX - 3, bookSlotY, bookSlotX, bookSlotY + s, 0x303AA7FF);
-                context.fill(bookSlotX + s, bookSlotY, bookSlotX + s + 3, bookSlotY + s, 0x303AA7FF);
+            wandFilled = this.handler.getSlot(0).hasStack();
+            if (this.handler.getSlot(1).hasStack()) {
+                bookFilled = true;
+                ItemStack bookStack = this.handler.getSlot(1).getStack();
+                if (bookStack.getItem() instanceof SpellBookItem spellBook) {
+                    bookSpell = spellBook.getSpell();
+                }
             }
         } catch (Exception ignored) {}
-        // Labels
-        context.drawText(this.textRenderer, Text.literal("Палочка").asOrderedText(), wandSlotX - 6, wandSlotY - 12, 0xFFBBBBBB, false);
-        context.drawText(this.textRenderer, Text.literal("Книга").asOrderedText(), bookSlotX + 2, bookSlotY - 12, 0xFFBBBBBB, false);
-
-        // Required XP info
-        int req = handler.getRequiredXp();
-        boolean enough = handler.hasEnoughXp();
-        int color = enough ? 0xFFA0FF7A : 0xFFFF6B6B;
-        String label = req > 0 ? ("Требуется опыт: " + req) : "";
-        if (!label.isEmpty()) {
-            context.drawText(this.textRenderer, Text.literal(label).asOrderedText(), x + 8, y + 8, color, false);
+        
+        int wandGlow = wandFilled ? 0xFF4DA3FF : 0xFF444444;
+        int bookGlow = getSpellElementColor(bookSpell, bookFilled);
+        
+        // Рамки слотов
+        drawSlotBorder(context, wandSlotX, wandSlotY, slotSize, wandGlow);
+        drawSlotBorder(context, bookSlotX, bookSlotY, slotSize, bookGlow);
+        
+        // === ПРОГРЕСС БАР ===
+        int progress = this.handler.getProgress();
+        int max = this.handler.getMaxProgress();
+        
+        int barX = x + 60;
+        int barY = y + 50;
+        int barW = 100;
+        int barH = 8;
+        int filled = max > 0 ? (int)((progress / (float)max) * barW) : 0;
+        
+        // Фон бара
+        context.fill(barX - 1, barY - 1, barX + barW + 1, barY + barH + 1, 0xFF1F1F1F);
+        context.fill(barX, barY, barX + barW, barY + barH, 0xFF000000);
+        
+        // Заполнение с анимацией
+        if (filled > 0) {
+            context.fill(barX, barY, barX + filled, barY + barH, COLOR_HIGHLIGHT);
+            // Shimmer
+            long t = Util.getMeasuringTimeMs();
+            float phase = (t % 1500L) / 1500.0f;
+            int shimmerX = barX + (int)(phase * filled);
+            int shimmerW = Math.min(12, filled);
+            if (shimmerX + shimmerW <= barX + filled) {
+                context.fill(shimmerX, barY, shimmerX + shimmerW, barY + barH, 0x66FFFFFF);
+            }
         }
-
-        // Subtle background particles when learning is in progress
+        
+        
+        // === ИНВЕНТАРЬ ИГРОКА (центрировано) ===
+        int invWidth = 9 * 18; // 162
+        int invX = x + (GUI_WIDTH - invWidth) / 2; // Центрируем
+        int invY = y + 118;
+        int invHeight = 4 * 18 + 4;
+        
+        context.fill(invX - 4, invY - 4, invX + invWidth + 4, invY + invHeight, 0x80000000);
+        drawBorder(context, invX - 4, invY - 4, invWidth + 8, invHeight + 4, COLOR_BORDER_INNER, 1);
+        
+        
+        // Магические частицы при изучении
         if (max > 0 && progress > 0) {
             long time = Util.getMeasuringTimeMs();
-            int dots = 14;
-            for (int i = 0; i < dots; i++) {
-                // pseudo-random but time-scrolling positions
-                float t = (time % 4000L) / 4000.0f + i * 0.07f;
-                float rx = (float)(MathHelper.sin(t * 9.3f + i) * 43758.5453f);
-                float ry = (float)(MathHelper.cos(t * 7.1f + i * 0.37f) * 9623.1337f);
-                float fx = rx - MathHelper.floor(rx);
-                float fy = ry - MathHelper.floor(ry);
-                float px = x + 10 + (fx * (backgroundWidth - 20));
-                float py = y + 10 + (fy * (backgroundHeight - 20));
-                int alpha = 0x20 + (int)(0x20 * (0.5f + 0.5f * MathHelper.sin(t * 6.28f + i)));
-                int pcol = (alpha << 24) | 0xB9E5FF; // soft blue
-                int px1 = (int)px, py1 = (int)py;
-                context.fill(px1, py1, px1 + 1, py1 + 1, pcol);
+            for (int i = 0; i < 8; i++) {
+                float pt = (time % 3000L) / 3000.0f + i * 0.125f;
+                float px = x + 60 + (float)(Math.sin(pt * Math.PI * 2 + i) * 50);
+                float py = y + 50 + (float)(Math.cos(pt * Math.PI * 2 + i * 0.7) * 15);
+                int alpha = (int)(0x40 * (0.5f + 0.5f * Math.sin(pt * Math.PI * 4)));
+                context.fill((int)px, (int)py, (int)px + 2, (int)py + 2, (alpha << 24) | 0xB9E5FF);
             }
-        }
-        
-        // === ВЫДЕЛЕНИЕ ИНВЕНТАРЯ ИГРОКА ===
-        // Основной инвентарь 9x3 (x=8, y=84)
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) {
-                int slotX = x + 8 + col * 18;
-                int slotY = y + 84 + row * 18;
-                drawSlot(context, slotX, slotY, 0xFF8B8B8B);
-            }
-        }
-        
-        // Хотбар 9x1 (x=8, y=142)
-        for (int col = 0; col < 9; col++) {
-            int slotX = x + 8 + col * 18;
-            int slotY = y + 142;
-            drawSlot(context, slotX, slotY, 0xFF9A9A9A);
         }
     }
     
+    private void drawBorder(DrawContext context, int x, int y, int w, int h, int color, int thickness) {
+        context.fill(x, y, x + w, y + thickness, color);
+        context.fill(x, y + h - thickness, x + w, y + h, color);
+        context.fill(x, y, x + thickness, y + h, color);
+        context.fill(x + w - thickness, y, x + w, y + h, color);
+    }
+    
+    private void drawSlotBorder(DrawContext context, int sx, int sy, int size, int color) {
+        context.fill(sx - 2, sy - 2, sx + size + 2, sy - 1, color);
+        context.fill(sx - 2, sy + size + 1, sx + size + 2, sy + size + 2, color);
+        context.fill(sx - 2, sy - 1, sx - 1, sy + size + 1, color);
+        context.fill(sx + size + 1, sy - 1, sx + size + 2, sy + size + 1, color);
+    }
+    
     /**
-     * Рисует рамку слота
+     * Возвращает цвет рамки слота книги в зависимости от элемента заклинания
+     * Огонь - оранжевый, Лёд - голубой, Звук - жёлтый, Тьма - тёмно-фиолетовый
      */
-    private void drawSlot(DrawContext context, int x, int y, int color) {
-        // Внешняя рамка
-        context.fill(x - 1, y - 1, x + 17, y, color);        // Верх
-        context.fill(x - 1, y + 16, x + 17, y + 17, color);  // Низ
-        context.fill(x - 1, y - 1, x, y + 17, color);        // Лево
-        context.fill(x + 16, y - 1, x + 17, y + 17, color);  // Право
+    private int getSpellElementColor(SpellType spell, boolean hasFilled) {
+        if (!hasFilled || spell == null) {
+            return 0xFF444444; // Серый - пустой слот
+        }
         
-        // Внутренний темный фон
-        context.fill(x, y, x + 16, y + 16, 0xAA000000);
+        return switch (spell) {
+            // Огненные заклинания - оранжевый
+            case FIREBALL, FIRE_WALL, INNER_HEAT, HEAT_WEAPON -> 0xFFFF8C00;
+            // Ледяные заклинания - голубой
+            case ICE_SHARD, FROST_AURA, ICE_WALL -> 0xFF00BFFF;
+            // Звуковые заклинания - жёлтый
+            case SOUND_STRIKE, BATTLE_HYMN, CLARIFYING_TONE -> 0xFFFFD700;
+            // Тёмные заклинания - тёмно-фиолетовый
+            case ABSORBING_BARRIER, WEAKNESS_CURSE -> 0xFF8B008B;
+            // Прочее - серый
+            default -> 0xFF888888;
+        };
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        renderBackground(context, mouseX, mouseY, delta);
         super.render(context, mouseX, mouseY, delta);
         drawMouseoverTooltip(context, mouseX, mouseY);
     }
 
     @Override
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
-        // Suppress the main title by not drawing it; keep the player inventory title only
-        context.drawText(this.textRenderer, this.playerInventoryTitle, this.playerInventoryTitleX, this.playerInventoryTitleY, 4210752, false);
+        // Заголовок
+        String title = "✧ Алтарь Изучения ✧";
+        int titleWidth = this.textRenderer.getWidth(title);
+        context.drawText(this.textRenderer, title, (GUI_WIDTH - titleWidth) / 2, 8, COLOR_TITLE, true);
+        
+        // Лейблы слотов
+        context.drawText(this.textRenderer, "Палочка", 18, 35, COLOR_TEXT, false);
+        context.drawText(this.textRenderer, "Книга", 162, 35, COLOR_TEXT, false);
+        
+        // Требуемый опыт
+        int req = handler.getRequiredXp();
+        boolean enough = handler.hasEnoughXp();
+        if (req > 0) {
+            int color = enough ? 0xFF88FF88 : 0xFFFF6666;
+            String xpText = "Опыт: " + req + " уровней";
+            context.drawText(this.textRenderer, xpText, 70, 70, color, false);
+        }
+        
     }
 
     @Override
     protected void init() {
         super.init();
-        this.titleX = (this.backgroundWidth - textRenderer.getWidth(this.title)) / 2;
-        int x = (this.width - this.backgroundWidth) / 2;
-        int y = (this.height - this.backgroundHeight) / 2;
-        learnButton = ButtonWidget.builder(Text.literal("Изучить"), btn -> {
-            MinecraftClient mc = MinecraftClient.getInstance();
-            if (mc.player != null && mc.interactionManager != null) {
-                mc.interactionManager.clickButton(this.handler.syncId, com.manaborn.screen.LearningAltarScreenHandler.BUTTON_LEARN);
+        int x = (this.width - GUI_WIDTH) / 2;
+        int y = (this.height - GUI_HEIGHT) / 2;
+        
+        learnButton = ButtonWidget.builder(
+            Text.literal("✦ ИЗУЧИТЬ ✦").formatted(Formatting.BOLD),
+            btn -> {
+                MinecraftClient mc = MinecraftClient.getInstance();
+                if (mc.player != null && mc.interactionManager != null) {
+                    mc.interactionManager.clickButton(this.handler.syncId, com.manaborn.screen.LearningAltarScreenHandler.BUTTON_LEARN);
+                }
             }
-        }).dimensions(x + 58, y + 58, 60, 20).build();
+        ).dimensions(x + 70, y + 90, 80, 20).build();
         this.addDrawableChild(learnButton);
         updateButtonState();
     }
