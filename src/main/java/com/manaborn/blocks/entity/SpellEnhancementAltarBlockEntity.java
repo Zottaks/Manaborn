@@ -11,7 +11,6 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -185,7 +184,7 @@ public class SpellEnhancementAltarBlockEntity extends BlockEntity
             case ICE_SHARD, FROST_AURA -> 20;
             case FIRE_WALL, SOUND_STRIKE, BATTLE_HYMN, CLARIFYING_TONE -> 25;
             case WEAKNESS_CURSE, HEAT_WEAPON -> 30;
-            case ABSORBING_BARRIER, ICE_WALL, SILENCE_ZONE -> 40;
+            case ABSORBING_BARRIER, ICE_WALL, SILENCE_ZONE, TRANSLOCATION -> 40;
         };
     }
     
@@ -197,7 +196,7 @@ public class SpellEnhancementAltarBlockEntity extends BlockEntity
             case INNER_HEAT -> 1;
             case WEAKNESS_CURSE -> 2;
             case FIREBALL, ICE_SHARD, FROST_AURA, ICE_WALL, HEAT_WEAPON, SOUND_STRIKE, BATTLE_HYMN, CLARIFYING_TONE -> 3;
-            case FIRE_WALL, ABSORBING_BARRIER, SILENCE_ZONE -> 4;
+            case FIRE_WALL, ABSORBING_BARRIER, SILENCE_ZONE, TRANSLOCATION -> 4;
         };
     }
 

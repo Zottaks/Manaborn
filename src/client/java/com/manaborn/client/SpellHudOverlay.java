@@ -138,6 +138,10 @@ public final class SpellHudOverlay {
                 // Проясняющий тон: звуковой стиль
                 renderSoundStrikeStyle(drawContext, x, y, width, height, time, client, alpha);
                 break;
+            case TRANSLOCATION:
+                // Транслокация: бело-серый стиль энтропии
+                renderEntropyStyle(drawContext, x, y, width, height, time, client, alpha);
+                break;
         }
         
         // Применяем прозрачность к тексту
@@ -481,6 +485,37 @@ public final class SpellHudOverlay {
             int lineColor = (lineAlphaValue << 24) | 0xFFFFFF;
             ctx.fill(x + 5, lineY, x + width - 5, lineY + 1, lineColor);
         }
+    }
+
+    /**
+     * Рендерит UI в стиле энтропии (бело-серый, минималистичный)
+     */
+    private static void renderEntropyStyle(DrawContext ctx, int x, int y, int width, int height, float time, MinecraftClient client, float alpha) {
+        int alphaValue = (int) (alpha * 200);
+        int darkGray = (alphaValue << 24) | 0x141414;
+        int midGray = (alphaValue << 24) | 0x5A5A5A;
+        int lightGray = (alphaValue << 24) | 0xD0D0D0;
+        int white = (alphaValue << 24) | 0xFFFFFF;
+
+        ctx.fill(x, y, x + width, y + height, darkGray);
+
+        ctx.fill(x, y, x + width, y + 2, white);
+        ctx.fill(x, y + height - 2, x + width, y + height, lightGray);
+        ctx.fill(x, y, x + 2, y + height, midGray);
+        ctx.fill(x + width - 2, y, x + width, y + height, midGray);
+
+        int barY = y + height / 2 - 2;
+        for (int i = 0; i < width - 16; i++) {
+            float t = i / (float) (width - 16);
+            int shade = (int) (180 + 60 * t);
+            int color = (alphaValue << 24) | (shade << 16) | (shade << 8) | shade;
+            ctx.fill(x + 8 + i, barY, x + 9 + i, barY + 4, color);
+        }
+
+        int dotAlpha = (int) (alpha * (100 + (Math.sin(time * Math.PI * 2) * 40 + 40))) << 24;
+        int dotColor = dotAlpha | 0xFFFFFF;
+        ctx.fill(x + 12, y + 8, x + 14, y + 10, dotColor);
+        ctx.fill(x + width - 14, y + height - 10, x + width - 12, y + height - 8, dotColor);
     }
     
     /**

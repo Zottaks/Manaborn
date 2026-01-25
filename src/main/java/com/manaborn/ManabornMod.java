@@ -102,6 +102,7 @@ public class ManabornMod implements ModInitializer {
 	public static Item BATTLE_HYMN_SPELL_BOOK;
 	public static Item SILENCE_ZONE_SPELL_BOOK;
 	public static Item CLARIFYING_TONE_SPELL_BOOK;
+	public static Item TRANSLOCATION_SPELL_BOOK;
 	public static EntityType<IceShardEntity> ICE_SHARD_ENTITY;
 	public static Block LEARNING_ALTAR;
 	public static BlockEntityType<LearningAltarBlockEntity> LEARNING_ALTAR_BE;
@@ -462,6 +463,14 @@ public class ManabornMod implements ModInitializer {
 				new Item.Settings().maxCount(1).registryKey(silenceZoneBookKey), SpellType.SILENCE_ZONE));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(SILENCE_ZONE_SPELL_BOOK));
 		System.out.println(" [DEBUG] Silence Zone Spell Book зарегистрирована с ID: " + silenceZoneBookKey.getValue());
+
+		// Регистрация Translocation Spell Book
+		RegistryKey<Item> translocationBookKey = RegistryKey.of(Registries.ITEM.getKey(),
+				Identifier.of(MOD_ID, "translocation_spell_book"));
+		TRANSLOCATION_SPELL_BOOK = Registry.register(Registries.ITEM, translocationBookKey, new SpellBookItem(
+				new Item.Settings().maxCount(1).registryKey(translocationBookKey), SpellType.TRANSLOCATION));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(TRANSLOCATION_SPELL_BOOK));
+		System.out.println(" [DEBUG] Translocation Spell Book зарегистрирована с ID: " + translocationBookKey.getValue());
 
 		// Регистрация Learning Altar блока
 		RegistryKey<Block> altarBlockKey = RegistryKey.of(Registries.BLOCK.getKey(),

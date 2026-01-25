@@ -388,6 +388,9 @@ public class SpellEnhancementAltarScreen extends HandledScreen<SpellEnhancementA
             case SILENCE_ZONE -> nextLevel == 2 
                 ? "Радиус: +2 блока\nДлительность: +3с" 
                 : "Радиус: +4 блока\nБлок заклинаний";
+            case TRANSLOCATION -> nextLevel == 2
+                ? "Дальность: 10→40\nКД: 20с→50с"
+                : "Дальность: 40→100\nAoE телепорт";
         };
     }
 
@@ -467,7 +470,7 @@ public class SpellEnhancementAltarScreen extends HandledScreen<SpellEnhancementA
             case ICE_SHARD, FROST_AURA -> 20;
             case FIRE_WALL, SOUND_STRIKE, BATTLE_HYMN, CLARIFYING_TONE -> 25;
             case WEAKNESS_CURSE, HEAT_WEAPON -> 30;
-            case ABSORBING_BARRIER, ICE_WALL, SILENCE_ZONE -> 40;
+            case ABSORBING_BARRIER, ICE_WALL, SILENCE_ZONE, TRANSLOCATION -> 40;
         };
     }
 
@@ -476,7 +479,7 @@ public class SpellEnhancementAltarScreen extends HandledScreen<SpellEnhancementA
             case INNER_HEAT -> 1;
             case WEAKNESS_CURSE -> 2;
             case FIREBALL, ICE_SHARD, FROST_AURA, ICE_WALL, HEAT_WEAPON, SOUND_STRIKE, BATTLE_HYMN, CLARIFYING_TONE -> 3;
-            case FIRE_WALL, ABSORBING_BARRIER, SILENCE_ZONE -> 4;
+            case FIRE_WALL, ABSORBING_BARRIER, SILENCE_ZONE, TRANSLOCATION -> 4;
         };
     }
 

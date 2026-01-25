@@ -73,6 +73,12 @@ public class ManabornClient implements ClientModInitializer {
                 Identifier.of("manaborn", "ice_wall_progress"),
                 IceWallProgressOverlay::render);
 
+        // Регистрируем HUD элемент для отображения прогресса транслокации
+        HudElementRegistry.attachElementBefore(
+                VanillaHudElements.HOTBAR,
+                Identifier.of("manaborn", "translocation_progress"),
+                TranslocationProgressOverlay::render);
+
         // Открытие меню заклинаний по клавише I (edge-detection)
 
         // Обработчик пакета синхронизации маны

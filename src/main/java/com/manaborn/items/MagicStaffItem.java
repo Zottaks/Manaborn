@@ -1,6 +1,10 @@
 package com.manaborn.items;
 
+import com.manaborn.mana.ManaManager;
+import com.manaborn.spells.LeveledSpell;
+import com.manaborn.spells.SpellLevelManager;
 import com.manaborn.spells.SpellManager;
+import com.manaborn.spells.SpellRegistry;
 import com.manaborn.spells.SpellType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.LivingEntity;
@@ -18,10 +22,23 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.advancement.AdvancementEntry;
 import net.minecraft.advancement.AdvancementProgress;
 import net.minecraft.util.Identifier;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 public class MagicStaffItem extends Item {
+    private static final ConcurrentHashMap<UUID, Long> lastTranslocationClick = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<UUID, Boolean> translocationAoERequested = new ConcurrentHashMap<>();
+    private static final int TRANSLOCATION_DOUBLE_CLICK_WINDOW = 7;
+    private static final double TRANSLOCATION_TARGET_RANGE = 24.0;
+
     public MagicStaffItem(Settings settings) {
         super(settings);
     }
@@ -59,9 +76,12 @@ public class MagicStaffItem extends Item {
     public ActionResult use(World world, PlayerEntity user, Hand hand) {
         ItemStack stack = user.getStackInHand(hand);
 
-        // Если выбрана Стена Льда — начинаем удержание ПКМ (зарядка)
+        // Если выбрана Стена Льда или Транслокация — начинаем удержание ПКМ (зарядка)
         SpellType selected = SpellManager.getSelectedSpell(stack);
-        if (selected == SpellType.ICE_WALL) {
+        if (selected == SpellType.ICE_WALL || selected == SpellType.TRANSLOCATION) {
+            if (!world.isClient() && selected == SpellType.TRANSLOCATION && user instanceof ServerPlayerEntity serverPlayer) {
+                handleTranslocationClick(serverPlayer, world);
+            }
             user.setCurrentHand(hand);
             return ActionResult.CONSUME;
         }
@@ -75,9 +95,13 @@ public class MagicStaffItem extends Item {
         if (!(user instanceof PlayerEntity player))
             return false;
         SpellType selected = SpellManager.getSelectedSpell(stack);
-        if (selected != SpellType.ICE_WALL)
-            return false;
         if (world.isClient())
+            return false;
+
+        if (selected == SpellType.TRANSLOCATION) {
+            return castTranslocation(stack, world, player, remainingUseTicks);
+        }
+        if (selected != SpellType.ICE_WALL)
             return false;
 
         ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
@@ -134,6 +158,212 @@ public class MagicStaffItem extends Item {
         // Кулдаун для стены льда не ставим (зарядка уже ограничивает), при
         // необходимости добавим позже
         return true;
+    }
+
+    private void handleTranslocationClick(ServerPlayerEntity player, World world) {
+        boolean isShiftDown = player.isSneaking();
+        boolean isLookingDown = player.getPitch() > 60.0f;
+
+        if (!(isShiftDown && isLookingDown)) {
+            translocationAoERequested.remove(player.getUuid());
+            return;
+        }
+
+        long now = world.getTime();
+        Long last = lastTranslocationClick.get(player.getUuid());
+        if (last != null && (now - last) <= TRANSLOCATION_DOUBLE_CLICK_WINDOW) {
+            translocationAoERequested.put(player.getUuid(), true);
+            world.playSound(null, player.getX(), player.getY(), player.getZ(),
+                    SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), SoundCategory.PLAYERS, 0.8f, 1.6f);
+        } else {
+            translocationAoERequested.put(player.getUuid(), false);
+        }
+        world.playSound(null, player.getX(), player.getY(), player.getZ(),
+                SoundEvents.BLOCK_NOTE_BLOCK_HAT.value(), SoundCategory.PLAYERS, 0.6f, 1.2f);
+        lastTranslocationClick.put(player.getUuid(), now);
+    }
+
+    private boolean castTranslocation(ItemStack stack, World world, PlayerEntity player, int remainingUseTicks) {
+        if (!(player instanceof ServerPlayerEntity serverPlayer) || !(world instanceof ServerWorld serverWorld)) {
+            return false;
+        }
+
+        SpellType selected = SpellType.TRANSLOCATION;
+        if (SpellManager.isOnCooldown(stack, world, selected)) {
+            return false;
+        }
+
+        int level = SpellLevelManager.getSpellLevel(serverPlayer.getUuid(), selected);
+        int maxChargeTicks = getMaxTranslocationChargeTicks(level);
+
+        int usedTicks = getMaxUseTime(stack, player) - remainingUseTicks;
+        if (usedTicks < 0) {
+            usedTicks = 0;
+        }
+        usedTicks = Math.min(usedTicks, maxChargeTicks);
+
+        float usedSeconds = usedTicks / 20.0f;
+        if (usedSeconds < 3.0f) {
+            serverPlayer.sendMessage(Text.literal("Нужно удерживать 3 секунды для каста!"), true);
+            return false;
+        }
+
+        int radius = getTranslocationRadius(usedSeconds);
+        boolean isShiftDown = player.isSneaking();
+        boolean isLookingDown = player.getPitch() > 60.0f;
+        boolean isSelfCast = isShiftDown && isLookingDown;
+        boolean aoeRequested = Boolean.TRUE.equals(translocationAoERequested.remove(serverPlayer.getUuid()));
+
+        LeveledSpell spell = (LeveledSpell) SpellRegistry.getSpell(selected);
+        int baseCost = spell != null ? spell.getManaCost(level) : selected.getManaCost();
+        int finalCost = baseCost;
+        if (stack.getItem() instanceof EtherScepterItem) {
+            finalCost = Math.max(0, baseCost - EtherScepterItem.MANA_DISCOUNT);
+        }
+
+        if (!ManaManager.tryConsume(serverPlayer, finalCost)) {
+            serverPlayer.sendMessage(Text.literal("Недостаточно маны: нужно " + finalCost), true);
+            return false;
+        }
+
+        if (isSelfCast) {
+            if (aoeRequested && level >= 3 && usedSeconds >= 20.0f) {
+                castSelfAoE(serverWorld, serverPlayer, 3.0, 3);
+                SpellManager.setCooldown(stack, world, selected, 250 * 20);
+            } else {
+                castSelf(serverWorld, serverPlayer, radius);
+                SpellManager.setCooldown(stack, world, selected, spell != null ? spell.getCooldown(level) : getTranslocationCooldown(level));
+            }
+        } else {
+            LivingEntity target = findLookTarget(serverWorld, serverPlayer, TRANSLOCATION_TARGET_RANGE);
+            if (target == null) {
+                serverPlayer.sendMessage(Text.literal("Цель не найдена!"), true);
+                return false;
+            }
+            castOnTarget(serverWorld, serverPlayer, target, radius);
+            SpellManager.setCooldown(stack, world, selected, spell != null ? spell.getCooldown(level) : getTranslocationCooldown(level));
+        }
+
+        return true;
+    }
+
+    private int getMaxTranslocationChargeTicks(int level) {
+        return switch (Math.max(1, Math.min(3, level))) {
+            case 1 -> 60;
+            case 2 -> 200;
+            default -> 400;
+        };
+    }
+
+    private int getTranslocationRadius(float usedSeconds) {
+        if (usedSeconds >= 20.0f) {
+            return 100;
+        }
+        if (usedSeconds >= 10.0f) {
+            return 40;
+        }
+        return 10;
+    }
+
+    private int getTranslocationCooldown(int level) {
+        return switch (Math.max(1, Math.min(3, level))) {
+            case 1 -> 20 * 20;
+            case 2 -> 50 * 20;
+            default -> 200 * 20;
+        };
+    }
+
+    private void castOnTarget(ServerWorld world, ServerPlayerEntity caster, LivingEntity target, int radius) {
+        Vec3d center = new Vec3d(caster.getX(), caster.getY(), caster.getZ());
+        Vec3d destination = findRandomSafePosition(world, center, radius);
+        target.teleport(destination.x, destination.y, destination.z, false);
+        randomizeView(caster, world);
+        world.playSound(null, target.getBlockPos(), SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 1.0f, 1.2f);
+    }
+
+    private void castSelf(ServerWorld world, ServerPlayerEntity caster, int radius) {
+        Vec3d center = new Vec3d(caster.getX(), caster.getY(), caster.getZ());
+        Vec3d destination = findRandomSafePosition(world, center, radius);
+        caster.teleport(destination.x, destination.y, destination.z, false);
+        randomizeView(caster, world);
+        world.playSound(null, caster.getBlockPos(), SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 1.0f, 0.9f);
+    }
+
+    private void castSelfAoE(ServerWorld world, ServerPlayerEntity caster, double radius, int maxTargets) {
+        Vec3d center = new Vec3d(caster.getX(), caster.getY(), caster.getZ());
+        Vec3d destination = findRandomSafePosition(world, center, radius);
+        caster.teleport(destination.x, destination.y, destination.z, false);
+        randomizeView(caster, world);
+
+        Box area = Box.of(center, radius * 2, radius * 2, radius * 2);
+        List<LivingEntity> nearby = world.getEntitiesByClass(LivingEntity.class, area,
+                e -> e != null && e.isAlive() && e != caster);
+
+        int count = 0;
+        for (LivingEntity entity : nearby) {
+            if (count >= maxTargets) {
+                break;
+            }
+            Vec3d targetDestination = findRandomSafePosition(world, destination, radius);
+            entity.teleport(targetDestination.x, targetDestination.y, targetDestination.z, false);
+            count++;
+        }
+
+        world.playSound(null, caster.getBlockPos(), SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 1.2f, 0.8f);
+    }
+
+    private void randomizeView(ServerPlayerEntity caster, ServerWorld world) {
+        float yaw = world.random.nextFloat() * 360.0f;
+        float pitch = -30.0f + world.random.nextFloat() * 60.0f;
+        caster.setYaw(yaw);
+        caster.setPitch(pitch);
+    }
+
+    private LivingEntity findLookTarget(ServerWorld world, PlayerEntity caster, double range) {
+        Vec3d start = caster.getEyePos();
+        Vec3d look = caster.getRotationVector();
+        Vec3d end = start.add(look.multiply(range));
+
+        var hit = world.raycast(new net.minecraft.world.RaycastContext(
+                start,
+                end,
+                net.minecraft.world.RaycastContext.ShapeType.COLLIDER,
+                net.minecraft.world.RaycastContext.FluidHandling.NONE,
+                caster));
+
+        Vec3d rayEnd = hit.getType() == net.minecraft.util.hit.HitResult.Type.BLOCK ? hit.getPos() : end;
+        Box box = new Box(start, rayEnd).expand(0.5);
+        List<LivingEntity> entities = world.getEntitiesByClass(LivingEntity.class, box, e -> e != null && e.isAlive());
+
+        LivingEntity best = null;
+        double bestDot = 0.95;
+        for (LivingEntity entity : entities) {
+            Vec3d to = entity.getEyePos().subtract(start).normalize();
+            double dot = look.dotProduct(to);
+            if (dot > bestDot) {
+                bestDot = dot;
+                best = entity;
+            }
+        }
+        return best;
+    }
+
+    private Vec3d findRandomSafePosition(ServerWorld world, Vec3d center, double radius) {
+        for (int attempt = 0; attempt < 16; attempt++) {
+            double angle = world.random.nextDouble() * Math.PI * 2;
+            double distance = Math.sqrt(world.random.nextDouble()) * radius;
+            double x = center.x + Math.cos(angle) * distance;
+            double z = center.z + Math.sin(angle) * distance;
+            int baseY = (int) Math.floor(center.y);
+
+            for (int dy = 3; dy >= -3; dy--) {
+                BlockPos pos = BlockPos.ofFloored(x, baseY + dy, z);
+                if (world.isAir(pos) && world.isAir(pos.up())) {
+                    return Vec3d.ofBottomCenter(pos);
+                }
+            }
+        }
+        return center;
     }
 
     @Override
