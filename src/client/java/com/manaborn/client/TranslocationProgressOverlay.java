@@ -16,6 +16,8 @@ import net.minecraft.util.math.MathHelper;
  */
 public final class TranslocationProgressOverlay {
 
+    private static final java.util.Map<java.util.UUID, Integer> LAST_STAGE = new java.util.HashMap<>();
+
     public static void render(DrawContext drawContext, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.player == null || client.options.hudHidden) {
@@ -35,6 +37,7 @@ public final class TranslocationProgressOverlay {
         }
 
         if (!player.isUsingItem()) {
+            LAST_STAGE.remove(player.getUuid());
             return;
         }
 
@@ -59,8 +62,10 @@ public final class TranslocationProgressOverlay {
         int y = screenHeight - 58;
 
         drawBackground(drawContext, x, y, barWidth, barHeight);
+        drawThresholds(drawContext, x, y, barWidth, barHeight, maxChargeTicks);
         drawFill(drawContext, x, y, barWidth, barHeight, progress);
         drawText(drawContext, x, y, barWidth, barHeight, usedTicks, maxChargeTicks);
+        handleStageSound(player, usedTicks, maxChargeTicks);
     }
 
     private static int getMaxChargeTicks(int level) {
@@ -69,6 +74,24 @@ public final class TranslocationProgressOverlay {
             case 2 -> 200;  // 10 seconds
             default -> 400; // 20 seconds
         };
+    }
+
+    private static void handleStageSound(PlayerEntity player, int usedTicks, int maxChargeTicks) {
+        int maxStage = maxChargeTicks >= 400 ? 3 : (maxChargeTicks >= 200 ? 2 : 1);
+        int stageFromTicks = usedTicks >= 400 ? 3 : (usedTicks >= 200 ? 2 : (usedTicks >= 60 ? 1 : 0));
+        int stage = Math.min(stageFromTicks, maxStage);
+        int lastStage = LAST_STAGE.getOrDefault(player.getUuid(), 0);
+        if (stage > lastStage) {
+            float pitch = switch (stage) {
+                case 1 -> 1.1f;
+                case 2 -> 1.25f;
+                default -> 1.4f;
+            };
+            player.playSound(net.minecraft.sound.SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), 0.6f, pitch);
+            LAST_STAGE.put(player.getUuid(), stage);
+        } else if (stage < lastStage) {
+            LAST_STAGE.put(player.getUuid(), stage);
+        }
     }
 
     private static void drawBackground(DrawContext context, int x, int y, int width, int height) {
@@ -92,6 +115,18 @@ public final class TranslocationProgressOverlay {
             int shade = (int) (220 + (35 * t));
             int color = 0xFF000000 | (shade << 16) | (shade << 8) | shade;
             context.fill(x + i, y, x + i + 1, y + height, color);
+        }
+    }
+
+    private static void drawThresholds(DrawContext context, int x, int y, int width, int height, int maxChargeTicks) {
+        int[] thresholds = new int[] {60, 200, 400};
+        int color = 0xFFBBBBBB;
+        for (int threshold : thresholds) {
+            if (threshold > maxChargeTicks) {
+                continue;
+            }
+            int markerX = x + Math.min(width - 1, Math.round(width * (threshold / (float) maxChargeTicks)));
+            context.fill(markerX, y + 2, markerX + 1, y + height - 2, color);
         }
     }
 

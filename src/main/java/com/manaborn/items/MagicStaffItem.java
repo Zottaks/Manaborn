@@ -37,7 +37,6 @@ public class MagicStaffItem extends Item {
     private static final ConcurrentHashMap<UUID, Long> lastTranslocationClick = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<UUID, Boolean> translocationAoERequested = new ConcurrentHashMap<>();
     private static final int TRANSLOCATION_DOUBLE_CLICK_WINDOW = 7;
-    private static final double TRANSLOCATION_TARGET_RANGE = 24.0;
 
     public MagicStaffItem(Settings settings) {
         super(settings);
@@ -208,7 +207,8 @@ public class MagicStaffItem extends Item {
             return false;
         }
 
-        int radius = getTranslocationRadius(usedSeconds);
+        int maxRadius = getTranslocationRadius(usedSeconds);
+        int minRadius = getTranslocationMinRadius(usedSeconds, maxRadius);
         boolean isShiftDown = player.isSneaking();
         boolean isLookingDown = player.getPitch() > 60.0f;
         boolean isSelfCast = isShiftDown && isLookingDown;
@@ -229,19 +229,19 @@ public class MagicStaffItem extends Item {
         if (isSelfCast) {
             if (aoeRequested && level >= 3 && usedSeconds >= 20.0f) {
                 castSelfAoE(serverWorld, serverPlayer, 3.0, 3);
-                SpellManager.setCooldown(stack, world, selected, 250 * 20);
+                SpellManager.setCooldown(stack, world, selected, getTranslocationCooldownForCharge(usedSeconds, true));
             } else {
-                castSelf(serverWorld, serverPlayer, radius);
-                SpellManager.setCooldown(stack, world, selected, spell != null ? spell.getCooldown(level) : getTranslocationCooldown(level));
+                castSelf(serverWorld, serverPlayer, minRadius, maxRadius);
+                SpellManager.setCooldown(stack, world, selected, getTranslocationCooldownForCharge(usedSeconds, false));
             }
         } else {
-            LivingEntity target = findLookTarget(serverWorld, serverPlayer, TRANSLOCATION_TARGET_RANGE);
+            LivingEntity target = findLookTarget(serverWorld, serverPlayer, getTranslocationTargetRange(level));
             if (target == null) {
                 serverPlayer.sendMessage(Text.literal("Цель не найдена!"), true);
                 return false;
             }
-            castOnTarget(serverWorld, serverPlayer, target, radius);
-            SpellManager.setCooldown(stack, world, selected, spell != null ? spell.getCooldown(level) : getTranslocationCooldown(level));
+            castOnTarget(serverWorld, serverPlayer, target, minRadius, maxRadius);
+            SpellManager.setCooldown(stack, world, selected, getTranslocationCooldownForCharge(usedSeconds, false));
         }
 
         return true;
@@ -265,25 +265,48 @@ public class MagicStaffItem extends Item {
         return 10;
     }
 
-    private int getTranslocationCooldown(int level) {
+    private int getTranslocationMinRadius(float usedSeconds, int maxRadius) {
+        int minRadius = 0;
+        if (usedSeconds >= 20.0f) {
+            minRadius = 50;
+        } else if (usedSeconds >= 10.0f) {
+            minRadius = 10;
+        }
+        return Math.min(minRadius, maxRadius);
+    }
+
+    private double getTranslocationTargetRange(int level) {
         return switch (Math.max(1, Math.min(3, level))) {
-            case 1 -> 20 * 20;
-            case 2 -> 50 * 20;
-            default -> 200 * 20;
+            case 1 -> 4.0;
+            case 2 -> 5.0;
+            default -> 6.0;
         };
     }
 
-    private void castOnTarget(ServerWorld world, ServerPlayerEntity caster, LivingEntity target, int radius) {
+    private int getTranslocationCooldownForCharge(float usedSeconds, boolean aoeCast) {
+        if (aoeCast && usedSeconds >= 20.0f) {
+            return 250 * 20;
+        }
+        if (usedSeconds >= 20.0f) {
+            return 200 * 20;
+        }
+        if (usedSeconds >= 10.0f) {
+            return 50 * 20;
+        }
+        return 10 * 20;
+    }
+
+    private void castOnTarget(ServerWorld world, ServerPlayerEntity caster, LivingEntity target, int minRadius, int maxRadius) {
         Vec3d center = new Vec3d(caster.getX(), caster.getY(), caster.getZ());
-        Vec3d destination = findRandomSafePosition(world, center, radius);
+        Vec3d destination = findRandomSafePosition(world, center, minRadius, maxRadius);
         target.teleport(destination.x, destination.y, destination.z, false);
         randomizeView(caster, world);
         world.playSound(null, target.getBlockPos(), SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 1.0f, 1.2f);
     }
 
-    private void castSelf(ServerWorld world, ServerPlayerEntity caster, int radius) {
+    private void castSelf(ServerWorld world, ServerPlayerEntity caster, int minRadius, int maxRadius) {
         Vec3d center = new Vec3d(caster.getX(), caster.getY(), caster.getZ());
-        Vec3d destination = findRandomSafePosition(world, center, radius);
+        Vec3d destination = findRandomSafePosition(world, center, minRadius, maxRadius);
         caster.teleport(destination.x, destination.y, destination.z, false);
         randomizeView(caster, world);
         world.playSound(null, caster.getBlockPos(), SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 1.0f, 0.9f);
@@ -291,7 +314,7 @@ public class MagicStaffItem extends Item {
 
     private void castSelfAoE(ServerWorld world, ServerPlayerEntity caster, double radius, int maxTargets) {
         Vec3d center = new Vec3d(caster.getX(), caster.getY(), caster.getZ());
-        Vec3d destination = findRandomSafePosition(world, center, radius);
+        Vec3d destination = findRandomSafePosition(world, center, 0.0, radius);
         caster.teleport(destination.x, destination.y, destination.z, false);
         randomizeView(caster, world);
 
@@ -304,7 +327,7 @@ public class MagicStaffItem extends Item {
             if (count >= maxTargets) {
                 break;
             }
-            Vec3d targetDestination = findRandomSafePosition(world, destination, radius);
+            Vec3d targetDestination = findRandomSafePosition(world, destination, 0.0, radius);
             entity.teleport(targetDestination.x, targetDestination.y, targetDestination.z, false);
             count++;
         }
@@ -348,10 +371,10 @@ public class MagicStaffItem extends Item {
         return best;
     }
 
-    private Vec3d findRandomSafePosition(ServerWorld world, Vec3d center, double radius) {
+    private Vec3d findRandomSafePosition(ServerWorld world, Vec3d center, double minRadius, double maxRadius) {
         for (int attempt = 0; attempt < 16; attempt++) {
             double angle = world.random.nextDouble() * Math.PI * 2;
-            double distance = Math.sqrt(world.random.nextDouble()) * radius;
+            double distance = minRadius + Math.sqrt(world.random.nextDouble()) * (maxRadius - minRadius);
             double x = center.x + Math.cos(angle) * distance;
             double z = center.z + Math.sin(angle) * distance;
             int baseY = (int) Math.floor(center.y);

@@ -247,6 +247,9 @@ public class RadialSpellMenuScreen extends Screen {
             } else if (spell == SpellType.ABSORBING_BARRIER || spell == SpellType.WEAKNESS_CURSE) {
                 categoryIcon = Text.literal("◆"); // Ромб для тьмы
                 iconColor = 0xFF8A6AD9;
+            } else if (spell == SpellType.TRANSLOCATION) {
+                categoryIcon = Text.literal("⬣"); // Символ энтропии
+                iconColor = 0xFFE6E6E6;
             }
             
             if (categoryIcon != null) {

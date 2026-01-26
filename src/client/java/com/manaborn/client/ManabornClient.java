@@ -46,6 +46,7 @@ public class ManabornClient implements ClientModInitializer {
         // Новый API появится в будущих версиях Fabric API
         registerIceShardRenderer();
         registerDustWispRenderer();
+        registerMageMerchantModelLayer();
         registerMageMerchantRenderer();
 
         // Регистрируем HUD элемент для отображения маны перед чатом
@@ -221,5 +222,10 @@ public class ManabornClient implements ClientModInitializer {
     private void registerMageMerchantRenderer() {
         EntityRendererRegistry.register(ManabornMod.MAGE_MERCHANT_ENTITY,
             com.manaborn.client.render.MageMerchantRenderer::new);
+    }
+
+    private void registerMageMerchantModelLayer() {
+        net.fabricmc.fabric.api.client.rendering.v1.EntityModelLayerRegistry.registerModelLayer(
+            com.manaborn.client.model.MageModel.LAYER, com.manaborn.client.model.MageModel::getTexturedModelData);
     }
 }
