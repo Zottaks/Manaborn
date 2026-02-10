@@ -47,6 +47,10 @@ public class SpellManager {
         ActiveEffectManager.tickIceWalls();
     }
 
+    public static void tickFrostCoffins(List<ServerPlayerEntity> players) {
+        ActiveEffectManager.tickFrostCoffins(players);
+    }
+
     public static boolean intersectsFireWall(ServerWorld world, Box box) {
         return ActiveEffectManager.intersectsFireWall(world, box);
     }

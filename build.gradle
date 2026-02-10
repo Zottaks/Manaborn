@@ -39,6 +39,14 @@ loom {
 
 }
 
+sourceSets {
+    client {
+        java {
+            exclude "com/manaborn/blockbench/**"
+        }
+    }
+}
+
 dependencies {
     // To change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"

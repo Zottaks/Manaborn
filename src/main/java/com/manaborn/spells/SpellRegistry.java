@@ -14,6 +14,7 @@ public class SpellRegistry {
         // Register all spell implementations
         register(SpellType.FIREBALL, new FireballSpell());
         register(SpellType.ICE_SHARD, new IceShardSpell());
+        register(SpellType.FROST_COFFIN, new FrostCoffinSpell());
         register(SpellType.FIRE_WALL, new FireWallSpell());
         register(SpellType.INNER_HEAT, new InnerHeatSpell());
         register(SpellType.FROST_AURA, new FrostAuraSpell());

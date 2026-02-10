@@ -191,6 +191,7 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
         return switch (spell) {
             case FIREBALL -> 5;
             case ICE_SHARD -> 8;
+            case FROST_COFFIN -> 25;
             case FIRE_WALL -> 17;
             case INNER_HEAT -> 13;
             case FROST_AURA -> 12;
@@ -222,6 +223,7 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
         return switch (spell) {
             case FIREBALL -> 20 * 20; // 20 seconds
             case ICE_SHARD -> 45 * 20; // 45 seconds
+            case FROST_COFFIN -> 45 * 20; // 45 seconds
             case FIRE_WALL -> 60 * 20; // 60 seconds
             case INNER_HEAT -> 120 * 20; // 120 seconds
             case FROST_AURA -> 75 * 20; // 75 seconds

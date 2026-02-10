@@ -355,6 +355,9 @@ public class SpellEnhancementAltarScreen extends HandledScreen<SpellEnhancementA
             case ICE_SHARD -> nextLevel == 2 
                 ? "Урон: +25%\nЗамедление: +1с" 
                 : "Урон: +50%\nМана: -3";
+            case FROST_COFFIN -> nextLevel == 2
+                ? "Разблок: слепота\nУдержание: нет"
+                : "Разблок: удержание Shift\nДренаж маны";
             case FIRE_WALL -> nextLevel == 2 
                 ? "Длительность: +2с\nУрон: +20%" 
                 : "Ширина: +1 блок\nКД: -1с";
@@ -470,6 +473,7 @@ public class SpellEnhancementAltarScreen extends HandledScreen<SpellEnhancementA
             case ICE_SHARD, FROST_AURA -> 20;
             case FIRE_WALL, SOUND_STRIKE, BATTLE_HYMN, CLARIFYING_TONE -> 25;
             case WEAKNESS_CURSE, HEAT_WEAPON -> 30;
+            case FROST_COFFIN -> 50;
             case ABSORBING_BARRIER, ICE_WALL, SILENCE_ZONE, TRANSLOCATION -> 40;
         };
     }
@@ -478,7 +482,7 @@ public class SpellEnhancementAltarScreen extends HandledScreen<SpellEnhancementA
         return switch (spell) {
             case INNER_HEAT -> 1;
             case WEAKNESS_CURSE -> 2;
-            case FIREBALL, ICE_SHARD, FROST_AURA, ICE_WALL, HEAT_WEAPON, SOUND_STRIKE, BATTLE_HYMN, CLARIFYING_TONE -> 3;
+            case FIREBALL, ICE_SHARD, FROST_AURA, ICE_WALL, HEAT_WEAPON, SOUND_STRIKE, BATTLE_HYMN, CLARIFYING_TONE, FROST_COFFIN -> 3;
             case FIRE_WALL, ABSORBING_BARRIER, SILENCE_ZONE, TRANSLOCATION -> 4;
         };
     }

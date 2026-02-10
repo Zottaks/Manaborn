@@ -59,7 +59,7 @@ public final class CooldownHudOverlay {
                 ctx.fill(x - 1, y, x, y + h, 0xCCFF8800);
                 ctx.fill(x + w, y, x + w + 1, y + h, 0xCCFF8800);
             }
-            case ICE_SHARD, ICE_WALL -> {
+            case ICE_SHARD, ICE_WALL, FROST_COFFIN -> {
                 // ледяная окантовка
                 ctx.fill(x - 1, y - 1, x + w + 1, y, 0xCC00CCFF);
                 ctx.fill(x - 1, y + h, x + w + 1, y + h + 1, 0xCC00CCFF);

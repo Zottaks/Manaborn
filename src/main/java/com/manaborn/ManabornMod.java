@@ -89,8 +89,10 @@ public class ManabornMod implements ModInitializer {
 	public static Item MANA_POTION;
 	public static Item MAGIC_DUST;
 	public static Block MAGIC_ORE;
+	public static Block FROST_COFFIN_BLOCK;
 	public static Item FIREBALL_SPELL_BOOK;
 	public static Item ICE_SHARD_SPELL_BOOK;
+	public static Item FROST_COFFIN_SPELL_BOOK;
 	public static Item FIRE_WALL_SPELL_BOOK;
 	public static Item INNER_HEAT_SPELL_BOOK;
 	public static Item FROST_AURA_SPELL_BOOK;
@@ -372,6 +374,14 @@ public class ManabornMod implements ModInitializer {
 				new SpellBookItem(new Item.Settings().maxCount(1).registryKey(iceShardBookKey), SpellType.ICE_SHARD));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(ICE_SHARD_SPELL_BOOK));
 		System.out.println(" [DEBUG] Ice Shard Spell Book зарегистрирована с ID: " + iceShardBookKey.getValue());
+
+		// Регистрация Frost Coffin Spell Book
+		RegistryKey<Item> frostCoffinBookKey = RegistryKey.of(Registries.ITEM.getKey(),
+				Identifier.of(MOD_ID, "frost_coffin_spell_book"));
+		FROST_COFFIN_SPELL_BOOK = Registry.register(Registries.ITEM, frostCoffinBookKey,
+				new SpellBookItem(new Item.Settings().maxCount(1).registryKey(frostCoffinBookKey), SpellType.FROST_COFFIN));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(FROST_COFFIN_SPELL_BOOK));
+		System.out.println(" [DEBUG] Frost Coffin Spell Book зарегистрирована с ID: " + frostCoffinBookKey.getValue());
 
 		// Регистрация Fire Wall Spell Book
 		RegistryKey<Item> fireWallBookKey = RegistryKey.of(Registries.ITEM.getKey(),
@@ -665,6 +675,20 @@ public class ManabornMod implements ModInitializer {
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.BUILDING_BLOCKS).register(entries -> entries.add(MAGIC_ORE));
 		System.out.println(" [DEBUG] Magic Ore зарегистрирована с ID: " + oreBlockKey.getValue());
 
+		// Регистрация Frost Coffin блока (прозрачная ледяная колонна без коллизии)
+		RegistryKey<Block> frostCoffinBlockKey = RegistryKey.of(Registries.BLOCK.getKey(),
+				Identifier.of(MOD_ID, "frost_coffin_block"));
+		FROST_COFFIN_BLOCK = Registry.register(
+				Registries.BLOCK,
+				frostCoffinBlockKey,
+				new Block(AbstractBlock.Settings.create()
+						.strength(0.3f)
+						.sounds(BlockSoundGroup.GLASS)
+						.noCollision()
+						.nonOpaque()
+						.registryKey(frostCoffinBlockKey)));
+		System.out.println(" [DEBUG] Frost Coffin Block зарегистрирован с ID: " + frostCoffinBlockKey.getValue());
+
 		// Регистрация обработчика структуры дома мага
 		com.manaborn.world.MageHouseStructureHandler.register();
 
@@ -677,6 +701,7 @@ public class ManabornMod implements ModInitializer {
 			com.manaborn.spells.SpellManager.tickFrostAuras(server.getPlayerManager().getPlayerList());
 			com.manaborn.spells.SpellManager.tickAbsorbingBarriers(server.getPlayerManager().getPlayerList());
 			com.manaborn.spells.SpellManager.tickIceWalls();
+			com.manaborn.spells.SpellManager.tickFrostCoffins(server.getPlayerManager().getPlayerList());
 			com.manaborn.spells.impl.BattleHymnSpell.tickBattleHymns(server.getPlayerManager().getPlayerList());
 			DustWispManager.tick(server.getPlayerManager().getPlayerList());
 			

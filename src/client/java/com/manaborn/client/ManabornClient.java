@@ -38,7 +38,7 @@ public class ManabornClient implements ClientModInitializer {
     public void onInitializeClient() {
         // Регистрируем клавиши управления
         KeyBindings.register();
-        
+
         // Регистрируем рендерер для ледяного осколка (КРИТИЧНО для предотвращения
         // краша!)
         // EntityRendererRegistry deprecated, но это всё ещё официальный способ для

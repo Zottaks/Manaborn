@@ -96,6 +96,9 @@ public final class SpellHudOverlay {
             case ICE_SHARD:
                 renderIceShardStyle(drawContext, x, y, width, height, time, client, alpha);
                 break;
+            case FROST_COFFIN:
+                renderIceShardStyle(drawContext, x, y, width, height, time, client, alpha);
+                break;
             case FIRE_WALL:
                 renderFireWallStyle(drawContext, x, y, width, height, time, client, alpha);
                 break;

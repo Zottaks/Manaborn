@@ -1,12 +1,18 @@
 package com.manaborn.spells;
 
+import com.manaborn.ManabornMod;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.Monster;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.entity.projectile.SmallFireballEntity;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -16,8 +22,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.world.World;
 
 import java.util.List;
@@ -46,6 +50,9 @@ public class ActiveEffectManager {
     // Active heat weapons: UUID player -> combo data
     private static final Map<UUID, HeatWeaponData> activeHeatWeapons = new ConcurrentHashMap<>();
 
+    // Active frost coffins: UUID target -> coffin data
+    private static final Map<UUID, FrostCoffinData> activeFrostCoffins = new ConcurrentHashMap<>();
+
     // Data classes
     public static class FireWallData {
         final Box boundingBox;
@@ -56,6 +63,31 @@ public class ActiveEffectManager {
             this.boundingBox = boundingBox;
             this.world = world;
             this.ticksRemaining = duration;
+        }
+    }
+
+    public static class FrostCoffinData {
+        final ServerWorld world;
+        final UUID casterId;
+        final UUID targetId;
+        final BlockPos anchor;
+        final List<BlockPos> blocks;
+        final boolean applyBlindness;
+        final boolean holdVariant;
+        int ticksRemaining;
+        int manaDrainCounter;
+
+        FrostCoffinData(ServerWorld world, UUID casterId, UUID targetId, BlockPos anchor, List<BlockPos> blocks,
+                boolean applyBlindness, boolean holdVariant, int durationTicks) {
+            this.world = world;
+            this.casterId = casterId;
+            this.targetId = targetId;
+            this.anchor = anchor;
+            this.blocks = blocks;
+            this.applyBlindness = applyBlindness;
+            this.holdVariant = holdVariant;
+            this.ticksRemaining = durationTicks;
+            this.manaDrainCounter = 0;
         }
     }
 
@@ -378,6 +410,215 @@ public class ActiveEffectManager {
         }
     }
 
+    // Frost Coffin management
+    public static void addFrostCoffin(ServerWorld world, UUID casterId, UUID targetId, boolean applyBlindness,
+            boolean holdVariant) {
+        // Replace existing coffin on target if present
+        FrostCoffinData existing = activeFrostCoffins.remove(targetId);
+        if (existing != null) {
+            cleanupFrostCoffin(existing);
+        }
+
+        ServerPlayerEntity caster = findOnlinePlayer(world, casterId);
+        LivingEntity target = null;
+        if (caster != null) {
+            Vec3d center = new Vec3d(caster.getX(), caster.getY() + 1.0, caster.getZ());
+            Box area = Box.of(center, 32.0, 32.0, 32.0);
+            target = findLivingEntityInBox(world, targetId, area);
+        }
+        if (target == null || !target.isAlive()) {
+            return;
+        }
+
+        BlockPos base = target.getBlockPos();
+        int y = base.getY();
+
+        List<BlockPos> placed = new ArrayList<>();
+
+        // Build a 1x1 column (2 blocks high) made of a no-collision translucent ice-like block.
+        for (int dy = 0; dy <= 1; dy++) {
+            BlockPos p = new BlockPos(base.getX(), y + dy, base.getZ());
+            if (!canPlaceCoffinBlock(world, p)) {
+                continue;
+            }
+            world.setBlockState(p, ManabornMod.FROST_COFFIN_BLOCK.getDefaultState());
+            placed.add(p);
+        }
+
+        if (placed.isEmpty()) {
+            return;
+        }
+
+        // Base duration: 30 seconds. Hold variant can end earlier by mana.
+        int durationTicks = 30 * 20;
+        activeFrostCoffins.put(targetId, new FrostCoffinData(world, casterId, targetId, base, placed, applyBlindness,
+                holdVariant, durationTicks));
+
+        world.playSound(null, base, SoundEvents.BLOCK_GLASS_PLACE, SoundCategory.PLAYERS, 0.7f, 1.2f);
+    }
+
+    public static void tickFrostCoffins(List<ServerPlayerEntity> players) {
+        if (activeFrostCoffins.isEmpty()) {
+            return;
+        }
+
+        List<UUID> toRemove = new ArrayList<>();
+
+        for (var entry : activeFrostCoffins.entrySet()) {
+            UUID targetId = entry.getKey();
+            FrostCoffinData data = entry.getValue();
+
+            data.ticksRemaining--;
+
+            LivingEntity target = findLivingEntityNear(data.world, data.targetId, data.anchor);
+            if (target == null || !target.isAlive()) {
+                toRemove.add(targetId);
+                continue;
+            }
+
+            ServerPlayerEntity caster = null;
+            for (ServerPlayerEntity p : players) {
+                if (p != null && p.getUuid().equals(data.casterId)) {
+                    caster = p;
+                    break;
+                }
+            }
+
+            boolean holdActiveNow = data.holdVariant && caster != null && caster.isSneaking();
+
+            // Freeze target inside the column (no pushing / no damage): lock in place every tick.
+            Vec3d center = Vec3d.ofCenter(data.anchor).add(0.0, 0.01, 0.0);
+            target.setVelocity(0.0, 0.0, 0.0);
+            target.teleport(center.x, data.anchor.getY(), center.z, false);
+
+            // Keep strong slowness as an extra safety net.
+            int slowAmplifier = holdActiveNow ? 10 : 6;
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 10, slowAmplifier, false, false, true));
+
+            if (data.applyBlindness) {
+                target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 10, 0, false, false, true));
+            }
+
+            if (holdActiveNow) {
+                // Hold variant: mining fatigue and hard lock in place, with mana drain.
+                target.addStatusEffect(
+                        new StatusEffectInstance(StatusEffects.MINING_FATIGUE, 10, 2, false, false, true));
+
+                // Drain mana from caster: 10 mana/sec = 1 mana per 2 ticks while hold is active.
+                data.manaDrainCounter++;
+                if (data.manaDrainCounter >= 2) {
+                    data.manaDrainCounter = 0;
+                    if (caster == null || !com.manaborn.mana.ManaManager.tryConsume(caster, 1)) {
+                        // No mana: break coffin immediately.
+                        toRemove.add(targetId);
+                        data.world.playSound(null, target.getBlockPos(), SoundEvents.BLOCK_GLASS_BREAK,
+                                SoundCategory.PLAYERS, 0.8f, 1.3f);
+                        continue;
+                    }
+                }
+            } else {
+                data.manaDrainCounter = 0;
+            }
+
+            // Particles: white end rods around the coffin.
+            if (data.ticksRemaining % 3 == 0) {
+                double cx = target.getX();
+                double cy = target.getY() + target.getHeight() * 0.5;
+                double cz = target.getZ();
+                data.world.spawnParticles(ParticleTypes.END_ROD, cx, cy, cz, 6, 0.8, 0.8, 0.8, 0.01);
+                data.world.spawnParticles(ParticleTypes.SNOWFLAKE, cx, cy, cz, 4, 0.6, 0.8, 0.6, 0.03);
+            }
+
+            // Crumbling in last 2 seconds: remaining blocks crack on their own.
+            if (data.ticksRemaining <= 40 && data.ticksRemaining > 0 && data.ticksRemaining % 2 == 0) {
+                int removeCount = Math.max(1, data.blocks.size() / 12);
+                for (int i = 0; i < removeCount && !data.blocks.isEmpty(); i++) {
+                    int idx = data.world.random.nextInt(data.blocks.size());
+                    BlockPos p = data.blocks.get(idx);
+                    if (data.world.getBlockState(p).isOf(ManabornMod.FROST_COFFIN_BLOCK)) {
+                        data.world.setBlockState(p, Blocks.AIR.getDefaultState());
+                        data.world.spawnParticles(ParticleTypes.SNOWFLAKE, p.getX() + 0.5, p.getY() + 0.5,
+                                p.getZ() + 0.5, 3, 0.1, 0.1, 0.1, 0.0);
+                        data.world.playSound(null, p, SoundEvents.BLOCK_GLASS_BREAK, SoundCategory.BLOCKS, 0.3f, 1.3f);
+                    }
+                    data.blocks.remove(idx);
+                }
+            }
+
+            if (data.ticksRemaining <= 0) {
+                toRemove.add(targetId);
+                continue;
+            }
+
+            // If all blocks are gone (broken by target), stop effect.
+            int stillThere = 0;
+            for (BlockPos p : data.blocks) {
+                if (data.world.getBlockState(p).isOf(ManabornMod.FROST_COFFIN_BLOCK)) {
+                    stillThere++;
+                }
+            }
+            if (stillThere <= 0) {
+                toRemove.add(targetId);
+            }
+        }
+
+        for (UUID id : toRemove) {
+            FrostCoffinData data = activeFrostCoffins.remove(id);
+            if (data != null) {
+                cleanupFrostCoffin(data);
+            }
+        }
+    }
+
+    private static void cleanupFrostCoffin(FrostCoffinData data) {
+        for (BlockPos p : data.blocks) {
+            if (data.world.getBlockState(p).isOf(ManabornMod.FROST_COFFIN_BLOCK)) {
+                data.world.setBlockState(p, Blocks.AIR.getDefaultState());
+                data.world.spawnParticles(ParticleTypes.SNOWFLAKE, p.getX() + 0.5, p.getY() + 0.5, p.getZ() + 0.5,
+                        2, 0.1, 0.1, 0.1, 0.0);
+            }
+        }
+    }
+
+    private static boolean canPlaceCoffinBlock(ServerWorld world, BlockPos pos) {
+        if (!world.isAir(pos)) {
+            return false;
+        }
+        FluidState fluid = world.getFluidState(pos);
+        return fluid.isEmpty();
+    }
+
+    private static LivingEntity findLivingEntityNear(ServerWorld world, UUID entityId, BlockPos anchor) {
+        // Try player first (fast path)
+        ServerPlayerEntity player = findOnlinePlayer(world, entityId);
+        if (player != null && player.isAlive()) {
+            return player;
+        }
+
+        if (anchor == null) {
+            return null;
+        }
+
+        Vec3d center = Vec3d.ofCenter(anchor);
+        Box area = Box.of(center, 12.0, 12.0, 12.0);
+        return findLivingEntityInBox(world, entityId, area);
+    }
+
+    private static LivingEntity findLivingEntityInBox(ServerWorld world, UUID entityId, Box area) {
+        List<LivingEntity> list = world.getEntitiesByClass(LivingEntity.class, area,
+                e -> e != null && e.isAlive() && e.getUuid().equals(entityId));
+        return list.isEmpty() ? null : list.get(0);
+    }
+
+    private static ServerPlayerEntity findOnlinePlayer(ServerWorld world, UUID playerId) {
+        for (ServerPlayerEntity p : world.getServer().getPlayerManager().getPlayerList()) {
+            if (p != null && p.getUuid().equals(playerId)) {
+                return p;
+            }
+        }
+        return null;
+    }
+
     // Heat Weapon management
     public static void addHeatWeapon(UUID playerId, int level) {
         activeHeatWeapons.put(playerId, new HeatWeaponData(level));
@@ -484,5 +725,9 @@ public class ActiveEffectManager {
         activeAbsorbingBarriers.clear();
         activeIceWalls.clear();
         activeHeatWeapons.clear();
+        for (FrostCoffinData data : activeFrostCoffins.values()) {
+            cleanupFrostCoffin(data);
+        }
+        activeFrostCoffins.clear();
     }
 }
