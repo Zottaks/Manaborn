@@ -1,213 +1,307 @@
 """
-Скрипт для генерации текстуры маг-торговца.
-Создаёт PNG файл 64x64 с дизайном мага.
-Использует ПРАВИЛЬНЫЙ UV-маппинг модели Villager.
+Генератор UV-совместимой текстуры для `MageModel`.
 
-UV-маппинг модели жителя (64x64):
-- Голова (8x8x8): начало @ (0,0)
-  - Верх: (8,0) 8x8, Низ: (16,0) 8x8
-  - Право: (0,8) 8x8, Перед: (8,8) 8x8, Лево: (16,8) 8x8, Зад: (24,8) 8x8
-- Шляпа/Капюшон (overlay, 8x8x8): начало @ (32,0)
-  - Верх: (40,0) 8x8, Низ: (48,0) 8x8
-  - Право: (32,8) 8x8, Перед: (40,8) 8x8, Лево: (48,8) 8x8, Зад: (56,8) 8x8
-- Нос: (24,0) 2x4x2
-- Тело: (16,20) 8x12x4
-- Руки: (44,22) и зеркально
-
-Требует: pip install Pillow
+Вдохновение:
+- Villager Magician: капюшон, читаемое лицо торговца
+- Minecraft Dungeons Mystery Merchant: тёмная фиолетовая мантия
+- Luxury Merchant: золотая отделка и ощущение дорогого торговца
 """
+
+from pathlib import Path
 
 from PIL import Image, ImageDraw
 
+
+ROOT = Path(__file__).resolve().parent
+TEXTURE_PATH = ROOT / "src" / "main" / "resources" / "assets" / "manaborn" / "textures" / "entity" / "mage.png"
+PREVIEW_PATH = ROOT / "mage_merchant_preview.png"
+
+TEXTURE_SIZE = 128
+PREVIEW_SIZE = 512
+
+PURPLE_SHADOW = (24, 13, 43, 255)
+PURPLE_DEEP = (40, 21, 72, 255)
+PURPLE_DARK = (58, 32, 101, 255)
+PURPLE_MID = (83, 53, 138, 255)
+PURPLE_LIGHT = (111, 79, 176, 255)
+
+GOLD_SHADOW = (120, 84, 11, 255)
+GOLD_DARK = (170, 125, 21, 255)
+GOLD_MID = (216, 173, 43, 255)
+GOLD_LIGHT = (250, 219, 120, 255)
+
+SKIN_SHADOW = (138, 104, 78, 255)
+SKIN_MID = (177, 137, 104, 255)
+SKIN_LIGHT = (206, 166, 128, 255)
+SKIN_HIGHLIGHT = (227, 194, 162, 255)
+
+LEATHER_DARK = (68, 42, 25, 255)
+LEATHER_MID = (104, 67, 40, 255)
+LEATHER_LIGHT = (140, 95, 60, 255)
+
+BOOT_DARK = (34, 21, 18, 255)
+BOOT_LIGHT = (63, 43, 36, 255)
+
+EYE_WHITE = (242, 243, 247, 255)
+EYE_DARK = (36, 26, 20, 255)
+ARCANE_BLUE = (83, 178, 255, 255)
+ARCANE_CYAN = (171, 238, 255, 255)
+VOID_BLACK = (0, 0, 0, 255)
+VOID_DARK = (10, 10, 10, 255)
+VOID_SOFT = (22, 22, 22, 255)
+
+
+def box_faces(u, v, w, h, d):
+    return {
+        "top": (u + d, v, w, d),
+        "bottom": (u + d + w, v, w, d),
+        "left": (u, v + d, d, h),
+        "front": (u + d, v + d, w, h),
+        "right": (u + d + w, v + d, d, h),
+        "back": (u + d + w + d, v + d, w, h),
+    }
+
+
+def fill_rect(draw, rect, color):
+    x, y, w, h = rect
+    draw.rectangle([x, y, x + w - 1, y + h - 1], fill=color)
+
+
+def line_h(draw, x0, x1, y, color):
+    draw.line((x0, y, x1, y), fill=color)
+
+
+def line_v(draw, x, y0, y1, color):
+    draw.line((x, y0, x, y1), fill=color)
+
+
+def gradient_face(draw, rect, top, mid, bottom):
+    x, y, w, h = rect
+    for row in range(h):
+        ratio = row / max(1, h - 1)
+        if ratio < 0.35:
+            color = top
+        elif ratio < 0.75:
+            color = mid
+        else:
+            color = bottom
+        line_h(draw, x, x + w - 1, y + row, color)
+
+
+def cloth_face(draw, rect, base, shadow, highlight, stripe_every=3):
+    x, y, w, h = rect
+    fill_rect(draw, rect, base)
+    for column in range(w):
+        actual_x = x + column
+        if column % stripe_every == 0:
+            line_v(draw, actual_x, y, y + h - 1, highlight)
+        elif column % stripe_every == stripe_every - 1:
+            line_v(draw, actual_x, y, y + h - 1, shadow)
+
+
+def robe_face(draw, rect, base, shadow, highlight, folds=()):
+    x, y, w, h = rect
+    gradient_face(draw, rect, highlight, base, shadow)
+    line_h(draw, x, x + w - 1, y, highlight)
+    line_h(draw, x, x + w - 1, y + h - 1, shadow)
+    if w >= 2:
+        line_v(draw, x, y, y + h - 1, shadow)
+        line_v(draw, x + w - 1, y, y + h - 1, shadow)
+    for fold_x in folds:
+        actual = x + max(0, min(w - 1, fold_x))
+        line_v(draw, actual, y, y + h - 1, highlight)
+        if actual + 1 <= x + w - 1:
+            line_v(draw, actual + 1, y, y + h - 1, shadow)
+
+
+def bordered_face(draw, rect, fill, border, inner=None):
+    x, y, w, h = rect
+    fill_rect(draw, rect, border)
+    if w > 2 and h > 2:
+        fill_rect(draw, (x + 1, y + 1, w - 2, h - 2), fill)
+    if inner and w > 4 and h > 4:
+        fill_rect(draw, (x + 2, y + 2, w - 4, h - 4), inner)
+
+
+def add_wear(draw, rect, colors):
+    x, y, w, h = rect
+    points = [
+        (x + 1, y + h - 2),
+        (x + w - 2, y + h - 3),
+        (x + w // 2, y + h - 1),
+    ]
+    for idx, (px, py) in enumerate(points):
+        draw.point((px, py), colors[idx % len(colors)])
+
+
+def add_eye(draw, x, y):
+    draw.point((x, y), EYE_WHITE)
+    draw.point((x + 1, y), EYE_WHITE)
+    draw.point((x + 1, y + 1), ARCANE_BLUE)
+
+
+def paint_head(draw):
+    head = box_faces(0, 11, 8, 8, 8)
+
+    for face in ("top", "left", "right", "back"):
+        gradient_face(draw, head[face], VOID_SOFT, VOID_DARK, VOID_BLACK)
+
+    gradient_face(draw, head["front"], VOID_SOFT, VOID_DARK, VOID_BLACK)
+    x, y, _, _ = head["front"]
+    line_h(draw, x, x + 7, y, PURPLE_SHADOW)
+    fill_rect(draw, (x + 1, y + 1, 6, 6), VOID_BLACK)
+    fill_rect(draw, (x + 2, y + 2, 4, 4), VOID_DARK)
+    draw.point((x + 2, y + 3), GOLD_LIGHT)
+    draw.point((x + 5, y + 3), GOLD_LIGHT)
+    draw.point((x + 3, y + 3), GOLD_MID)
+    draw.point((x + 6, y + 3), GOLD_MID)
+    draw.point((x + 2, y + 4), GOLD_DARK)
+    draw.point((x + 5, y + 4), GOLD_DARK)
+    line_h(draw, x + 1, x + 6, y + 6, PURPLE_SHADOW)
+    draw.point((x + 3, y + 5), GOLD_DARK)
+    draw.point((x + 4, y + 5), GOLD_DARK)
+
+    brim = box_faces(0, 0, 10, 1, 10)
+    fill_rect(draw, brim["top"], PURPLE_DARK)
+    fill_rect(draw, brim["bottom"], PURPLE_SHADOW)
+    for face in ("left", "front", "right", "back"):
+        fill_rect(draw, brim[face], GOLD_MID if face == "front" else PURPLE_MID)
+        if face != "front":
+            fill_rect(draw, (brim[face][0], brim[face][1], brim[face][2], 1), GOLD_LIGHT)
+
+    hood = box_faces(0, 27, 8, 4, 8)
+    crown = box_faces(0, 39, 6, 4, 6)
+    for face_name, face in hood.items():
+        robe_face(draw, face, PURPLE_DARK, PURPLE_SHADOW, PURPLE_MID, folds=(3,) if face_name in ("front", "back") else ())
+    for face_name, face in crown.items():
+        robe_face(draw, face, PURPLE_DEEP, PURPLE_SHADOW, PURPLE_LIGHT, folds=(2,) if face_name in ("front", "back") else ())
+
+    jewel_x, jewel_y, _, _ = brim["front"]
+    draw.point((jewel_x + 4, jewel_y), ARCANE_CYAN)
+
+
+def paint_body(draw):
+    torso = box_faces(32, 31, 8, 12, 4)
+    robe_face(draw, torso["front"], PURPLE_DEEP, PURPLE_SHADOW, PURPLE_MID, folds=(2, 5))
+    robe_face(draw, torso["back"], PURPLE_DARK, PURPLE_SHADOW, PURPLE_MID, folds=(3,))
+    robe_face(draw, torso["left"], PURPLE_DARK, PURPLE_SHADOW, PURPLE_MID, folds=())
+    robe_face(draw, torso["right"], PURPLE_DARK, PURPLE_SHADOW, PURPLE_MID, folds=())
+    gradient_face(draw, torso["top"], PURPLE_LIGHT, PURPLE_MID, PURPLE_SHADOW)
+    fill_rect(draw, torso["bottom"], PURPLE_DEEP)
+
+    fx, fy, _, fh = torso["front"]
+    fill_rect(draw, (fx, fy, 8, 3), GOLD_MID)
+    line_h(draw, fx, fx + 7, fy + 2, GOLD_DARK)
+    fill_rect(draw, (fx + 2, fy + 3, 4, 1), GOLD_LIGHT)
+    fill_rect(draw, (fx + 1, fy + 3, 2, 7), PURPLE_MID)
+    fill_rect(draw, (fx + 5, fy + 3, 2, 7), PURPLE_MID)
+    line_h(draw, fx + 1, fx + 2, fy + 9, GOLD_MID)
+    line_h(draw, fx + 5, fx + 6, fy + 9, GOLD_MID)
+    fill_rect(draw, (fx + 2, fy + 4, 4, 2), LEATHER_DARK)
+    fill_rect(draw, (fx + 3, fy + 4, 2, 2), GOLD_MID)
+    fill_rect(draw, (fx + 2, fy + 6, 4, 3), ARCANE_BLUE)
+    fill_rect(draw, (fx + 3, fy + 7, 2, 1), ARCANE_CYAN)
+    fill_rect(draw, (fx, fy + 10, 8, 2), PURPLE_DARK)
+    line_h(draw, fx, fx + 7, fy + 11, GOLD_DARK)
+    line_v(draw, fx + 1, fy + 3, fy + 10, PURPLE_LIGHT)
+    line_v(draw, fx + 6, fy + 3, fy + 10, PURPLE_SHADOW)
+    draw.point((fx + 2, fy + 8), GOLD_LIGHT)
+    draw.point((fx + 5, fy + 8), GOLD_LIGHT)
+    add_wear(draw, torso["front"], (GOLD_DARK, PURPLE_LIGHT, GOLD_LIGHT))
+
+    cape = box_faces(32, 11, 10, 19, 1)
+    for face_name, face in cape.items():
+        if face_name == "back":
+            robe_face(draw, face, PURPLE_DARK, PURPLE_SHADOW, PURPLE_MID, folds=(3, 6))
+            x, y, w, h = face
+            draw.rectangle([x, y, x + w - 1, y + h - 1], outline=GOLD_DARK)
+            draw.rectangle([x + 1, y + 1, x + w - 2, y + h - 2], outline=GOLD_LIGHT)
+            draw.point((x + w // 2, y + 5), GOLD_LIGHT)
+            draw.point((x + w // 2 - 1, y + 6), GOLD_MID)
+            draw.point((x + w // 2 + 1, y + 6), GOLD_MID)
+            draw.point((x + w // 2, y + 7), GOLD_LIGHT)
+            add_wear(draw, face, (PURPLE_LIGHT, GOLD_DARK, PURPLE_MID))
+        else:
+            fill_rect(draw, face, PURPLE_SHADOW)
+
+    shoulder_r = box_faces(54, 16, 4, 3, 5)
+    shoulder_l = box_faces(57, 24, 4, 3, 5)
+    for shoulder in (shoulder_r, shoulder_l):
+        for face_name, face in shoulder.items():
+            if face_name in ("front", "back", "top"):
+                bordered_face(draw, face, GOLD_MID, GOLD_DARK, GOLD_LIGHT)
+            else:
+                fill_rect(draw, face, PURPLE_DARK)
+
+    clasp = box_faces(56, 32, 10, 2, 1)
+    for face in clasp.values():
+        fill_rect(draw, face, GOLD_DARK)
+
+    talisman_r = box_faces(16, 49, 1, 12, 1)
+    talisman_l = box_faces(20, 49, 1, 12, 1)
+    for part in (talisman_r, talisman_l):
+        for face_name, face in part.items():
+            fill_rect(draw, face, GOLD_MID if face_name in ("front", "back") else LEATHER_DARK)
+
+
+def paint_arm(draw, u, v, bracelet=True):
+    arm = box_faces(u, v, 4, 12, 4)
+    robe_face(draw, arm["front"], PURPLE_DARK, PURPLE_SHADOW, PURPLE_MID, folds=(1,))
+    robe_face(draw, arm["back"], PURPLE_DARK, PURPLE_SHADOW, PURPLE_MID, folds=(1,))
+    robe_face(draw, arm["left"], PURPLE_DARK, PURPLE_SHADOW, PURPLE_LIGHT, folds=())
+    robe_face(draw, arm["right"], PURPLE_DARK, PURPLE_SHADOW, PURPLE_LIGHT, folds=())
+    gradient_face(draw, arm["top"], PURPLE_LIGHT, PURPLE_MID, PURPLE_SHADOW)
+    fill_rect(draw, arm["bottom"], BOOT_DARK)
+    if bracelet:
+        x, y, w, h = arm["front"]
+        fill_rect(draw, (x, y + h - 2, w, 2), GOLD_MID)
+        line_h(draw, x, x + w - 1, y + h - 2, GOLD_LIGHT)
+    add_wear(draw, arm["front"], (PURPLE_LIGHT, GOLD_DARK, PURPLE_MID))
+
+
+def paint_leg(draw, u, v):
+    leg = box_faces(u, v, 4, 12, 4)
+    robe_face(draw, leg["front"], PURPLE_DARK, PURPLE_SHADOW, PURPLE_MID, folds=(1,))
+    robe_face(draw, leg["back"], PURPLE_DARK, PURPLE_SHADOW, PURPLE_MID, folds=(1,))
+    robe_face(draw, leg["left"], PURPLE_DARK, PURPLE_SHADOW, PURPLE_LIGHT, folds=())
+    robe_face(draw, leg["right"], PURPLE_DARK, PURPLE_SHADOW, PURPLE_LIGHT, folds=())
+    gradient_face(draw, leg["top"], PURPLE_MID, PURPLE_DARK, PURPLE_SHADOW)
+    fill_rect(draw, leg["bottom"], BOOT_DARK)
+    x, y, w, h = leg["front"]
+    line_h(draw, x, x + w - 1, y + h - 3, BOOT_LIGHT)
+    line_h(draw, x, x + w - 1, y + h - 2, BOOT_DARK)
+    add_wear(draw, leg["front"], (PURPLE_LIGHT, BOOT_LIGHT, PURPLE_MID))
+
+
+def add_detail_sparkles(draw):
+    sparkles = [
+        (11, 59), (18, 62), (27, 55), (35, 74), (48, 79), (67, 68),
+        (75, 88), (92, 51), (101, 76), (112, 83), (63, 98), (87, 104)
+    ]
+    for x, y in sparkles:
+        draw.point((x, y), GOLD_LIGHT)
+        draw.point((x + 1, y + 1), ARCANE_BLUE)
+
+
 def create_mage_merchant_texture():
-    # Текстура 64x64, начинаем с прозрачного фона
-    img = Image.new('RGBA', (64, 64), (0, 0, 0, 0))
+    img = Image.new("RGBA", (TEXTURE_SIZE, TEXTURE_SIZE), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    
-    # Цвета мага
-    ROBE_DARK = (50, 20, 80, 255)         # Тёмно-фиолетовая роба
-    ROBE_MID = (80, 40, 120, 255)         # Средняя роба
-    ROBE_LIGHT = (100, 60, 150, 255)      # Светлая роба
-    GOLD = (255, 215, 0, 255)             # Золотой
-    GOLD_DARK = (180, 150, 0, 255)        # Тёмное золото
-    SKIN = (228, 195, 158, 255)           # Кожа (как у жителя)
-    SKIN_SHADOW = (198, 165, 128, 255)    # Тень кожи
-    SKIN_DARK = (168, 135, 98, 255)       # Тёмная кожа
-    HAT_DARK = (40, 15, 60, 255)          # Шляпа тёмная
-    HAT_MID = (60, 30, 90, 255)           # Шляпа средняя
-    WHITE = (255, 255, 255, 255)          # Белый (глаза)
-    BROWN = (82, 50, 30, 255)             # Коричневый (зрачки)
-    NOSE_COLOR = (210, 175, 138, 255)     # Нос (чуть темнее кожи)
-    
-    # ========== ГОЛОВА (Head) ==========
-    # Верх головы @ (8,0) размер 8x8
-    for px in range(8, 16):
-        for py in range(0, 8):
-            draw.point((px, py), fill=SKIN)
-    
-    # Низ головы @ (16,0) размер 8x8
-    for px in range(16, 24):
-        for py in range(0, 8):
-            draw.point((px, py), fill=SKIN_DARK)
-    
-    # Правая сторона головы @ (0,8) размер 8x8
-    for px in range(0, 8):
-        for py in range(8, 16):
-            draw.point((px, py), fill=SKIN_SHADOW)
-    
-    # Перед лица @ (8,8) размер 8x8
-    for px in range(8, 16):
-        for py in range(8, 16):
-            draw.point((px, py), fill=SKIN)
-    
-    # ГЛАЗА - на ЛИЦЕ, ниже края шляпы
-    # Лицо занимает (8,8)-(15,15)
-    # Глаза на y=12-13, зрачки ЧЁРНЫЕ для контраста
-    BLACK = (0, 0, 0, 255)
-    # Левый глаз
-    draw.point((9, 12), fill=WHITE)
-    draw.point((10, 12), fill=WHITE)
-    draw.point((9, 13), fill=WHITE)
-    draw.point((10, 13), fill=BLACK)  # Зрачок
-    # Правый глаз
-    draw.point((13, 12), fill=WHITE)
-    draw.point((14, 12), fill=WHITE)
-    draw.point((14, 13), fill=WHITE)
-    draw.point((13, 13), fill=BLACK)  # Зрачок
-    
-    # Левая сторона головы @ (16,8) размер 8x8
-    for px in range(16, 24):
-        for py in range(8, 16):
-            draw.point((px, py), fill=SKIN_SHADOW)
-    
-    # Зад головы @ (24,8) размер 8x8
-    for px in range(24, 32):
-        for py in range(8, 16):
-            draw.point((px, py), fill=SKIN_DARK)
-    
-    # ========== НОС ==========
-    # Нос жителя большой! @ (24,0) размер развёртки примерно 8x6
-    # Верх носа
-    draw.rectangle([26, 0, 27, 1], fill=NOSE_COLOR)
-    # Низ носа  
-    draw.rectangle([28, 0, 29, 1], fill=SKIN_DARK)
-    # Стороны носа
-    draw.rectangle([24, 2, 25, 5], fill=NOSE_COLOR)   # Право
-    draw.rectangle([26, 2, 27, 5], fill=NOSE_COLOR)   # Перед
-    draw.rectangle([28, 2, 29, 5], fill=NOSE_COLOR)   # Лево
-    draw.rectangle([30, 2, 31, 5], fill=SKIN_SHADOW)  # Зад
-    
-    # ========== ШЛЯПА/КАПЮШОН (Hat Layer) ==========
-    # Полностью фиолетовая шляпа с ОДНОЙ тонкой жёлтой линией вдоль полей
-    # ВСЕ жёлтые линии на ОДНОМ уровне y=12
-    
-    # Верх шляпы @ (40,0) размер 8x8
-    draw.rectangle([40, 0, 47, 7], fill=HAT_DARK)
-    
-    # Низ шляпы @ (48,0) размер 8x8
-    draw.rectangle([48, 0, 55, 7], fill=HAT_MID)
-    
-    # Правая сторона шляпы @ (32,8) размер 8x8 - полностью заполняем
-    draw.rectangle([32, 8, 39, 15], fill=HAT_MID)
-    # Жёлтая линия толщиной 2 пикселя (y=11-12)
-    draw.rectangle([32, 11, 39, 12], fill=GOLD)
-    
-    # Перед шляпы @ (40,8) размер 8x8 - заполняем верхнюю часть
-    draw.rectangle([40, 8, 47, 11], fill=HAT_DARK)
-    # Жёлтая линия толщиной 2 пикселя (y=11-12)
-    draw.rectangle([40, 11, 47, 12], fill=GOLD)
-    # (40,13)-(47,15) - ПРОЗРАЧНО для глаз
-    
-    # Левая сторона шляпы @ (48,8) размер 8x8 - полностью заполняем
-    draw.rectangle([48, 8, 55, 15], fill=HAT_MID)
-    # Жёлтая линия толщиной 2 пикселя (y=11-12)
-    draw.rectangle([48, 11, 55, 12], fill=GOLD)
-    
-    # Зад шляпы @ (56,8) размер 8x8 - полностью заполняем
-    draw.rectangle([56, 8, 63, 15], fill=HAT_DARK)
-    # Жёлтая линия толщиной 2 пикселя (y=11-12)
-    draw.rectangle([56, 11, 63, 12], fill=GOLD)
-    
-    # НЕ заполняем область под шляпой спереди - там должно быть видно лицо!
-    # Область (40,13)-(47,15) остаётся ПРОЗРАЧНОЙ для глаз
-    
-    # ========== ТЕЛО ==========
-    # Тело @ (16,20) размер 8x12x4
-    
-    # Верх тела @ (20,16) 8x4
-    draw.rectangle([20, 16, 27, 19], fill=ROBE_DARK)
-    # Низ тела @ (28,16) 8x4
-    draw.rectangle([28, 16, 35, 19], fill=ROBE_DARK)
-    
-    # Правая сторона тела @ (16,20) 4x12
-    draw.rectangle([16, 20, 19, 31], fill=ROBE_DARK)
-    
-    # Перед тела @ (20,20) 8x12
-    draw.rectangle([20, 20, 27, 31], fill=ROBE_MID)
-    # Золотая застёжка/полоса по центру
-    draw.line([(23, 20), (23, 31)], fill=GOLD)
-    draw.line([(24, 20), (24, 31)], fill=GOLD_DARK)
-    # Золотые пуговицы
-    draw.point((23, 22), fill=GOLD)
-    draw.point((23, 25), fill=GOLD)
-    draw.point((23, 28), fill=GOLD)
-    
-    # Левая сторона тела @ (28,20) 4x12
-    draw.rectangle([28, 20, 31, 31], fill=ROBE_DARK)
-    
-    # Зад тела @ (32,20) 8x12
-    draw.rectangle([32, 20, 39, 31], fill=ROBE_DARK)
-    # Магический символ на спине
-    draw.point((35, 24), fill=GOLD)
-    draw.point((34, 25), fill=GOLD_DARK)
-    draw.point((36, 25), fill=GOLD_DARK)
-    draw.point((35, 26), fill=GOLD)
-    
-    # ========== РУКИ ==========
-    # Заполняем ВСЮ область рук робой без пропусков
-    # Включая ВСЕ стороны - верх, низ, перед, зад, лево, право
-    
-    # Правая рука - заполняем ПОЛНОСТЬЮ область (40-55, 16-31)
-    draw.rectangle([40, 16, 55, 31], fill=ROBE_DARK)
-    # Перед руки чуть светлее
-    draw.rectangle([44, 20, 47, 30], fill=ROBE_MID)
-    
-    # Левая рука - заполняем ПОЛНОСТЬЮ область (0-15, 16-31)
-    draw.rectangle([0, 16, 15, 31], fill=ROBE_DARK)
-    # Перед руки чуть светлее
-    draw.rectangle([4, 20, 7, 30], fill=ROBE_MID)
-    
-    # Дополнительно заполняем области 56-63 для рук (если есть)
-    draw.rectangle([56, 16, 63, 31], fill=ROBE_DARK)
-    
-    # ========== НИЖНЯЯ ЧАСТЬ ТЕКСТУРЫ ==========
-    # Заполняем ВСЮ нижнюю часть текстуры робой чтобы не было пропусков
-    
-    # Полностью заливаем всё от y=32 до y=63
-    draw.rectangle([0, 32, 63, 63], fill=ROBE_DARK)
-    
-    # Немного вариации цвета для ног
-    draw.rectangle([16, 32, 31, 47], fill=ROBE_MID)
-    
-    # Золотые звёзды на робе (декор)
-    stars = [(2, 35), (8, 40), (5, 44), (20, 36), (26, 42), (22, 45),
-             (40, 38), (55, 42), (48, 50), (35, 55), (10, 52), (25, 58),
-             (50, 35), (58, 55), (45, 60)]
-    for pos in stars:
-        draw.point(pos, fill=GOLD)
-    
-    # Сохраняем
-    import os
-    output_dir = r"src\main\resources\assets\manaborn\textures\entity"
-    os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, "mage_merchant.png")
-    img.save(output_path)
-    print(f"Текстура сохранена: {output_path}")
-    
-    # Превью (увеличенное)
-    preview = img.resize((256, 256), Image.NEAREST)
-    preview.save("mage_merchant_preview.png")
-    print("Превью сохранено: mage_merchant_preview.png")
+
+    paint_head(draw)
+    paint_body(draw)
+    paint_arm(draw, 24, 47)
+    paint_arm(draw, 40, 47)
+    paint_leg(draw, 0, 49)
+    paint_leg(draw, 54, 0)
+    add_detail_sparkles(draw)
+
+    TEXTURE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    img.save(TEXTURE_PATH)
+    img.resize((PREVIEW_SIZE, PREVIEW_SIZE), Image.NEAREST).save(PREVIEW_PATH)
+
+    print(f"Texture saved: {TEXTURE_PATH}")
+    print(f"Preview saved: {PREVIEW_PATH}")
+
 
 if __name__ == "__main__":
     create_mage_merchant_texture()

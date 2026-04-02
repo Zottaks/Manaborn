@@ -19,7 +19,7 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.world.ServerWorldAccess;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundCategory;
@@ -32,10 +32,11 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOfferList;
 import net.minecraft.village.TradedItem;
-import net.minecraft.world.World;
-import net.minecraft.world.LocalDifficulty;
-import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.EntityData;
+import net.minecraft.entity.SpawnReason;
+import net.minecraft.world.LocalDifficulty;
+import net.minecraft.world.ServerWorldAccess;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 
@@ -44,6 +45,7 @@ import org.jetbrains.annotations.Nullable;
  * Маг-торговец - NPC, который спавнится в доме мага и продаёт магические предметы.
  */
 public class MageMerchantEntity extends MerchantEntity {
+    private boolean emergencyTranslocationUsed = false;
 
 
     public MageMerchantEntity(EntityType<? extends MerchantEntity> entityType, World world) {
@@ -75,15 +77,45 @@ public class MageMerchantEntity extends MerchantEntity {
 
     @Override
     public boolean damage(ServerWorld world, DamageSource source, float amount) {
+        float healthBeforeHit = this.getHealth();
         boolean result = super.damage(world, source, amount);
-        if (result && amount >= 5.0F) {
-            Vec3d center = new Vec3d(this.getX(), this.getY(), this.getZ());
-            Vec3d destination = findRandomSafePosition(world, center, 20.0, 40.0);
-            this.teleport(destination.x, destination.y, destination.z, false);
-            world.playSound(null, this.getBlockPos(), SoundEvents.ENTITY_ENDERMAN_TELEPORT,
-                    SoundCategory.NEUTRAL, 1.0f, 1.1f);
+
+        if (result
+                && this.isAlive()
+                && !this.emergencyTranslocationUsed
+                && healthBeforeHit > this.getMaxHealth() * 0.5F
+                && this.getHealth() <= this.getMaxHealth() * 0.5F) {
+            triggerEmergencyTranslocation(world);
         }
+
         return result;
+    }
+
+    private void triggerEmergencyTranslocation(ServerWorld world) {
+        this.emergencyTranslocationUsed = true;
+
+        Vec3d origin = new Vec3d(this.getX(), this.getY(), this.getZ());
+        Vec3d destination = findRandomSafePosition(world, origin, 20.0, 40.0);
+
+        spawnTranslocationEffect(world, origin);
+        this.teleport(destination.x, destination.y, destination.z, false);
+        spawnTranslocationEffect(world, destination);
+
+        world.playSound(null, this.getBlockPos(), SoundEvents.ENTITY_ENDERMAN_TELEPORT,
+                SoundCategory.NEUTRAL, 1.0f, 1.05f);
+        world.playSound(null, this.getBlockPos(), SoundEvents.ITEM_TOTEM_USE,
+                SoundCategory.NEUTRAL, 0.55f, 1.8f);
+    }
+
+    private void spawnTranslocationEffect(ServerWorld world, Vec3d center) {
+        world.spawnParticles(ParticleTypes.END_ROD, center.x, center.y + 1.0, center.z,
+                18, 0.45, 0.75, 0.45, 0.02);
+        world.spawnParticles(ParticleTypes.POOF, center.x, center.y + 1.0, center.z,
+                12, 0.3, 0.55, 0.3, 0.02);
+        world.spawnParticles(ParticleTypes.FIREWORK, center.x, center.y + 1.0, center.z,
+                6, 0.18, 0.35, 0.18, 0.01);
+        world.spawnParticles(ParticleTypes.GLOW, center.x, center.y + 1.1, center.z,
+                10, 0.25, 0.45, 0.25, 0.01);
     }
 
     private Vec3d findRandomSafePosition(ServerWorld world, Vec3d center, double minRadius, double maxRadius) {
