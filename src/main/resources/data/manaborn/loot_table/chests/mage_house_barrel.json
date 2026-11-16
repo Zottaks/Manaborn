@@ -1,0 +1,49 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "manaborn:fireball_spell_book",
+          "weight": 40
+        },
+        {
+          "type": "minecraft:item",
+          "name": "manaborn:ice_shard_spell_book",
+          "weight": 40
+        },
+        {
+          "type": "minecraft:item",
+          "name": "manaborn:battle_hymn_spell_book",
+          "weight": 20
+        }
+      ]
+    },
+    {
+      "rolls": {
+        "min": 3,
+        "max": 6
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:diamond",
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "bonus_rolls": 0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:redstone",
+          "weight": 1
+        }
+      ]
+    }
+  ]
+}

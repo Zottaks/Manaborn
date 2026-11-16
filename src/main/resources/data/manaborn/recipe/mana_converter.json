@@ -1,0 +1,18 @@
+{
+	"type": "minecraft:crafting_shaped",
+	"category": "misc",
+	"pattern": [
+		"DDD",
+		"DHD",
+		"LLL"
+	],
+	"key": {
+		"D": "manaborn:magic_dust",
+		"H": "minecraft:hopper",
+		"L": "minecraft:lapis_lazuli"
+	},
+	"result": {
+		"id": "manaborn:mana_converter",
+		"count": 1
+	}
+}

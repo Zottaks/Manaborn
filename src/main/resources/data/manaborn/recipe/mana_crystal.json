@@ -1,0 +1,17 @@
+{
+	"type": "minecraft:crafting_shaped",
+	"category": "misc",
+	"pattern": [
+		" D ",
+		"DLD",
+		" D "
+	],
+	"key": {
+		"D": "manaborn:magic_dust",
+		"L": "minecraft:lapis_lazuli"
+	},
+	"result": {
+		"id": "manaborn:mana_potion",
+		"count": 1
+	}
+}

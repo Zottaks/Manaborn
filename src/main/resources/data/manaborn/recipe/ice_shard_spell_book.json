@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:book",
+    "manaborn:magic_dust",
+    "minecraft:snowball"
+  ],
+  "result": {
+    "id": "manaborn:ice_shard_spell_book",
+    "count": 1
+  }
+}

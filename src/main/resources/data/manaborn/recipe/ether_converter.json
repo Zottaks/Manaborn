@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "DDD",
+    "DAD",
+    "LCL"
+  ],
+  "key": {
+    "D": "manaborn:magic_dust",
+    "A": "minecraft:anvil",
+    "L": "minecraft:lapis_lazuli",
+    "C": "minecraft:diamond"
+  },
+  "result": {
+    "id": "manaborn:ether_converter",
+    "count": 1
+  }
+}

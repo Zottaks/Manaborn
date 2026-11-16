@@ -1,0 +1,6 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "manaborn:item/mana_vessel_full"
+  }
+}
