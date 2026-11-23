@@ -1,0 +1,8 @@
+{
+  "type": "fabric:add_features",
+  "biomes": "#minecraft:is_overworld",
+  "step": "underground_ores",
+  "features": [
+    "manaborn:manazite_ore"
+  ]
+}

@@ -4,385 +4,382 @@ import com.manaborn.client.state.ClientManaState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 
 /**
- * Красивое отображение маны на HUD с анимациями
- * Использует новый HudElementRegistry API вместо устаревшего HudRenderCallback
+ * Отображение маны на HUD — мягкие манакристаллы.
+ *
+ * Сохранена классическая компоновка (кристаллы в правом нижнем углу),
+ * но визуал переработан:
+ *  - плавная интерполяция значения маны (без дёрганий)
+ *  - мягкий градиент «глубокий сапфир → ледяная лазурь»
+ *  - бегущая волна света вдоль ряда кристаллов
+ *  - дышащее свечение вокруг заполненных кристаллов
+ *  - редкие искорки-мерцания на вершинах кристаллов
  */
 public final class ManaHudOverlay {
-	
-	private static int previousMana = 0;
-	private static float shakeIntensity = 0.0f;
-	private static float pulseAnimation = 0.0f;
-	private static long lastUpdateTime = 0;
-	
-	/**
-	 * Метод рендеринга маны на HUD с красивыми анимациями
-	 * 
-	 * @param drawContext Контекст для рисования
-	 * @param tickCounter Счетчик тиков для анимаций
-	 */
-	public static void render(DrawContext drawContext, RenderTickCounter tickCounter) {
-		MinecraftClient client = MinecraftClient.getInstance();
-		if (client == null || client.player == null || client.options.hudHidden) return;
 
-		int mana = ClientManaState.getMana();
-		int max = ClientManaState.getMaxMana();
-		if (max <= 0) return;
+    // ── Палитра (мягкая, сапфирово-лазурная) ─────────────────────────────
+    private static final int CRYSTAL_TOP = 0xBFE0FF;    // бледная лазурь
+    private static final int CRYSTAL_MID = 0x5E9FE8;    // лазурь
+    private static final int CRYSTAL_BOTTOM = 0x2A56B0; // сапфир
+    private static final int CRYSTAL_CORE = 0xEAF5FF;   // почти белый блик
+    private static final int EMPTY_TOP = 0x1A2338;
+    private static final int EMPTY_BOTTOM = 0x0E1424;
+    private static final int OUTLINE_FULL = 0x9CC8FF;
+    private static final int OUTLINE_EMPTY = 0xFF2E4166;
 
-		// Обновление анимаций
-		updateAnimations(mana, tickCounter);
+    // ── Состояние анимаций ───────────────────────────────────────────────
+    private static float displayedMana = -1;      // сглаженное значение маны
+    private static int previousMana = 0;
+    private static float shakeIntensity = 0.0f;
+    private static float regenPulse = 0.0f;
+    private static long lastUpdateTime = 0;
 
-		int screenWidth = drawContext.getScaledWindowWidth();
-		int screenHeight = drawContext.getScaledWindowHeight();
+    public static void render(DrawContext ctx, RenderTickCounter tickCounter) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null || client.player == null || client.options.hudHidden) return;
 
-		// Позиция: правый нижний угол, с хорошим отступом
-		int xRight = screenWidth - 14;
-		int yBottom = screenHeight - 40;
+        int mana = ClientManaState.getMana();
+        int max = ClientManaState.getMaxMana();
+        if (max <= 0) return;
 
-		// Параметры ромбов (немного больше для лучшей видимости)
-		int crystalWidth = 9;
-		int crystalHeight = 13;
-		int gap = 2;
-		int crystalsCount = 10;
+        updateAnimations(mana);
 
-		// Рисуем ромбы справа налево
-		for (int i = 0; i < crystalsCount; i++) {
-			int x = xRight - i * (crystalWidth + gap);
-			int y = yBottom;
-			
-			// Добавляем эффект встряски при трате маны (более мягкий)
-			if (shakeIntensity > 0) {
-				x += (Math.random() - 0.5) * shakeIntensity * 1.5;
-				y += (Math.random() - 0.5) * shakeIntensity * 1.5;
-			}
-			
-			// Вычисляем заполненность этого ромба
-			float fillAmount = calculateCrystalFill(i, mana, max, crystalsCount);
-			
-			// Рисуем ромб
-			drawManaCrystal(drawContext, x, y, crystalWidth, crystalHeight, fillAmount, i, tickCounter);
-		}
-		
-		// Рисуем текст с количеством маны слева от ромбов (опционально)
-		drawManaText(drawContext, xRight - crystalsCount * (crystalWidth + gap) - 35, yBottom + 2, mana, max);
-	}
-	
-	/**
-	 * Обновление анимаций
-	 */
-	private static void updateAnimations(int currentMana, RenderTickCounter tickCounter) {
-		long currentTime = System.currentTimeMillis();
-		float deltaTime = (currentTime - lastUpdateTime) / 1000.0f;
-		lastUpdateTime = currentTime;
-		
-		// Анимация встряски при трате маны
-		if (currentMana < previousMana) {
-			shakeIntensity = 1.0f;
-		}
-		shakeIntensity = Math.max(0, shakeIntensity - deltaTime * 3.0f);
-		
-		// Анимация пульсации при регенерации
-		if (currentMana > previousMana) {
-			pulseAnimation = 1.0f;
-		}
-		pulseAnimation = Math.max(0, pulseAnimation - deltaTime * 2.0f);
-		
-		previousMana = currentMana;
-	}
-	
-	/**
-	 * Вычисляет заполненность конкретного кристалла
-	 */
-	private static float calculateCrystalFill(int crystalIndex, int mana, int maxMana, int totalCrystals) {
-		float manaPerCrystal = maxMana / (float) totalCrystals;
-		float crystalStartMana = crystalIndex * manaPerCrystal;
-		float crystalEndMana = (crystalIndex + 1) * manaPerCrystal;
-		
-		if (mana <= crystalStartMana) {
-			return 0.0f;
-		} else if (mana >= crystalEndMana) {
-			return 1.0f;
-		} else {
-			return (mana - crystalStartMana) / manaPerCrystal;
-		}
-	}
-	
-	/**
-	 * Рисует красивый кристалл маны с градиентом и свечением
-	 */
-	private static void drawManaCrystal(DrawContext context, int x, int y, int width, int height, 
-	                                     float fillAmount, int index, RenderTickCounter tickCounter) {
-		// Время для анимации
-		float time = (System.currentTimeMillis() % 10000) / 1000.0f + index * 0.3f;
-		
-		// Форма кристалла (ромб/кристалл)
-		int centerX = x + width / 2;
-		int topY = y;
-		int bottomY = y + height;
-		int leftX = x;
-		int rightX = x + width;
-		int middleY = y + height / 2;
-		
-		if (fillAmount > 0) {
-			// Вычисляем высоту заполнения
-			int fillHeight = (int) (height * fillAmount);
-			int fillTopY = bottomY - fillHeight;
-			
-			// Красивые цвета маны: яркий голубой с более насыщенными оттенками
-			int topColor = 0xFF00FFFF;      // Яркий циан
-			int midColor = 0xFF00CCFF;      // Голубой
-			int bottomColor = 0xFF0099FF;   // Темный голубой
-			
-			// Интерполяция цветов в зависимости от заполнения
-			int displayTopColor = interpolateColor(topColor, bottomColor, fillAmount * 0.5f);
-			int displayBottomColor = interpolateColor(midColor, bottomColor, fillAmount * 0.7f);
-			
-			// Добавляем эффект пульсации при регенерации
-			if (pulseAnimation > 0) {
-				float pulse = (float) Math.sin(time * 8) * 0.5f + 0.5f;
-				float glowIntensity = pulseAnimation * pulse * 0.4f;
-				displayTopColor = brightenColor(displayTopColor, glowIntensity);
-				displayBottomColor = brightenColor(displayBottomColor, glowIntensity);
-			}
-			
-			// Рисуем красивую заполненную часть кристалла с градиентом
-			drawEnhancedGradientCrystal(context, centerX, fillTopY, leftX, rightX, middleY, bottomY, 
-			                            displayTopColor, displayBottomColor, fillAmount);
-			
-			// Добавляем свечение на полных кристаллах
-			if (fillAmount >= 0.9f) {
-				float glowPulse = (float) Math.sin(time * 2.5f) * 0.5f + 0.5f;
-				int glowIntensity = (int) (glowPulse * 80 + 40);
-				int glowColor = addAlpha(0x00FFFF, glowIntensity);
-				drawEnhancedGlow(context, x - 2, y - 2, width + 4, height + 4, glowColor);
-			}
-			
-			// Добавляем блики на кристалле для эффекта 3D
-			if (fillAmount > 0.15f) {
-				drawCrystalHighlight(context, centerX - 1, topY + 1, width / 2, height / 3, 
-				                    addAlpha(0xFFFFFF, (int) (fillAmount * 100)));
-			}
-		} else {
-			// Пустой кристалл - темный с тонким контуром
-			drawEmptyCrystal(context, centerX, topY, leftX, rightX, middleY, bottomY);
-		}
-		
-		// Рисуем контур кристалла поверх всего
-		drawCrystalOutlineEnhanced(context, centerX, topY, leftX, rightX, middleY, bottomY, fillAmount);
-	}
-	
-	/**
-	 * Рисует улучшенный градиентный кристалл с лучшей формой
-	 */
-	private static void drawEnhancedGradientCrystal(DrawContext context, int centerX, int topY, 
-	                                        int leftX, int rightX, int middleY, int bottomY,
-	                                        int topColor, int bottomColor, float fillAmount) {
-		// Рисуем кристалл построчно для создания градиента
-		int height = bottomY - topY;
-		for (int dy = 0; dy < height; dy++) {
-			int currentY = topY + dy;
-			float progress = dy / (float) height;
-			int color = interpolateColor(topColor, bottomColor, progress);
-			
-			// Вычисляем ширину на текущей высоте (форма ромба)
-			int currentWidth;
-			if (currentY < middleY) {
-				// Верхняя часть - расширяется
-				float upperProgress = (currentY - topY) / (float) (middleY - topY);
-				currentWidth = (int) ((rightX - leftX) * upperProgress);
-			} else {
-				// Нижняя часть - сужается
-				float lowerProgress = (bottomY - currentY) / (float) (bottomY - middleY);
-				currentWidth = (int) ((rightX - leftX) * lowerProgress);
-			}
-			
-			int x1 = centerX - currentWidth / 2;
-			int x2 = centerX + currentWidth / 2;
-			
-			if (x2 > x1) {
-				context.fill(x1, currentY, x2, currentY + 1, color);
-			}
-		}
-	}
-	
-	/**
-	 * Рисует пустой кристалл
-	 */
-	private static void drawEmptyCrystal(DrawContext context, int centerX, int topY, 
-	                                     int leftX, int rightX, int middleY, int bottomY) {
-		// Рисуем темный пустой кристалл с едва заметным свечением
-		int height = bottomY - topY;
-		for (int dy = 0; dy < height; dy++) {
-			int currentY = topY + dy;
-			float progress = dy / (float) height;
-			int color = interpolateColor(0xFF1A2A3A, 0xFF0F1820, progress);
-			
-			// Вычисляем ширину на текущей высоте (форма ромба)
-			int currentWidth;
-			if (currentY < middleY) {
-				float upperProgress = (currentY - topY) / (float) (middleY - topY);
-				currentWidth = (int) ((rightX - leftX) * upperProgress);
-			} else {
-				float lowerProgress = (bottomY - currentY) / (float) (bottomY - middleY);
-				currentWidth = (int) ((rightX - leftX) * lowerProgress);
-			}
-			
-			int x1 = centerX - currentWidth / 2;
-			int x2 = centerX + currentWidth / 2;
-			
-			if (x2 > x1) {
-				context.fill(x1, currentY, x2, currentY + 1, color);
-			}
-		}
-	}
-	
-	/**
-	 * Рисует улучшенное свечение вокруг кристалла
-	 */
-	private static void drawEnhancedGlow(DrawContext context, int x, int y, int width, int height, int color) {
-		// Мягкое свечение (несколько слоев для эффекта размытия)
-		int alpha1 = (color >> 24) & 0xFF;
-		int rgb = color & 0x00FFFFFF;
-		
-		// Внешний слой свечения (самый прозрачный)
-		context.fill(x - 1, y - 1, x + width + 1, y, addAlpha(rgb, alpha1 / 3));
-		context.fill(x - 1, y + height, x + width + 1, y + height + 1, addAlpha(rgb, alpha1 / 3));
-		context.fill(x - 1, y, x, y + height, addAlpha(rgb, alpha1 / 3));
-		context.fill(x + width, y, x + width + 1, y + height, addAlpha(rgb, alpha1 / 3));
-		
-		// Внутренний слой свечения (более видный)
-		context.fill(x, y, x + width, y + 1, color);
-		context.fill(x, y + height - 1, x + width, y + height, color);
-		context.fill(x, y, x + 1, y + height, color);
-		context.fill(x + width - 1, y, x + width, y + height, color);
-	}
-	
-	/**
-	 * Рисует улучшенную обводку кристалла с градиентом интенсивности
-	 */
-	private static void drawCrystalOutlineEnhanced(DrawContext context, int centerX, int topY, 
-	                                        int leftX, int rightX, int middleY, int bottomY, float fillAmount) {
-		// Цвет контура зависит от заполнения
-		int outlineColor;
-		if (fillAmount >= 0.7f) {
-			outlineColor = 0xFF00FFCC; // Яркий голубой
-		} else if (fillAmount >= 0.3f) {
-			outlineColor = 0xFF0088FF; // Средний голубой
-		} else {
-			outlineColor = 0xFF003388; // Темный голубой
-		}
-		
-		// Верхняя часть ромба
-		drawLineThick(context, centerX, topY, leftX, middleY, outlineColor, 1);
-		drawLineThick(context, centerX, topY, rightX, middleY, outlineColor, 1);
-		// Нижняя часть ромба
-		drawLineThick(context, leftX, middleY, centerX, bottomY, outlineColor, 1);
-		drawLineThick(context, rightX, middleY, centerX, bottomY, outlineColor, 1);
-	}
-	
-	/**
-	 * Рисует утолщенную линию
-	 */
-	private static void drawLineThick(DrawContext context, int x1, int y1, int x2, int y2, int color, int thickness) {
-		// Используем стандартный метод рисования линии
-		drawLine(context, x1, y1, x2, y2, color);
-	}
+        int screenWidth = ctx.getScaledWindowWidth();
+        int screenHeight = ctx.getScaledWindowHeight();
 
-	
-	
-	/**
-	 * Рисует текст с количеством маны
-	 */
-	private static void drawManaText(DrawContext context, int x, int y, int mana, int maxMana) {
-		String text = mana + "/" + maxMana;
-		int textColor = 0xFF00FFFF; // Яркий голубой
-		
-		// Добавляем тень для лучшей читаемости
-		context.drawText(MinecraftClient.getInstance().textRenderer, text, x, y, textColor, true);
-	}
-	
-	/**
-	 * Рисует блик на кристалле для 3D эффекта
-	 */
-	private static void drawCrystalHighlight(DrawContext context, int x, int y, int width, int height, int color) {
-		context.fill(x, y, x + width, y + height, color);
-	}
-	
-	/**
-	 * Рисует линию между двумя точками (Bresenham's line algorithm)
-	 */
-	private static void drawLine(DrawContext context, int x1, int y1, int x2, int y2, int color) {
-		int dx = Math.abs(x2 - x1);
-		int dy = Math.abs(y2 - y1);
-		int sx = x1 < x2 ? 1 : -1;
-		int sy = y1 < y2 ? 1 : -1;
-		int err = dx - dy;
-		
-		while (true) {
-			context.fill(x1, y1, x1 + 1, y1 + 1, color);
-			
-			if (x1 == x2 && y1 == y2) break;
-			
-			int e2 = 2 * err;
-			if (e2 > -dy) {
-				err -= dy;
-				x1 += sx;
-			}
-			if (e2 < dx) {
-				err += dx;
-				y1 += sy;
-			}
-		}
-	}
-	
-	/**
-	 * Интерполяция между двумя цветами
-	 */
-	private static int interpolateColor(int color1, int color2, float t) {
-		t = MathHelper.clamp(t, 0.0f, 1.0f);
-		
-		int a1 = (color1 >> 24) & 0xFF;
-		int r1 = (color1 >> 16) & 0xFF;
-		int g1 = (color1 >> 8) & 0xFF;
-		int b1 = color1 & 0xFF;
-		
-		int a2 = (color2 >> 24) & 0xFF;
-		int r2 = (color2 >> 16) & 0xFF;
-		int g2 = (color2 >> 8) & 0xFF;
-		int b2 = color2 & 0xFF;
-		
-		int a = (int) (a1 + (a2 - a1) * t);
-		int r = (int) (r1 + (r2 - r1) * t);
-		int g = (int) (g1 + (g2 - g1) * t);
-		int b = (int) (b1 + (b2 - b1) * t);
-		
-		return (a << 24) | (r << 16) | (g << 8) | b;
-	}
-	
-	/**
-	 * Добавляет альфа-канал к цвету
-	 */
-	private static int addAlpha(int rgb, int alpha) {
-		return (alpha << 24) | (rgb & 0x00FFFFFF);
-	}
-	
-	/**
-	 * Осветляет цвет
-	 */
-	private static int brightenColor(int color, float amount) {
-		int a = (color >> 24) & 0xFF;
-		int r = (color >> 16) & 0xFF;
-		int g = (color >> 8) & 0xFF;
-		int b = color & 0xFF;
-		
-		r = Math.min(255, (int) (r + (255 - r) * amount));
-		g = Math.min(255, (int) (g + (255 - g) * amount));
-		b = Math.min(255, (int) (b + (255 - b) * amount));
-		
-		return (a << 24) | (r << 16) | (g << 8) | b;
-	}
+        // Геометрия кристаллов
+        int crystalW = 9;
+        int crystalH = 13;
+        int gap = 2;
+        int count = 10;
+
+        int xRight = screenWidth - 14;
+        // На уровне хотбара: центр кристаллов совпадает с центром хотбара
+        int yBottom = screenHeight - 19;
+
+        int totalW = count * (crystalW + gap) - gap;
+
+        // Мягкая подложка-пластина под всей полоской
+        drawBackdropPlate(ctx, xRight - totalW - 6, yBottom - 4, totalW + 12, crystalH + 9);
+
+        // Кристаллы рисуются справа налево
+        for (int i = 0; i < count; i++) {
+            int x = xRight - i * (crystalW + gap) - crystalW;
+            int y = yBottom;
+
+            // Мягкая встряска при трате маны
+            if (shakeIntensity > 0) {
+                x += (int) ((Math.random() - 0.5) * shakeIntensity * 1.2);
+                y += (int) ((Math.random() - 0.5) * shakeIntensity * 1.2);
+            }
+
+            // Заполненность кристалла от сглаженного значения
+            // (индекс развёрнут: кристалл 0 — самый левый/самый полный)
+            int crystalIndex = count - 1 - i;
+            float fill = crystalFill(crystalIndex, displayedMana, max, count);
+
+            drawManaCrystal(ctx, x, y, crystalW, crystalH, fill, crystalIndex);
+        }
+
+        // Текст с количеством маны — над полоской, прижат к правому краю,
+        // чтобы не пересекаться с хотбаром
+        MinecraftClient mc = MinecraftClient.getInstance();
+        String manaLabel = mana + "/" + max;
+        int manaLabelW = mc.textRenderer.getWidth(manaLabel);
+        drawManaText(ctx, xRight - manaLabelW - 1, yBottom - 12, mana, max);
+    }
+
+    // ── Анимации ─────────────────────────────────────────────────────────
+
+    private static void updateAnimations(int targetMana) {
+        long now = Util.getMeasuringTimeMs();
+        float dt = lastUpdateTime == 0 ? 0.016f : (now - lastUpdateTime) / 1000.0f;
+        dt = Math.min(dt, 0.1f);
+        lastUpdateTime = now;
+
+        if (displayedMana < 0) displayedMana = targetMana;
+
+        // Плавное сглаживание: экспоненциальное приближение к цели
+        float ease = 1.0f - (float) Math.exp(-dt * 9.0f);
+        displayedMana += (targetMana - displayedMana) * ease;
+        if (Math.abs(displayedMana - targetMana) < 0.05f) displayedMana = targetMana;
+
+        if (targetMana < previousMana) shakeIntensity = 0.8f;
+        shakeIntensity = Math.max(0, shakeIntensity - dt * 2.5f);
+
+        if (targetMana > previousMana) regenPulse = 1.0f;
+        regenPulse = Math.max(0, regenPulse - dt * 1.6f);
+
+        previousMana = targetMana;
+    }
+
+    private static float crystalFill(int index, float mana, int maxMana, int total) {
+        float perCrystal = maxMana / (float) total;
+        float start = index * perCrystal;
+        return MathHelper.clamp((mana - start) / perCrystal, 0.0f, 1.0f);
+    }
+
+    // ── Подложка ─────────────────────────────────────────────────────────
+
+    /**
+     * Тёмная полупрозрачная пластина со скошенными углами и едва заметной
+     * дышащей кромкой — визуально «собирает» кристаллы в единый элемент.
+     */
+    private static void drawBackdropPlate(DrawContext ctx, int x, int y, int w, int h) {
+        long t = Util.getMeasuringTimeMs();
+        float breath = 0.5f + 0.5f * MathHelper.sin(t * 0.0013f);
+
+        // Тело пластины (углы срезаны на 1px для смягчения)
+        ctx.fill(x + 1, y, x + w - 1, y + h, 0x38070B18);
+        ctx.fill(x, y + 1, x + w, y + h - 1, 0x38070B18);
+
+        // Тонкая кромка
+        int edge = (28 + (int) (18 * breath)) << 24 | 0x7FA8E0;
+        ctx.fill(x + 1, y, x + w - 1, y + 1, edge);
+        ctx.fill(x + 1, y + h - 1, x + w - 1, y + h, edge);
+        ctx.fill(x, y + 1, x + 1, y + h - 1, edge);
+        ctx.fill(x + w - 1, y + 1, x + w, y + h - 1, edge);
+    }
+
+    // ── Кристалл ─────────────────────────────────────────────────────────
+
+    private static void drawManaCrystal(DrawContext ctx, int x, int y, int w, int h,
+                                        float fill, int index) {
+        long t = Util.getMeasuringTimeMs();
+        float time = t / 1000.0f;
+
+        int cx = x + w / 2;
+        int topY = y;
+        int bottomY = y + h;
+        int midY = y + h / 2;
+        int halfW = w / 2;
+
+        if (fill > 0.001f) {
+            // Бегущая волна света: позиция волны вдоль ряда кристаллов
+            float wavePos = ((time * 0.55f) % 1.6f) * 12.0f - 1.0f; // -1..11 в «единицах кристалла»
+            float waveBoost = (float) Math.exp(-Math.pow(index - wavePos, 2) / 1.4);
+
+            // Дыхание каждого кристалла (со сдвигом фазы)
+            float breath = 0.5f + 0.5f * MathHelper.sin(time * 1.4f + index * 0.55f);
+
+            // Цвета с учётом волны и дыхания
+            float glowAmt = Math.min(1.0f, waveBoost * 0.55f + breath * 0.10f + regenPulse * 0.25f);
+            int cTop = brighten(CRYSTAL_TOP, glowAmt * 0.8f);
+            int cMid = brighten(CRYSTAL_MID, glowAmt * 0.6f);
+            int cBot = brighten(CRYSTAL_BOTTOM, glowAmt * 0.5f);
+
+            // Свечение за кристаллом (мягкое, многослойное)
+            float glowStrength = 0.25f + fill * 0.5f + waveBoost * 0.35f + regenPulse * 0.3f;
+            drawSoftGlow(ctx, cx, midY, halfW, h / 2, 0x5E9FE8, glowStrength);
+
+            // Тело кристалла: заполненная снизу часть
+            int fillH = Math.max(1, (int) (h * fill));
+            int fillTop = bottomY - fillH;
+            drawDiamondGradient(ctx, cx, fillTop, bottomY, midY, halfW, cTop, cMid, cBot);
+
+            // Внутреннее светлое ядро (мягкий свет из центра кристалла)
+            if (fill > 0.35f) {
+                int coreH = (int) (fillH * 0.55f);
+                int coreTop = bottomY - coreH;
+                int coreHalf = Math.max(1, halfW / 2);
+                int coreAlpha = (int) (60 + 90 * breath * fill);
+                drawDiamondCore(ctx, cx, coreTop, bottomY - 1, coreHalf, (coreAlpha << 24) | CRYSTAL_CORE);
+            }
+
+            // Искорка на вершине — редко и нежно
+            float sparkleSeed = MathHelper.sin(time * 0.9f + index * 2.13f);
+            if (fill >= 0.95f && sparkleWindow(time, index)) {
+                float sp = sparklePhase(time, index);
+                int alpha = (int) (Math.sin(sp * Math.PI) * 220);
+                if (alpha > 0) drawSparkle(ctx, cx, topY + 1, (alpha << 24) | 0xF2FAFF);
+            }
+        } else {
+            // Пустой кристалл — приглушённый силуэт
+            drawDiamondGradient(ctx, cx, topY, bottomY, midY, halfW,
+                    brighten(EMPTY_TOP, 0), EMPTY_TOP, EMPTY_BOTTOM);
+        }
+
+        // Контур
+        int outline = fill > 0.5f
+                ? withAlpha(OUTLINE_FULL, 120 + (int) (60 * fill))
+                : OUTLINE_EMPTY;
+        drawDiamondOutline(ctx, cx, topY, bottomY, midY, halfW, outline);
+    }
+
+    // ── Примитивы кристалла ──────────────────────────────────────────────
+
+    /**
+     * Ромб с вертикальным градиентом в три стадии (верх/середина/низ).
+     */
+    private static void drawDiamondGradient(DrawContext ctx, int cx, int topY, int bottomY,
+                                            int midY, int halfW, int cTop, int cMid, int cBot) {
+        int height = bottomY - topY;
+        for (int dy = 0; dy < height; dy++) {
+            int curY = topY + dy;
+            float progress = dy / (float) height;
+
+            int color;
+            if (curY < midY) {
+                color = blend(argb(cTop), argb(cMid), progress * 2.0f);
+            } else {
+                color = blend(argb(cMid), argb(cBot), (progress - 0.5f) * 2.0f);
+            }
+
+            int rowHalf;
+            if (curY < midY) {
+                rowHalf = (int) (halfW * ((curY - topY) / (float) Math.max(1, midY - topY)));
+            } else {
+                rowHalf = (int) (halfW * ((bottomY - curY) / (float) Math.max(1, bottomY - midY)));
+            }
+
+            // Кончики ромба: каждый ряд закрашен хотя бы центральным пикселем —
+            // вершины не пустые, но ширина не выходит за контур ромба
+            if (rowHalf >= 0) {
+                ctx.fill(cx - rowHalf, curY, cx + rowHalf + 1, curY + 1, color);
+            }
+        }
+    }
+
+    /**
+     * Маленький светлый ромб-ядро внутри кристалла.
+     */
+    private static void drawDiamondCore(DrawContext ctx, int cx, int topY, int bottomY, int halfW, int argb) {
+        int height = bottomY - topY;
+        int midY = topY + height / 2;
+        for (int dy = 0; dy < height; dy++) {
+            int curY = topY + dy;
+            int rowHalf;
+            if (curY < midY) {
+                rowHalf = (int) (halfW * ((curY - topY) / (float) Math.max(1, midY - topY)));
+            } else {
+                rowHalf = (int) (halfW * ((bottomY - curY) / (float) Math.max(1, bottomY - midY)));
+            }
+            if (rowHalf >= 0) {
+                ctx.fill(cx - rowHalf, curY, cx + rowHalf + 1, curY + 1, argb);
+            }
+        }
+    }
+
+    private static void drawDiamondOutline(DrawContext ctx, int cx, int topY, int bottomY,
+                                           int midY, int halfW, int argb) {
+        line(ctx, cx, topY, cx - halfW, midY, argb);
+        line(ctx, cx, topY, cx + halfW, midY, argb);
+        line(ctx, cx - halfW, midY, cx, bottomY, argb);
+        line(ctx, cx + halfW, midY, cx, bottomY, argb);
+    }
+
+    /**
+     * Многослойное мягкое свечение вокруг точки.
+     */
+    private static void drawSoftGlow(DrawContext ctx, int cx, int cy, int rx, int ry, int rgb, float strength) {
+        strength = MathHelper.clamp(strength, 0.0f, 1.0f);
+        int a1 = (int) (26 * strength);
+        int a2 = (int) (14 * strength);
+
+        // Внутренний слой
+        ctx.fill(cx - rx - 1, cy - ry - 1, cx + rx + 2, cy + ry + 2, withAlpha(rgb, a1));
+        // Внешний, шире и прозрачнее
+        ctx.fill(cx - rx - 3, cy - ry - 2, cx + rx + 4, cy + ry + 3, withAlpha(rgb, a2));
+    }
+
+    /**
+     * Четырёхлучевая искорка.
+     */
+    private static void drawSparkle(DrawContext ctx, int cx, int cy, int argb) {
+        ctx.fill(cx, cy - 2, cx + 1, cy + 3, argb);
+        ctx.fill(cx - 2, cy, cx + 3, cy + 1, argb);
+        int soft = (argb & 0x00FFFFFF) | (((argb >> 24) & 0xFF) / 2 << 24);
+        ctx.fill(cx - 1, cy - 1, cx, cy, soft);
+        ctx.fill(cx + 1, cy - 1, cx + 2, cy, soft);
+        ctx.fill(cx - 1, cy + 1, cx, cy + 2, soft);
+        ctx.fill(cx + 1, cy + 1, cx + 2, cy + 2, soft);
+    }
+
+    // ── Искорки: расписание ──────────────────────────────────────────────
+
+    /** Окно активности искорки для кристалла (каждые ~7 секунд, короткая вспышка) */
+    private static boolean sparkleWindow(float time, int index) {
+        float cycle = 7.0f + index * 0.9f;
+        float phase = (time + index * 2.7f) % cycle;
+        return phase < 0.6f;
+    }
+
+    private static float sparklePhase(float time, int index) {
+        float cycle = 7.0f + index * 0.9f;
+        return ((time + index * 2.7f) % cycle) / 0.6f;
+    }
+
+    // ── Текст ────────────────────────────────────────────────────────────
+
+    private static void drawManaText(DrawContext ctx, int x, int y, int mana, int maxMana) {
+        long t = Util.getMeasuringTimeMs();
+        MinecraftClient client = MinecraftClient.getInstance();
+
+        String text = mana + "/" + maxMana;
+
+        // Мягкий цвет: бледная лазурь, чуть тускнеет при низкой мане
+        float fullness = maxMana > 0 ? mana / (float) maxMana : 0;
+        int rgb = blendRgb(0x8FB8E8, 0xCFE6FF, fullness);
+
+        // Нежное свечение текста при полной мане
+        if (fullness >= 0.999f) {
+            float pulse = 0.5f + 0.5f * MathHelper.sin(t * 0.0025f);
+            rgb = blendRgb(rgb, 0xFFFFFF, pulse * 0.35f);
+        }
+
+        ctx.drawText(client.textRenderer, text, x, y, 0xFF000000 | rgb, true);
+    }
+
+    // ── Утилиты ──────────────────────────────────────────────────────────
+
+    private static void line(DrawContext ctx, int x1, int y1, int x2, int y2, int color) {
+        int dx = Math.abs(x2 - x1);
+        int dy = Math.abs(y2 - y1);
+        int sx = x1 < x2 ? 1 : -1;
+        int sy = y1 < y2 ? 1 : -1;
+        int err = dx - dy;
+
+        while (true) {
+            ctx.fill(x1, y1, x1 + 1, y1 + 1, color);
+            if (x1 == x2 && y1 == y2) break;
+            int e2 = 2 * err;
+            if (e2 > -dy) { err -= dy; x1 += sx; }
+            if (e2 < dx) { err += dx; y1 += sy; }
+        }
+    }
+
+    private static int argb(int rgb) {
+        return 0xFF000000 | (rgb & 0x00FFFFFF);
+    }
+
+    private static int withAlpha(int rgb, int alpha) {
+        return (MathHelper.clamp(alpha, 0, 255) << 24) | (rgb & 0x00FFFFFF);
+    }
+
+    private static int blend(int c1, int c2, float t) {
+        t = MathHelper.clamp(t, 0.0f, 1.0f);
+        int a = (int) (((c1 >> 24) & 0xFF) + (((c2 >> 24) & 0xFF) - ((c1 >> 24) & 0xFF)) * t);
+        int r = (int) (((c1 >> 16) & 0xFF) + (((c2 >> 16) & 0xFF) - ((c1 >> 16) & 0xFF)) * t);
+        int g = (int) (((c1 >> 8) & 0xFF) + (((c2 >> 8) & 0xFF) - ((c1 >> 8) & 0xFF)) * t);
+        int b = (int) ((c1 & 0xFF) + ((c2 & 0xFF) - (c1 & 0xFF)) * t);
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    private static int blendRgb(int rgb1, int rgb2, float t) {
+        return blend(argb(rgb1), argb(rgb2), t) & 0x00FFFFFF;
+    }
+
+    private static int brighten(int rgb, float amount) {
+        amount = MathHelper.clamp(amount, 0.0f, 1.0f);
+        int r = (rgb >> 16) & 0xFF;
+        int g = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+        r = Math.min(255, (int) (r + (255 - r) * amount));
+        g = Math.min(255, (int) (g + (255 - g) * amount));
+        b = Math.min(255, (int) (b + (255 - b) * amount));
+        return (r << 16) | (g << 8) | b;
+    }
 }
-
-

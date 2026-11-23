@@ -25,11 +25,21 @@ public final class ManaManager {
     private ManaManager() {}
 
     public static int getMana(UUID playerId) {
-        return playerIdToMana.getOrDefault(playerId, DEFAULT_MANA);
+        // До пробуждения маны нет вовсе
+        int max = getMaxMana(playerId);
+        if (max <= 0) {
+            return 0;
+        }
+        return Math.min(max, playerIdToMana.getOrDefault(playerId, max));
+    }
+
+    /** Личный максимум маны игрока (0 до пробуждения) */
+    public static int getMaxMana(UUID playerId) {
+        return AwakeningManager.getMaxMana(playerId);
     }
 
     public static void setMana(UUID playerId, int mana) {
-        playerIdToMana.put(playerId, Math.max(0, Math.min(MAX_MANA, mana)));
+        playerIdToMana.put(playerId, Math.max(0, Math.min(getMaxMana(playerId), mana)));
     }
 
     public static boolean tryConsume(ServerPlayerEntity player, int amount) {
@@ -50,13 +60,15 @@ public final class ManaManager {
     public static void addMana(ServerPlayerEntity player, int amount) {
         if (amount <= 0) return;
         UUID id = player.getUuid();
+        int max = getMaxMana(id);
+        if (max <= 0) return; // магия ещё не пробуждена
         int current = getMana(id);
-        setMana(id, Math.min(MAX_MANA, current + amount));
+        setMana(id, Math.min(max, current + amount));
         sendSync(player);
     }
 
     public static void ensureInitialized(ServerPlayerEntity player) {
-        playerIdToMana.putIfAbsent(player.getUuid(), DEFAULT_MANA);
+        playerIdToMana.putIfAbsent(player.getUuid(), Math.min(DEFAULT_MANA, getMaxMana(player.getUuid())));
     }
 
     // ===== Регистрация тиков сервера и регенерация =====
@@ -68,8 +80,12 @@ public final class ManaManager {
         for (ServerPlayerEntity player : players) {
             ensureInitialized(player);
             UUID id = player.getUuid();
+            int max = getMaxMana(id);
+            if (max <= 0) {
+                continue; // магия ещё не пробуждена — маны нет
+            }
             int current = getMana(id);
-            if (current >= MAX_MANA) {
+            if (current >= max) {
                 continue;
             }
 
@@ -83,7 +99,7 @@ public final class ManaManager {
                 continue;
             }
 
-            int need = MAX_MANA - current;
+            int need = max - current;
             int move = Math.min(VESSEL_REFILL_PER_TICK, Math.min(need, stored));
             if (move > 0) {
                 ManaVesselItem.setStored(vessel, stored - move);
@@ -112,7 +128,7 @@ public final class ManaManager {
     }
 
     public static void sendSync(ServerPlayerEntity player) {
-        ManaSyncS2CPacket pkt = new ManaSyncS2CPacket(getMana(player.getUuid()), MAX_MANA);
+        ManaSyncS2CPacket pkt = new ManaSyncS2CPacket(getMana(player.getUuid()), getMaxMana(player.getUuid()));
         ServerPlayNetworking.send(player, pkt);
     }
 }

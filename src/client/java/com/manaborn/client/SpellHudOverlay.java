@@ -1,51 +1,83 @@
 package com.manaborn.client;
 
+import com.manaborn.client.state.ClientSpellLevelsState;
+import com.manaborn.client.ui.ManabornGuiStyle;
 import com.manaborn.items.MagicStaffItem;
+import com.manaborn.spells.LeveledSpell;
+import com.manaborn.spells.Spell;
+import com.manaborn.spells.SpellManager;
+import com.manaborn.spells.SpellRegistry;
+import com.manaborn.spells.SpellType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
-import com.manaborn.spells.SpellManager;
-import com.manaborn.spells.SpellType;
+import net.minecraft.util.Util;
 
 /**
- * Отображение выбранного заклинания на HUD
- * Использует новый HudElementRegistry API вместо устаревшего HudRenderCallback
- * 
- * Каждое заклинание имеет свой уникальный визуальный стиль:
- * - Fireball: огненные красно-оранжевые цвета с эффектом лавы
- * - Ice Shard: холодные сине-голубые цвета со снежным эффектом
- * 
- * HUD исчезает через 3 секунды после смены заклинания
+ * Панель выбранного заклинания в правом верхнем углу.
+ *
+ * Ремейк старого визуала: тематический градиент и двойная пульсирующая
+ * рамка в цветах школы магии, фоновая атмосфера школы (искры, снежинки,
+ * нотный стан) и у каждого заклинания — свой узнаваемый анимированный
+ * штрих (комета, языки пламени, ноты, глитч и т.д.).
+ *
+ * Панель плавно исчезает через 3 секунды после смены заклинания.
  */
 public final class SpellHudOverlay {
-    
+
     private static SpellType lastSpell = null;
     private static long lastSpellChangeTime = 0;
-    private static final long FADE_DELAY_MS = 3000; // 3 секунды
-    private static final long FADE_DURATION_MS = 500; // 0.5 секунды на исчезновение
-    
-    /**
-     * Метод рендеринга информации о заклинании на HUD
-     * 
-     * @param drawContext Контекст для рисования
-     * @param tickCounter Счетчик тиков для анимаций
-     */
+    private static final long FADE_DELAY_MS = 3000;
+    private static final long FADE_DURATION_MS = 500;
+
+    // ── Школы магии: палитры панели ──────────────────────────────────────
+
+    private enum School {
+        FIRE(0x330000, 0x660000, 0xFF6600, 0xFFAA00, 0xFF8800),
+        ICE(0x001133, 0x003366, 0x4DA3FF, 0x00FFFF, 0x00CCFF),
+        DARK(0x0A0A12, 0x1A1426, 0x3A2A5F, 0x5C3B89, 0x8A6AD9),
+        SOUND(0x1A1A1A, 0x333333, 0xFFFF00, 0xFFDD00, 0xFFFFFF),
+        ENTROPY(0x141414, 0x1E1E1E, 0xD0D0D0, 0x888888, 0x5A5A5A);
+
+        final int bgTop;
+        final int bgBottom;
+        final int borderA;
+        final int borderB;
+        final int inner;
+
+        School(int bgTop, int bgBottom, int borderA, int borderB, int inner) {
+            this.bgTop = bgTop;
+            this.bgBottom = bgBottom;
+            this.borderA = borderA;
+            this.borderB = borderB;
+            this.inner = inner;
+        }
+    }
+
+    private static School schoolOf(SpellType spell) {
+        return switch (spell) {
+            case FIREBALL, FIRE_WALL, INNER_HEAT, HEAT_WEAPON -> School.FIRE;
+            case ICE_SHARD, ICE_WALL, FROST_AURA, FROST_COFFIN -> School.ICE;
+            case ABSORBING_BARRIER, WEAKNESS_CURSE -> School.DARK;
+            case SOUND_STRIKE, BATTLE_HYMN, SILENCE_ZONE, CLARIFYING_TONE -> School.SOUND;
+            case TRANSLOCATION -> School.ENTROPY;
+        };
+    }
+
+    // ── Рендер ───────────────────────────────────────────────────────────
+
     public static void render(DrawContext drawContext, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.player == null || client.options.hudHidden) return;
 
-        // Проверяем, держит ли игрок волшебную палочку (MagicStaffItem или EtherScepterItem)
+        // Посох в руках (MagicStaffItem или EtherScepterItem)
         ItemStack mainHand = client.player.getMainHandStack();
         ItemStack offHand = client.player.getOffHandStack();
-        
         ItemStack staff = null;
-        if (mainHand.getItem() instanceof MagicStaffItem) {
-            staff = mainHand;
-        } else if (offHand.getItem() instanceof MagicStaffItem) {
-            staff = offHand;
-        }
+        if (mainHand.getItem() instanceof MagicStaffItem) staff = mainHand;
+        else if (offHand.getItem() instanceof MagicStaffItem) staff = offHand;
         if (staff == null) {
             lastSpell = null;
             return;
@@ -53,488 +85,372 @@ public final class SpellHudOverlay {
 
         SpellType selectedSpell = SpellManager.getSelectedSpell(staff);
         if (selectedSpell == null) {
-            // Нечего отображать, если заклинание ещё не выбрано/не записано в NBT
             lastSpell = null;
             return;
         }
-        
+
         // Обновляем время при смене заклинания
         if (lastSpell != selectedSpell) {
             lastSpell = selectedSpell;
             lastSpellChangeTime = System.currentTimeMillis();
         }
-        
-        // Вычисляем прозрачность (fade out)
-        long currentTime = System.currentTimeMillis();
-        long timeSinceChange = currentTime - lastSpellChangeTime;
-        
+
+        // Прозрачность (fade out)
+        long timeSinceChange = System.currentTimeMillis() - lastSpellChangeTime;
         float alpha = 1.0f;
         if (timeSinceChange > FADE_DELAY_MS) {
             long fadeTime = timeSinceChange - FADE_DELAY_MS;
-            if (fadeTime >= FADE_DURATION_MS) {
-                return; // Полностью исчезло
-            }
+            if (fadeTime >= FADE_DURATION_MS) return;
             alpha = 1.0f - (fadeTime / (float) FADE_DURATION_MS);
         }
-        
-        int screenWidth = drawContext.getScaledWindowWidth();
 
-        // Позиция в правом верхнем углу
-        int x = screenWidth - 140;
-        int y = 20;
-        int width = 130;
+        int screenWidth = drawContext.getScaledWindowWidth();
+        int width = 150;
         int height = 50;
-        
-        // Получаем время для анимации
-        float time = (System.currentTimeMillis() % 2000) / 2000.0f;
-        
-        // Рисуем в зависимости от типа заклинания с прозрачностью
-        switch (selectedSpell) {
-            case FIREBALL:
-                renderFireballStyle(drawContext, x, y, width, height, time, client, alpha);
-                break;
-            case ICE_SHARD:
-                renderIceShardStyle(drawContext, x, y, width, height, time, client, alpha);
-                break;
-            case FROST_COFFIN:
-                renderIceShardStyle(drawContext, x, y, width, height, time, client, alpha);
-                break;
-            case FIRE_WALL:
-                renderFireWallStyle(drawContext, x, y, width, height, time, client, alpha);
-                break;
-            case INNER_HEAT:
-                // Внутренний жар: используем огненный стиль
-                renderFireballStyle(drawContext, x, y, width, height, time, client, alpha);
-                break;
-            case HEAT_WEAPON:
-                // Нагрев оружия: используем огненный стиль
-                renderFireballStyle(drawContext, x, y, width, height, time, client, alpha);
-                break;
-            case FROST_AURA:
-                // Аура стужи: используем ледяной стиль
-                renderIceShardStyle(drawContext, x, y, width, height, time, client, alpha);
-                break;
-            case ABSORBING_BARRIER:
-                renderDarkBarrierStyle(drawContext, x, y, width, height, time, client, alpha);
-                break;
-            case WEAKNESS_CURSE:
-                // Проклятие Слабости: темный стиль как у барьера
-                renderDarkBarrierStyle(drawContext, x, y, width, height, time, client, alpha);
-                break;
-            case ICE_WALL:
-                // Стена льда: используем ледяной стиль
-                renderIceShardStyle(drawContext, x, y, width, height, time, client, alpha);
-                break;
-            case SOUND_STRIKE:
-                // Звуковой удар: бело-жёлтый звуковой стиль
-                renderSoundStrikeStyle(drawContext, x, y, width, height, time, client, alpha);
-                break;
-            case BATTLE_HYMN:
-                // Боевой гимн: тот же звуковой стиль
-                renderSoundStrikeStyle(drawContext, x, y, width, height, time, client, alpha);
-                break;
-            case SILENCE_ZONE:
-                // Область тишины: звуковой стиль (магия звука)
-                renderSoundStrikeStyle(drawContext, x, y, width, height, time, client, alpha);
-                break;
-            case CLARIFYING_TONE:
-                // Проясняющий тон: звуковой стиль
-                renderSoundStrikeStyle(drawContext, x, y, width, height, time, client, alpha);
-                break;
-            case TRANSLOCATION:
-                // Транслокация: бело-серый стиль энтропии
-                renderEntropyStyle(drawContext, x, y, width, height, time, client, alpha);
-                break;
-        }
-        
-        // Применяем прозрачность к тексту
-        int textAlpha = (int) (alpha * 255) << 24;
-        
-        // Текст с названием заклинания
-        Text spellText = Text.literal(selectedSpell.getDisplayName());
-        drawContext.drawText(client.textRenderer, spellText, x + 10, y + 10, textAlpha | 0xFFFFFF, true);
-        
-        // Текст со стоимостью маны
-        Text costText = Text.literal("Мана: " + selectedSpell.getManaCost());
-        drawContext.drawText(client.textRenderer, costText, x + 10, y + 25, textAlpha | 0xFFFFFF, true);
-        
-        // Подсказка
-        Text hintText = Text.literal("ПКМ - использовать");
-        drawContext.drawText(client.textRenderer, hintText, x + 10, y + 37, textAlpha | 0xAAAAAA, false);
+        int x = screenWidth - width - 10;
+        int y = 20;
+
+        long t = Util.getMeasuringTimeMs();
+        float time = (t % 2000) / 2000.0f;
+
+        School school = schoolOf(selectedSpell);
+
+        drawPanelBase(drawContext, x, y, width, height, school, time, alpha);
+        drawAmbient(drawContext, school, x, y, width, height, time, alpha);
+        drawSignature(drawContext, selectedSpell, x, y, width, height, t, alpha);
+        drawTexts(drawContext, client, selectedSpell, staff, x, y, width, alpha);
     }
-    
-    /**
-     * Рендерит UI в стиле огненного шара
-     * Красно-оранжевые цвета с эффектом пульсации лавы
-     */
-    private static void renderFireballStyle(DrawContext ctx, int x, int y, int width, int height, float time, MinecraftClient client, float alpha) {
-        // Анимация пульсации
+
+    // ── Основа панели: градиент школы + двойная пульсирующая рамка ──────
+
+    private static void drawPanelBase(DrawContext ctx, int x, int y, int w, int h,
+                                      School s, float time, float alpha) {
         float pulse = (float) Math.sin(time * Math.PI * 2) * 0.3f + 0.7f;
-        
-        // Цвета огня с прозрачностью
-        int alphaValue = (int) (alpha * 192); // 0xC0 = 192
-        int darkRed = (alphaValue << 24) | 0x330000;      // Темно-красный фон
-        int brightRed = ((int)(alpha * 255) << 24) | 0x660000;    // Ярко-красный
-        int orange = ((int)(alpha * 255) << 24) | 0xFF6600;       // Оранжевый
-        int yellow = ((int)(alpha * 255) << 24) | 0xFFAA00;       // Желтый
-        
-        // Основной фон с градиентом
-        drawGradientRect(ctx, x, y, x + width, y + height, darkRed, brightRed);
-        
-        // Внешняя рамка (оранжевая пульсация)
-        int outerBorder = blendColors(orange, yellow, pulse);
-        ctx.fill(x - 2, y - 2, x + width + 2, y - 1, outerBorder);
-        ctx.fill(x - 2, y + height + 1, x + width + 2, y + height + 2, outerBorder);
-        ctx.fill(x - 2, y - 1, x - 1, y + height + 1, outerBorder);
-        ctx.fill(x + width + 1, y - 1, x + width + 2, y + height + 1, outerBorder);
-        
-        // Внутренняя рамка (ярко-оранжевая)
-        ctx.fill(x - 1, y - 1, x + width + 1, y, ((int)(alpha * 255) << 24) | 0xFF8800);
-        ctx.fill(x - 1, y + height, x + width + 1, y + height + 1, ((int)(alpha * 255) << 24) | 0xFF8800);
-        ctx.fill(x - 1, y, x, y + height, ((int)(alpha * 255) << 24) | 0xFF8800);
-        ctx.fill(x + width, y, x + width + 1, y + height, ((int)(alpha * 255) << 24) | 0xFF8800);
-        
-        // Эффект "искр" - маленькие точки
-        int sparkCount = 8;
-        for (int i = 0; i < sparkCount; i++) {
-            float sparkTime = (time + i / (float) sparkCount) % 1.0f;
-            int sparkX = x + 5 + (int) (Math.sin(sparkTime * Math.PI * 2 + i) * (width - 15));
-            int sparkY = y + 5 + (int) (sparkTime * (height - 10));
-            
-            if (sparkY < y + height - 5) {
-                int sparkColor = blendColors(yellow, orange, sparkTime);
-                ctx.fill(sparkX, sparkY, sparkX + 2, sparkY + 2, sparkColor);
+        int aTop = (int) (alpha * 192) << 24;
+        int aFull = (int) (alpha * 255) << 24;
+
+        // Основной фон с градиентом школы
+        ManabornGuiStyle.fillGradientV(ctx, x, y, x + w, y + h, aTop | s.bgTop, aFull | s.bgBottom);
+
+        // Внешняя рамка (пульсация между двумя цветами школы)
+        int outer = ManabornGuiStyle.blendArgb(aFull | s.borderA, aFull | s.borderB, pulse);
+        ctx.fill(x - 2, y - 2, x + w + 2, y - 1, outer);
+        ctx.fill(x - 2, y + h + 1, x + w + 2, y + h + 2, outer);
+        ctx.fill(x - 2, y - 1, x - 1, y + h + 1, outer);
+        ctx.fill(x + w + 1, y - 1, x + w + 2, y + h + 1, outer);
+
+        // Внутренняя рамка
+        int inner = aFull | s.inner;
+        ctx.fill(x - 1, y - 1, x + w + 1, y, inner);
+        ctx.fill(x - 1, y + h, x + w + 1, y + h + 1, inner);
+        ctx.fill(x - 1, y, x, y + h, inner);
+        ctx.fill(x + w, y, x + w + 1, y + h, inner);
+
+        // Тонкий блик по верхней кромке внутри панели
+        int sheen = ((int) (alpha * 24) << 24) | 0xFFFFFF;
+        ctx.fill(x + 2, y + 2, x + w - 2, y + 3, sheen);
+    }
+
+    // ── Атмосфера школы: мягкий фоновый эффект ───────────────────────────
+
+    private static void drawAmbient(DrawContext ctx, School school, int x, int y, int w, int h,
+                                    float time, float alpha) {
+        switch (school) {
+            case FIRE -> {
+                // Редкие поднимающиеся искры
+                for (int i = 0; i < 4; i++) {
+                    float sparkTime = (time + i / 4.0f) % 1.0f;
+                    int sx = x + 8 + (i * 31) % (w - 16);
+                    int sy = y + 6 + (int) (sparkTime * (h - 14));
+                    int a = (int) ((1.0f - sparkTime) * 140 * alpha);
+                    if (a > 0) ctx.fill(sx, sy, sx + 1, sy + 2, (a << 24) | 0xFFAA33);
+                }
             }
-        }
-        
-        // Декоративные линии (эффект жара)
-        for (int i = 0; i < 3; i++) {
-            float lineTime = (time + i * 0.33f) % 1.0f;
-            int lineY = y + 5 + (int) (lineTime * (height - 10));
-            int lineAlpha = (int) ((1.0f - lineTime) * 128 * alpha);
-            int lineColor = (lineAlpha << 24) | 0xFFAA00;
-            ctx.fill(x + 5, lineY, x + width - 5, lineY + 1, lineColor);
+            case ICE -> {
+                // Падающие мерцающие снежинки
+                for (int i = 0; i < 5; i++) {
+                    float snowTime = (time + i / 5.0f) % 1.0f;
+                    int sx = x + 8 + (i * 27) % (w - 16);
+                    int sy = y + 5 + (int) (snowTime * (h - 12));
+                    int a = (int) ((0.5f + 0.5f * (float) Math.sin(snowTime * Math.PI * 2)) * 150 * alpha);
+                    if (a > 0) {
+                        int col = (a << 24) | 0xFFFFFF;
+                        ctx.fill(sx - 1, sy, sx + 2, sy + 1, col);
+                        ctx.fill(sx, sy - 1, sx + 1, sy + 2, col);
+                    }
+                }
+            }
+            case DARK -> {
+                // Медленно тонущие фиолетовые крупинки
+                for (int i = 0; i < 5; i++) {
+                    float dt = (time + i * 0.19f) % 1.0f;
+                    int sx = x + 8 + (i * 25) % (w - 16);
+                    int sy = y + 6 + (int) (dt * (h - 14));
+                    int a = (int) ((120 + 100 * Math.sin((dt + i) * Math.PI * 2)) * alpha);
+                    if (a > 0) ctx.fill(sx, sy, sx + 2, sy + 2, (a << 24) | 0xA060FF);
+                }
+            }
+            case SOUND -> {
+                // Едва заметные линии нотного стана
+                int a = (int) (alpha * 50);
+                for (int i = 1; i <= 3; i++) {
+                    int lineY = y + (h / 4) * i;
+                    ctx.fill(x + 5, lineY, x + w - 5, lineY + 1, (a << 24) | 0xFFFFFF);
+                }
+            }
+            case ENTROPY -> {
+                // Хаотичные глитч-пиксели, вспыхивающие в случайных местах рывками
+                int frame = (int) (time * 12.999f);
+                for (int i = 0; i < 6; i++) {
+                    long seed = (frame * 31L + i * 977L) * 6364136223846793005L;
+                    seed ^= seed >> 29;
+                    seed &= 0x7FFFFFFFFFFFFFFFL;
+                    int rx = x + 6 + (int) (seed % (w - 14));
+                    int ry = y + 4 + (int) ((seed >> 12) % (h - 9));
+                    int rgb = switch ((int) ((seed >> 6) % 6)) {
+                        case 0 -> 0xFFFFFF;
+                        case 1 -> 0xE86AF0;
+                        case 2 -> 0x5AF0D8;
+                        default -> 0xD8D8E0;
+                    };
+                    int a = (int) (alpha * (90 + (seed >> 20) % 120));
+                    ctx.fill(rx, ry, rx + 2, ry + 1, (a << 24) | rgb);
+                }
+            }
         }
     }
-    
-    /**
-     * Рендерит UI в стиле ледяного осколка
-     * Холодные сине-голубые цвета со снежным эффектом
-     */
-    private static void renderIceShardStyle(DrawContext ctx, int x, int y, int width, int height, float time, MinecraftClient client, float alpha) {
-        // Анимация мерцания
-        float shimmer = (float) Math.sin(time * Math.PI * 4) * 0.2f + 0.8f;
-        
-        // Цвета льда и снега с прозрачностью
-        int alphaValue = (int) (alpha * 192); // 0xC0 = 192
-        int darkBlue = (alphaValue << 24) | 0x001133;     // Темно-синий фон
-        int iceBlue = ((int)(alpha * 255) << 24) | 0x003366;      // Ледяной синий
-        int lightBlue = ((int)(alpha * 255) << 24) | 0x4DA3FF;    // Светло-голубой
-        int cyan = ((int)(alpha * 255) << 24) | 0x00FFFF;         // Циан
-        
-        // Основной фон с градиентом
-        drawGradientRect(ctx, x, y, x + width, y + height, darkBlue, iceBlue);
-        
-        // Внешняя рамка (голубое мерцание)
-        int outerBorder = blendColors(lightBlue, cyan, shimmer);
-        ctx.fill(x - 2, y - 2, x + width + 2, y - 1, outerBorder);
-        ctx.fill(x - 2, y + height + 1, x + width + 2, y + height + 2, outerBorder);
-        ctx.fill(x - 2, y - 1, x - 1, y + height + 1, outerBorder);
-        ctx.fill(x + width + 1, y - 1, x + width + 2, y + height + 1, outerBorder);
-        
-        // Внутренняя рамка (яркий циан)
-        ctx.fill(x - 1, y - 1, x + width + 1, y, ((int)(alpha * 255) << 24) | 0x00CCFF);
-        ctx.fill(x - 1, y + height, x + width + 1, y + height + 1, ((int)(alpha * 255) << 24) | 0x00CCFF);
-        ctx.fill(x - 1, y, x, y + height, ((int)(alpha * 255) << 24) | 0x00CCFF);
-        ctx.fill(x + width, y, x + width + 1, y + height, ((int)(alpha * 255) << 24) | 0x00CCFF);
-        
-        // Эффект "снежинок" - падающие точки
-        int snowflakeCount = 12;
-        for (int i = 0; i < snowflakeCount; i++) {
-            float snowTime = (time + i / (float) snowflakeCount) % 1.0f;
-            int snowX = x + 5 + (int) (Math.sin(snowTime * Math.PI * 4 + i * 0.5) * 10) + (i % 3) * 35;
-            int snowY = y + 5 + (int) (snowTime * (height - 10));
-            
-            if (snowY < y + height - 5) {
-                // Мерцающие снежинки
-                float snowAlpha = (float) Math.sin(snowTime * Math.PI * 2) * 0.5f + 0.5f;
-                int snowAlphaValue = (int) (snowAlpha * 255 * alpha);
-                int snowColor = (snowAlphaValue << 24) | 0xFFFFFF;
-                
-                // Рисуем крестик (снежинку)
-                ctx.fill(snowX - 1, snowY, snowX + 2, snowY + 1, snowColor);
-                ctx.fill(snowX, snowY - 1, snowX + 1, snowY + 2, snowColor);
+
+    // ── Фирменный штрих каждого заклинания ───────────────────────────────
+
+    private static void drawSignature(DrawContext ctx, SpellType spell, int x, int y, int w, int h,
+                                      long t, float alpha) {
+        int tx = x + 10; // внутренняя область панели
+        int cy = y + h / 2;
+
+        switch (spell) {
+            case FIREBALL -> {
+                // Комета, пролетающая вдоль нижней кромки с хвостом
+                float p = (t % 2400) / 2400.0f;
+                int cx = tx + (int) (p * (w - 24));
+                int a = (int) (alpha * (p < 0.85f ? 255 : (1 - (p - 0.85f) / 0.15f) * 255));
+                int yy = y + h - 8;
+                ctx.fill(cx, yy, cx + 2, yy + 2, (a << 24) | 0xFFAA33);
+                ctx.fill(cx - 3, yy, cx, yy + 1, ((a * 2 / 3) << 24) | 0xFF6600);
+                ctx.fill(cx - 5, yy, cx - 3, yy + 1, ((a / 3) << 24) | 0xCC3300);
+            }
+            case FIRE_WALL -> {
+                // Языки пламени вдоль нижней кромки
+                float time = (t % 2000) / 2000.0f;
+                for (int i = 0; i < 5; i++) {
+                    float ft = (time + i / 5.0f) % 1.0f;
+                    int fx = tx + 4 + i * ((w - 28) / 4);
+                    int fh = (int) ((Math.sin(ft * Math.PI * 2 + i) * 0.5 + 0.5) * 9);
+                    ctx.fill(fx, y + h - 6 - fh, fx + 2, y + h - 6, blendGlow(0xFF6600, 0xFFDD00, ft, alpha));
+                }
+            }
+            case INNER_HEAT -> {
+                // Тёплое кольцо, пульсирующее от центра панели
+                float p = (t % 1600) / 1600.0f;
+                int rr = 6 + (int) (p * 14);
+                int a = (int) (alpha * (1 - p) * 120);
+                if (a > 0) ring(ctx, x + w / 2, cy, rr, (a << 24) | 0xFF9955);
+            }
+            case HEAT_WEAPON -> {
+                // Диагональные проблески жара
+                for (int i = 0; i < 2; i++) {
+                    float p = ((t * 0.0012f) + i * 0.5f) % 1.0f;
+                    int sx = tx + (int) (p * (w - 24));
+                    int a = (int) (Math.sin(p * Math.PI) * 90 * alpha);
+                    if (a > 0) {
+                        for (int j = 0; j < 8; j++) {
+                            ctx.fill(sx + j / 2, y + h - 8 - j, sx + j / 2 + 1, y + h - 7 - j, (a << 24) | 0xFFCC88);
+                        }
+                    }
+                }
+            }
+            case ICE_SHARD -> {
+                // Быстрый осколок, проносящийся вдоль нижней кромки
+                float p = (t % 1800) / 1800.0f;
+                int sx = tx + (int) (p * (w - 24));
+                int a = (int) (alpha * (p < 0.85f ? 230 : (1 - (p - 0.85f) / 0.15f) * 230));
+                int yy = y + h - 8;
+                ctx.fill(sx, yy, sx + 3, yy + 1, (a << 24) | 0xBFE8FF);
+                ctx.fill(sx + 1, yy - 1, sx + 2, yy + 2, (a << 24) | 0xBFE8FF);
+                ctx.fill(sx - 3, yy, sx, yy + 1, ((a / 2) << 24) | 0x4DA3FF);
+            }
+            case ICE_WALL -> {
+                // Сосульки под верхней кромкой панели
+                for (int i = 0; i < 4; i++) {
+                    int ix = tx + 6 + i * ((w - 32) / 3);
+                    int len = 3 + (i % 2) * 2;
+                    ctx.fill(ix, y + 1, ix + 1, y + 1 + len, ((int) (alpha * 170) << 24) | 0xBFE8FF);
+                }
+            }
+            case FROST_AURA -> {
+                // Кольца ауры, расходящиеся от центра панели
+                for (int i = 0; i < 2; i++) {
+                    float p = ((t * 0.0008f) + i * 0.5f) % 1.0f;
+                    int rr = 6 + (int) (p * 16);
+                    int a = (int) (alpha * (1 - p) * 100);
+                    if (a > 0) ring(ctx, x + w / 2, cy, rr, (a << 24) | 0x66D0FF);
+                }
+            }
+            case FROST_COFFIN -> {
+                // Ледяные кристаллы в правых углах панели
+                drawIceCrystal(ctx, x + w - 10, y + 5, alpha);
+                drawIceCrystal(ctx, x + w - 10, y + h - 9, alpha);
+            }
+            case ABSORBING_BARRIER -> {
+                // Блик, пробегающий по панели слева направо (барьерный отблеск)
+                float p = (t % 3000) / 3000.0f;
+                int sx = tx + (int) (p * (w - 24));
+                int a = (int) (Math.sin(p * Math.PI) * 45 * alpha);
+                if (a > 0) ctx.fill(sx, y + 4, sx + 4, y + h - 4, (a << 24) | 0xC8A8FF);
+            }
+            case WEAKNESS_CURSE -> {
+                // Тёмные капли, стекающие с верхней кромки
+                for (int i = 0; i < 3; i++) {
+                    float p = ((t * 0.0007f) + i * 0.33f) % 1.0f;
+                    int dx = tx + 8 + i * ((w - 36) / 2);
+                    int dy = y + 2 + (int) (p * (h - 10));
+                    int a = (int) ((1 - p) * 160 * alpha);
+                    if (a > 0) ctx.fill(dx, dy, dx + 1, dy + 3, (a << 24) | 0x5C3B89);
+                }
+            }
+            case SOUND_STRIKE -> {
+                // Волновые дуги, расходящиеся вправо от левого края
+                for (int i = 0; i < 3; i++) {
+                    float p = ((t * 0.0009f) + i * 0.33f) % 1.0f;
+                    int wx = x + 12 + (int) (p * 14);
+                    int a = (int) ((1 - p) * 200 * alpha);
+                    if (a > 0) {
+                        int col = (a << 24) | (i % 2 == 0 ? 0xFFFF00 : 0xFFFFFF);
+                        ctx.fill(wx, cy - 3, wx + 1, cy + 4, col);
+                        ctx.fill(wx + 1, cy - 2, wx + 2, cy + 3, col);
+                    }
+                }
+            }
+            case BATTLE_HYMN -> {
+                // Пара нот, всплывающих у правого края
+                for (int i = 0; i < 2; i++) {
+                    float p = ((t * 0.0006f) + i * 0.5f) % 1.0f;
+                    int nx = x + w - 20 - i * 12;
+                    int ny = y + h - 14 - (int) (p * (h - 24));
+                    drawMusicNote(ctx, nx, ny, i == 0 ? 0xFFFF00 : 0xFFFFFF, alpha * (1.0f - p * 0.7f));
+                }
+            }
+            case SILENCE_ZONE -> {
+                // Волновые дуги, которые «глохнут» на полпути — тишина поглощает звук
+                for (int i = 0; i < 2; i++) {
+                    float p = ((t * 0.0009f) + i * 0.5f) % 1.0f;
+                    float fade = Math.max(0.0f, 1.0f - p * 2.2f);
+                    int a = (int) (fade * 180 * alpha);
+                    if (a > 0) {
+                        int wx = x + 12 + (int) (p * 10);
+                        int col = (a << 24) | 0xFFFF00;
+                        ctx.fill(wx, cy - 3, wx + 1, cy + 4, col);
+                        ctx.fill(wx + 1, cy - 2, wx + 2, cy + 3, col);
+                    }
+                }
+            }
+            case CLARIFYING_TONE -> {
+                // Чистые блёстки, поднимающиеся вверх
+                for (int i = 0; i < 3; i++) {
+                    float p = ((t * 0.0011f) + i * 0.37f) % 1.0f;
+                    int sx = tx + 6 + i * ((w - 32) / 2);
+                    int sy = y + h - 6 - (int) (p * (h - 14));
+                    int a = (int) (Math.sin(p * Math.PI) * 200 * alpha);
+                    if (a > 0) {
+                        ctx.fill(sx, sy - 1, sx + 1, sy + 2, (a << 24) | 0xFFFFFF);
+                        ctx.fill(sx - 1, sy, sx + 2, sy + 1, (a << 24) | 0xFFFFFF);
+                    }
+                }
+            }
+            case TRANSLOCATION -> {
+                // Глитч-пиксель, вспыхивающий в случайном месте
+                long frame = t / 500;
+                if (frame % 5 == 0) {
+                    int gx = tx + (int) ((frame * 37) % (w - 24));
+                    ctx.fill(gx, y + 6, gx + 4, y + 7, ((int) (alpha * 160) << 24) | 0xFFFFFF);
+                }
             }
         }
-        
-        // Кристаллические линии (эффект льда)
-        for (int i = 0; i < 4; i++) {
-            float lineTime = (time * 0.5f + i * 0.25f) % 1.0f;
-            int lineX = x + 5 + (int) (lineTime * (width - 10));
-            int lineAlpha = (int) ((1.0f - Math.abs(lineTime - 0.5f) * 2) * 128 * alpha);
-            int lineColor = (lineAlpha << 24) | 0x00FFFF;
-            
-            // Диагональные линии
-            for (int j = 0; j < height - 10; j += 2) {
-                ctx.fill(lineX + j / 2, y + 5 + j, lineX + j / 2 + 1, y + 6 + j, lineColor);
-            }
-        }
-        
-        // Ледяные кристаллы в углах
-        drawIceCrystal(ctx, x + 5, y + 5, shimmer);
-        drawIceCrystal(ctx, x + width - 10, y + 5, shimmer);
-        drawIceCrystal(ctx, x + 5, y + height - 10, shimmer);
-        drawIceCrystal(ctx, x + width - 10, y + height - 10, shimmer);
     }
-    
-    /**
-     * Рисует маленький ледяной кристалл
-     */
-    private static void drawIceCrystal(DrawContext ctx, int x, int y, float brightness) {
-        int alpha = (int) (brightness * 200);
-        int color = (alpha << 24) | 0xAAFFFF;
-        
-        // Крестик
+
+    // ── Тексты ───────────────────────────────────────────────────────────
+
+    private static void drawTexts(DrawContext ctx, MinecraftClient client, SpellType selectedSpell,
+                                  ItemStack staff, int x, int y, int width, float alpha) {
+        int textAlpha = (int) (alpha * 255) << 24;
+        int tx = x + 10;
+
+        int spellLevel = ClientSpellLevelsState.getSpellLevel(selectedSpell);
+        String levelRoman = switch (spellLevel) {
+            case 1 -> "I";
+            case 2 -> "II";
+            default -> "III";
+        };
+
+        // Название с уровнем — в ярком цвете школы магии
+        int nameColor = textAlpha | ManabornGuiStyle.brightenRgb(
+                ManabornGuiStyle.elementRgb(selectedSpell), 0.35f);
+        Text spellText = Text.literal(selectedSpell.getDisplayName() + " " + levelRoman);
+        ctx.drawText(client.textRenderer, spellText, tx, y + 7, nameColor, true);
+
+        // Стоимость маны — зависит от уровня, как при реальном касте
+        Spell spellImpl = SpellRegistry.getSpell(selectedSpell);
+        int manaCost = (spellImpl instanceof LeveledSpell leveled)
+                ? leveled.getManaCost(spellLevel)
+                : selectedSpell.getManaCost();
+        if (staff.getItem() instanceof com.manaborn.items.EtherScepterItem) {
+            manaCost = Math.max(0, manaCost - com.manaborn.items.EtherScepterItem.MANA_DISCOUNT);
+        }
+        ctx.drawText(client.textRenderer, Text.literal("Мана: " + manaCost), tx, y + 20, textAlpha | 0xFFFFFF, true);
+
+        // Подсказка
+        ctx.drawText(client.textRenderer, Text.literal("ПКМ - использовать"), tx, y + 34, textAlpha | 0xAAAAAA, false);
+    }
+
+    // ── Примитивы ────────────────────────────────────────────────────────
+
+    /** Смешать два RGB и применить прозрачность HUD */
+    private static int blendGlow(int rgb1, int rgb2, float t, float alpha) {
+        return ((int) (alpha * 255) << 24) | ManabornGuiStyle.blendRgb(rgb1, rgb2, t);
+    }
+
+    /** Контур круга толщиной 1px */
+    private static void ring(DrawContext ctx, int cx, int cy, int radius, int argb) {
+        int r2 = radius * radius;
+        int inner = (radius - 1) * (radius - 1);
+        for (int dy = -radius; dy <= radius; dy++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                int d2 = dx * dx + dy * dy;
+                if (d2 <= r2 && d2 >= inner) {
+                    ctx.fill(cx + dx, cy + dy, cx + dx + 1, cy + dy + 1, argb);
+                }
+            }
+        }
+    }
+
+    /** Маленький ледяной кристалл-крестик */
+    private static void drawIceCrystal(DrawContext ctx, int x, int y, float alpha) {
+        int a = (int) (alpha * 200);
+        int color = (a << 24) | 0xAAFFFF;
         ctx.fill(x + 2, y, x + 3, y + 5, color);
         ctx.fill(x, y + 2, x + 5, y + 3, color);
-        // Диагонали
         ctx.fill(x + 1, y + 1, x + 2, y + 2, color);
         ctx.fill(x + 3, y + 1, x + 4, y + 2, color);
         ctx.fill(x + 1, y + 3, x + 2, y + 4, color);
         ctx.fill(x + 3, y + 3, x + 4, y + 4, color);
     }
-    
-    /**
-     * Рисует вертикальный градиент
-     */
-    private static void drawGradientRect(DrawContext ctx, int x1, int y1, int x2, int y2, int colorTop, int colorBottom) {
-        int height = y2 - y1;
-        for (int i = 0; i < height; i++) {
-            float ratio = i / (float) height;
-            int color = blendColors(colorTop, colorBottom, ratio);
-            ctx.fill(x1, y1 + i, x2, y1 + i + 1, color);
-        }
-    }
-    
-    /**
-     * Смешивает два цвета
-     * 
-     * @param color1 Первый цвет (ARGB)
-     * @param color2 Второй цвет (ARGB)
-     * @param ratio Соотношение (0.0 = color1, 1.0 = color2)
-     * @return Смешанный цвет
-     */
-    private static int blendColors(int color1, int color2, float ratio) {
-        ratio = Math.max(0, Math.min(1, ratio));
-        
-        int a1 = (color1 >> 24) & 0xFF;
-        int r1 = (color1 >> 16) & 0xFF;
-        int g1 = (color1 >> 8) & 0xFF;
-        int b1 = color1 & 0xFF;
-        
-        int a2 = (color2 >> 24) & 0xFF;
-        int r2 = (color2 >> 16) & 0xFF;
-        int g2 = (color2 >> 8) & 0xFF;
-        int b2 = color2 & 0xFF;
-        
-        int a = (int) (a1 + (a2 - a1) * ratio);
-        int r = (int) (r1 + (r2 - r1) * ratio);
-        int g = (int) (g1 + (g2 - g1) * ratio);
-        int b = (int) (b1 + (b2 - b1) * ratio);
-        
-        return (a << 24) | (r << 16) | (g << 8) | b;
-    }
-    
-    private static void renderDarkBarrierStyle(DrawContext ctx, int x, int y, int width, int height, float time, MinecraftClient client, float alpha) {
-        float pulse = (float) Math.sin(time * Math.PI * 2) * 0.25f + 0.75f;
-        int baseA = (int) (alpha * 200);
-        int bgTop = (baseA << 24) | 0x0A0A12;
-        int bgBottom = ((int)(alpha * 255) << 24) | 0x141424;
-        drawGradientRect(ctx, x, y, x + width, y + height, bgTop, bgBottom);
 
-        int ring1 = ((int)(alpha * 255) << 24) | 0x3A2A5F;
-        int ring2 = ((int)(alpha * 255) << 24) | 0x5C3B89;
-        int ringBlend = blendColors(ring1, ring2, pulse);
-        ctx.fill(x - 2, y - 2, x + width + 2, y - 1, ringBlend);
-        ctx.fill(x - 2, y + height + 1, x + width + 2, y + height + 2, ringBlend);
-        ctx.fill(x - 2, y - 1, x - 1, y + height + 1, ringBlend);
-        ctx.fill(x + width + 1, y - 1, x + width + 2, y + height + 1, ringBlend);
-
-        int inner = ((int)(alpha * 255) << 24) | 0x221833;
-        ctx.fill(x - 1, y - 1, x + width + 1, y, inner);
-        ctx.fill(x - 1, y + height, x + width + 1, y + height + 1, inner);
-        ctx.fill(x - 1, y, x, y + height, inner);
-        ctx.fill(x + width, y, x + width + 1, y + height, inner);
-
-        int specks = 10;
-        for (int i = 0; i < specks; i++) {
-            float t = (time + i * 0.07f) % 1.0f;
-            int sx = x + 6 + (int)((i * 11 + 7 * t) % (width - 12));
-            int sy = y + 6 + (int)(t * (height - 12));
-            int a = (int)(alpha * (120 + 100 * Math.sin((t + i) * Math.PI * 2)));
-            int c = ((a & 0xFF) << 24) | 0xA060FF;
-            ctx.fill(sx, sy, sx + 2, sy + 2, c);
-        }
-
-        for (int i = 0; i < 3; i++) {
-            float t = (time * 0.8f + i * 0.33f) % 1.0f;
-            int lineY = y + 6 + (int)(t * (height - 12));
-            int la = (int)((1.0f - Math.abs(t - 0.5f) * 2) * 100 * alpha);
-            int lc = (la << 24) | 0x8A6AD9;
-            ctx.fill(x + 6, lineY, x + width - 6, lineY + 1, lc);
-        }
-    }
-    
-    /**
-     * Рендерит UI в стиле стены огня
-     * Золотисто-оранжевые цвета с эффектом вертикальных языков пламени
-     */
-    private static void renderFireWallStyle(DrawContext ctx, int x, int y, int width, int height, float time, MinecraftClient client, float alpha) {
-        // Анимация пульсации
-        float pulse = (float) Math.sin(time * Math.PI * 2) * 0.3f + 0.7f;
-        
-        // Цвета огненной стены с прозрачностью
-        int alphaValue = (int) (alpha * 192);
-        int darkOrange = (alphaValue << 24) | 0x442200;    // Темно-оранжевый фон
-        int orange = ((int)(alpha * 255) << 24) | 0xFF6600; // Оранжевый
-        int gold = ((int)(alpha * 255) << 24) | 0xFFAA00;   // Золотой
-        int brightGold = ((int)(alpha * 255) << 24) | 0xFFDD00; // Яркое золото
-        
-        // Основной фон с градиентом
-        drawGradientRect(ctx, x, y, x + width, y + height, darkOrange, orange);
-        
-        // Внешняя рамка (золотая пульсация)
-        int outerBorder = blendColors(gold, brightGold, pulse);
-        ctx.fill(x - 2, y - 2, x + width + 2, y - 1, outerBorder);
-        ctx.fill(x - 2, y + height + 1, x + width + 2, y + height + 2, outerBorder);
-        ctx.fill(x - 2, y - 1, x - 1, y + height + 1, outerBorder);
-        ctx.fill(x + width + 1, y - 1, x + width + 2, y + height + 1, outerBorder);
-        
-        // Внутренняя рамка (оранжевая)
-        ctx.fill(x - 1, y - 1, x + width + 1, y, ((int)(alpha * 255) << 24) | 0xFF8800);
-        ctx.fill(x - 1, y + height, x + width + 1, y + height + 1, ((int)(alpha * 255) << 24) | 0xFF8800);
-        ctx.fill(x - 1, y, x, y + height, ((int)(alpha * 255) << 24) | 0xFF8800);
-        ctx.fill(x + width, y, x + width + 1, y + height, ((int)(alpha * 255) << 24) | 0xFF8800);
-        
-        // Эффект "языков пламени" - вертикальные полосы
-        int flameCount = 6;
-        for (int i = 0; i < flameCount; i++) {
-            float flameTime = (time + i / (float) flameCount) % 1.0f;
-            int flameX = x + 10 + i * ((width - 20) / (flameCount - 1));
-            int flameHeight = (int) ((Math.sin(flameTime * Math.PI * 2 + i) * 0.5 + 0.5) * (height - 20));
-            int flameY = y + height - 10 - flameHeight;
-            
-            int flameColor = blendColors(orange, brightGold, flameTime);
-            ctx.fill(flameX, flameY, flameX + 3, y + height - 10, flameColor);
-        }
-    }
-    
-    /**
-     * Рендерит UI в стиле звуковой магии
-     * Бело-жёлтые цвета с музыкальными нотами
-     */
-    private static void renderSoundStrikeStyle(DrawContext ctx, int x, int y, int width, int height, float time, MinecraftClient client, float alpha) {
-        // Цвета звуковой магии с прозрачностью (БЕЗ пульсаций)
-        int alphaValue = (int) (alpha * 192);
-        int darkGray = (alphaValue << 24) | 0x1A1A1A;      // Темно-серый фон
-        int lightGray = ((int)(alpha * 255) << 24) | 0x333333;    // Светло-серый
-        int white = ((int)(alpha * 255) << 24) | 0xFFFFFF;        // Белый
-        int yellow = ((int)(alpha * 255) << 24) | 0xFFFF00;       // Жёлтый
-        int gold = ((int)(alpha * 255) << 24) | 0xFFDD00;         // Золотой
-        
-        // Основной фон с градиентом
-        drawGradientRect(ctx, x, y, x + width, y + height, darkGray, lightGray);
-        
-        // Внешняя рамка (статичная жёлтая)
-        ctx.fill(x - 2, y - 2, x + width + 2, y - 1, yellow);
-        ctx.fill(x - 2, y + height + 1, x + width + 2, y + height + 2, yellow);
-        ctx.fill(x - 2, y - 1, x - 1, y + height + 1, yellow);
-        ctx.fill(x + width + 1, y - 1, x + width + 2, y + height + 1, yellow);
-        
-        // Внутренняя рамка (белая)
-        ctx.fill(x - 1, y - 1, x + width + 1, y, white);
-        ctx.fill(x - 1, y + height, x + width + 1, y + height + 1, white);
-        ctx.fill(x - 1, y, x, y + height, white);
-        ctx.fill(x + width, y, x + width + 1, y + height, white);
-        
-        // Рисуем музыкальные ноты (меньше, чтобы не мешали глазу)
-        // Статичные ноты в углах
-        drawMusicNote(ctx, x + 8, y + 8, white, alpha * 0.5f);
-        drawMusicNote(ctx, x + width - 14, y + height - 14, yellow, alpha * 0.5f);
-        
-        // Анимированные плывущие ноты (МЕНЬШЕ - только 5)
-        int noteCount = 5;
-        for (int i = 0; i < noteCount; i++) {
-            float noteTime = (time * 0.5f + i / (float) noteCount) % 1.0f; // Медленнее
-            int noteX = x + 15 + (i * 22);
-            int noteY = y + 12 + (int) (noteTime * (height - 24));
-            
-            if (noteY < y + height - 12) {
-                // Цвета чередуются
-                int noteColor = (i % 2 == 0) ? white : yellow;
-                
-                // Затухание в конце пути
-                float noteAlphaFactor = 1.0f - (noteTime * 0.6f);
-                drawMusicNote(ctx, noteX, noteY, noteColor, alpha * noteAlphaFactor * 0.8f);
-            }
-        }
-        
-        // Горизонтальные "нотные линии" (как на нотном стане)
-        int lineCount = 3;
-        int lineSpacing = height / (lineCount + 1);
-        for (int i = 1; i <= lineCount; i++) {
-            int lineY = y + lineSpacing * i;
-            int lineAlphaValue = (int) (alpha * 60);
-            int lineColor = (lineAlphaValue << 24) | 0xFFFFFF;
-            ctx.fill(x + 5, lineY, x + width - 5, lineY + 1, lineColor);
-        }
-    }
-
-    /**
-     * Рендерит UI в стиле энтропии (бело-серый, минималистичный)
-     */
-    private static void renderEntropyStyle(DrawContext ctx, int x, int y, int width, int height, float time, MinecraftClient client, float alpha) {
-        int alphaValue = (int) (alpha * 200);
-        int darkGray = (alphaValue << 24) | 0x141414;
-        int midGray = (alphaValue << 24) | 0x5A5A5A;
-        int lightGray = (alphaValue << 24) | 0xD0D0D0;
-        int white = (alphaValue << 24) | 0xFFFFFF;
-
-        ctx.fill(x, y, x + width, y + height, darkGray);
-
-        ctx.fill(x, y, x + width, y + 2, white);
-        ctx.fill(x, y + height - 2, x + width, y + height, lightGray);
-        ctx.fill(x, y, x + 2, y + height, midGray);
-        ctx.fill(x + width - 2, y, x + width, y + height, midGray);
-
-        int barY = y + height / 2 - 2;
-        for (int i = 0; i < width - 16; i++) {
-            float t = i / (float) (width - 16);
-            int shade = (int) (180 + 60 * t);
-            int color = (alphaValue << 24) | (shade << 16) | (shade << 8) | shade;
-            ctx.fill(x + 8 + i, barY, x + 9 + i, barY + 4, color);
-        }
-
-        int dotAlpha = (int) (alpha * (100 + (Math.sin(time * Math.PI * 2) * 40 + 40))) << 24;
-        int dotColor = dotAlpha | 0xFFFFFF;
-        ctx.fill(x + 12, y + 8, x + 14, y + 10, dotColor);
-        ctx.fill(x + width - 14, y + height - 10, x + width - 12, y + height - 8, dotColor);
-    }
-    
-    /**
-     * Рисует музыкальную ноту ♪
-     */
+    /** Музыкальная нота ♪ */
     private static void drawMusicNote(DrawContext ctx, int x, int y, int baseColor, float alpha) {
-        int alphaValue = (int) (alpha * 255);
-        int color = (alphaValue << 24) | (baseColor & 0xFFFFFF);
-        
-        // Головка ноты (круг)
+        int a = (int) (alpha * 255);
+        if (a <= 0) return;
+        int color = (a << 24) | (baseColor & 0xFFFFFF);
         ctx.fill(x, y + 4, x + 4, y + 8, color);
-        
-        // Штиль ноты (вертикальная линия)
         ctx.fill(x + 3, y, x + 5, y + 5, color);
-        
-        // Флажок (маленький)
         ctx.fill(x + 4, y, x + 7, y + 3, color);
     }
 }

@@ -94,13 +94,41 @@ public final class TranslocationProgressOverlay {
         }
     }
 
+    // ── Энтропийный глитч-стиль ──────────────────────────────────────────
+
+    private static long chaosHash(long seed) {
+        seed = (seed * 6364136223846793005L + 1442695040888963407L);
+        seed ^= seed >> 29;
+        seed *= 0xBF58476D1CE4E5B9L;
+        seed ^= seed >> 32;
+        return seed & 0x7FFFFFFFFFFFFFFFL;
+    }
+
+    private static int chaosColor(long seed) {
+        return switch ((int) (seed % 8)) {
+            case 0 -> 0xFFFFFF;
+            case 1 -> 0xE86AF0;
+            case 2 -> 0x5AF0D8;
+            default -> 0xC7D0DD;
+        };
+    }
+
     private static void drawBackground(DrawContext context, int x, int y, int width, int height) {
-        context.fill(x - 1, y - 1, x + width + 1, y, 0xFF666666);
-        context.fill(x - 1, y + height, x + width + 1, y + height + 1, 0xFF666666);
+        long frame = System.currentTimeMillis() / 160;
+
+        context.fill(x, y, x + width, y + height, 0xF014141C);
+
+        // Рамка с глитч-сегментами: отдельные куски вспыхивают хаотичными цветами
+        for (int i = 0; i <= width; i += 2) {
+            long seed = chaosHash(frame * 13 + i * 7);
+            int top = ((seed % 5) == 0) ? chaosColor(seed >> 8) : 0x666666;
+            int bottom = (((seed >> 4) % 7) == 0) ? chaosColor(seed >> 12) : 0x666666;
+            context.fill(x - 1 + i, y - 1, x - 1 + i + 2, y, 0xFF000000 | top);
+            context.fill(x - 1 + i, y + height, x - 1 + i + 2, y + height + 1, 0xFF000000 | bottom);
+        }
         context.fill(x - 1, y - 1, x, y + height + 1, 0xFF666666);
         context.fill(x + width, y - 1, x + width + 1, y + height + 1, 0xFF666666);
 
-        context.fill(x, y, x + width, y + height, 0xFF1A1A1A);
         context.fill(x, y, x + width, y + 1, 0xFF888888);
         context.fill(x, y + height - 1, x + width, y + height, 0xFF888888);
     }
@@ -116,17 +144,47 @@ public final class TranslocationProgressOverlay {
             int color = 0xFF000000 | (shade << 16) | (shade << 8) | shade;
             context.fill(x + i, y, x + i + 1, y + height, color);
         }
+
+        long frame = System.currentTimeMillis() / 120;
+
+        // Глитч-осколки внутри заливки — пространство «трещит» по мере зарядки
+        int shards = 2 + (int) (progress * 8);
+        for (int s = 0; s < shards; s++) {
+            long seed = chaosHash(frame * 31 + s * 977);
+            int sx = x + (int) (seed % Math.max(1, fillWidth));
+            int sy = y + 1 + (int) ((seed >> 8) % (height - 2));
+            context.fill(sx, sy, sx + 1 + (int) (seed >> 16) % 2, sy + 1, 0xFF000000 | chaosColor(seed >> 20));
+        }
+
+        // Случайные строки заливки «сдвигаются» на пару пикселей — разлом
+        if (fillWidth > 8 && (chaosHash(frame * 53) % 3) == 0) {
+            long seed = chaosHash(frame * 97);
+            int rowY = y + 2 + (int) (seed % (height - 4));
+            int shift = 1 + (int) ((seed >> 6) % 2);
+            int segX = x + 2 + (int) ((seed >> 10) % (fillWidth - 10));
+            context.fill(segX, rowY, segX + 6, rowY + 1, 0xFF000000);
+            context.fill(segX + 6 + shift, rowY, segX + 12 + shift, rowY + 1, 0xFFFFFFFF);
+        }
+
+        // Яркий фронт зарядки
+        if (fillWidth > 2) {
+            context.fill(x + fillWidth - 2, y, x + fillWidth, y + height, 0xFFFFFFFF);
+        }
     }
 
     private static void drawThresholds(DrawContext context, int x, int y, int width, int height, int maxChargeTicks) {
         int[] thresholds = new int[] {60, 200, 400};
-        int color = 0xFFBBBBBB;
+        long frame = System.currentTimeMillis() / 200;
+        int i = 0;
         for (int threshold : thresholds) {
             if (threshold > maxChargeTicks) {
                 continue;
             }
             int markerX = x + Math.min(width - 1, Math.round(width * (threshold / (float) maxChargeTicks)));
+            // Маркеры мерцают хаотичными вспышками
+            int color = ((chaosHash(frame * 7 + i * 131) % 4) == 0) ? 0xFFFFFFFF : 0xFFBBBBBB;
             context.fill(markerX, y + 2, markerX + 1, y + height - 2, color);
+            i++;
         }
     }
 

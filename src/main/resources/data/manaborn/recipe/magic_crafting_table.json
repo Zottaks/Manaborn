@@ -4,12 +4,12 @@
 	"pattern": [
 		"DDD",
 		"DCD",
-		"SSS"
+		"PPP"
 	],
 	"key": {
 		"D": "manaborn:magic_dust",
 		"C": "minecraft:crafting_table",
-		"S": "minecraft:stone"
+		"P": "minecraft:polished_deepslate"
 	},
 	"result": {
 		"id": "manaborn:magic_crafting_table",

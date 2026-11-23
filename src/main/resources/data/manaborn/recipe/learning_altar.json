@@ -2,13 +2,14 @@
   "type": "minecraft:crafting_shaped",
   "category": "building",
   "pattern": [
+    " D ",
     " B ",
-    " A ",
-    "   "
+    " R "
   ],
   "key": {
-    "A": "minecraft:stone",
-    "B": "manaborn:magic_dust"
+    "D": "manaborn:magic_dust",
+    "B": "minecraft:book",
+    "R": "minecraft:deepslate_bricks"
   },
   "result": {
     "id": "manaborn:learning_altar",

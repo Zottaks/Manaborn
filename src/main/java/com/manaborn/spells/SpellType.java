@@ -3,20 +3,21 @@ package com.manaborn.spells;
 import net.minecraft.util.Formatting;
 
 public enum SpellType {
-    FIREBALL("Огненный шар", 20, "fireball", Formatting.RED),
-    ICE_SHARD("Ледяной осколок", 35, "ice_shard", Formatting.AQUA),
+    // Стоимости соответствуют getManaCost() классов-реализаций (уровень 1)
+    FIREBALL("Огненный шар", 25, "fireball", Formatting.RED),
+    ICE_SHARD("Ледяной осколок", 30, "ice_shard", Formatting.AQUA),
     FROST_COFFIN("Морозный гроб", 35, "frost_coffin", Formatting.AQUA),
-    FIRE_WALL("Стена огня", 50, "fire_wall", Formatting.GOLD),
-    INNER_HEAT("Внутренний жар", 30, "inner_heat", Formatting.GOLD),
-    FROST_AURA("Аура Стужи", 40, "frost_aura", Formatting.AQUA),
-    ABSORBING_BARRIER("Поглощающий барьер", 15, "absorbing_barrier", Formatting.DARK_PURPLE),
-    WEAKNESS_CURSE("Проклятие Слабости", 45, "weakness_curse", Formatting.DARK_PURPLE),
+    FIRE_WALL("Стена огня", 30, "fire_wall", Formatting.GOLD),
+    INNER_HEAT("Внутренний жар", 25, "inner_heat", Formatting.GOLD),
+    FROST_AURA("Аура Стужи", 30, "frost_aura", Formatting.AQUA),
+    ABSORBING_BARRIER("Поглощающий барьер", 50, "absorbing_barrier", Formatting.DARK_PURPLE),
+    WEAKNESS_CURSE("Проклятие Слабости", 25, "weakness_curse", Formatting.DARK_PURPLE),
     ICE_WALL("Стена льда", 10, "ice_wall", Formatting.AQUA),
-    HEAT_WEAPON("Накаливание", 25, "heat_weapon", Formatting.GOLD),
-    SOUND_STRIKE("Звуковой удар", 30, "sound_strike", Formatting.YELLOW),
+    HEAT_WEAPON("Накаливание", 35, "heat_weapon", Formatting.GOLD),
+    SOUND_STRIKE("Звуковой удар", 25, "sound_strike", Formatting.YELLOW),
     BATTLE_HYMN("Боевой гимн", 30, "battle_hymn", Formatting.YELLOW),
     SILENCE_ZONE("Область тишины", 80, "silence_zone", Formatting.GRAY),
-    CLARIFYING_TONE("Проясняющий тон", 30, "clarifying_tone", Formatting.YELLOW),
+    CLARIFYING_TONE("Проясняющий тон", 25, "clarifying_tone", Formatting.YELLOW),
     TRANSLOCATION("Транслокация", 30, "translocation", Formatting.GRAY);
     
     private final String displayName;

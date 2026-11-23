@@ -5,8 +5,8 @@
     "down": "manaborn:block/magic_crafting_table_bottom",
     "up": "manaborn:block/magic_crafting_table_top",
     "north": "manaborn:block/magic_crafting_table_side",
-    "east": "manaborn:block/magic_crafting_table_side",
-    "south": "manaborn:block/magic_crafting_table_side",
-    "west": "manaborn:block/magic_crafting_table_side"
+    "east": "manaborn:block/magic_crafting_table_side_plain",
+    "south": "manaborn:block/magic_crafting_table_side_tools2",
+    "west": "manaborn:block/magic_crafting_table_side_plain"
   }
 }

@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:book",
+    "manaborn:magic_dust",
+    "minecraft:crafting_table"
+  ],
+  "result": {
+    "id": "manaborn:recipe_book",
+    "count": 1
+  }
+}

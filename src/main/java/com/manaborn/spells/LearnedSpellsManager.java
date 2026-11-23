@@ -97,9 +97,13 @@ public class LearnedSpellsManager {
     public static boolean learnSpell(ServerPlayerEntity player, SpellType spell) {
         boolean learned = globalLearnedSpells.add(spell);
         if (learned) {
+            // Новое заклинание всегда изучается с 1 уровня —
+            // сбрасываем возможные устаревшие данные из файла сохранения
+            SpellLevelManager.setSpellLevel(player.getUuid(), spell, 1);
+
             // Сохраняем на диск
             saveToDisk();
-            
+
             // Отправляем обновление текущему игроку
             // Другие игроки получат обновление при входе
             sendSync(player);

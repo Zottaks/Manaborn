@@ -165,24 +165,15 @@ public class SpellEnhancementAltarScreen extends HandledScreen<SpellEnhancementA
         int x = (this.width - GUI_WIDTH) / 2;
         int y = (this.height - GUI_HEIGHT) / 2;
         
-        // Основной фон
-        context.fill(x, y, x + GUI_WIDTH, y + GUI_HEIGHT, COLOR_BG);
+        // Рамка окна в едином стиле Manaborn
+        ManabornGuiStyle.drawFrame(context, x, y, GUI_WIDTH, GUI_HEIGHT);
         
         // Анимация свечения при улучшении
         if (isAnimating) {
-            int glowAlpha = (int)(Math.sin(animationProgress * Math.PI * 4) * 60 + 60);
+            int glowAlpha = (int)(Math.sin(animationProgress * Math.PI * 4) * 50 + 50);
             int glowColor = (glowAlpha << 24) | 0xFFD700;
             context.fill(x + 2, y + 2, x + GUI_WIDTH - 2, y + GUI_HEIGHT - 2, glowColor);
         }
-        
-        // Внешняя рамка (фиолетовая с пульсацией)
-        int pulseOffset = (int)(Math.sin(glowPulse * 0.1) * 20);
-        int borderR = Math.min(255, 107 + pulseOffset);
-        int borderColor = 0xFF000000 | (borderR << 16) | (75 << 8) | 163;
-        drawBorder(context, x, y, GUI_WIDTH, GUI_HEIGHT, borderColor, 2);
-        
-        // Внутренняя рамка
-        drawBorder(context, x + 3, y + 3, GUI_WIDTH - 6, GUI_HEIGHT - 6, COLOR_BORDER_INNER, 1);
         
         // === ЛЕВАЯ ПАНЕЛЬ: Список заклинаний ===
         int leftPanelX = x + 10;
@@ -190,8 +181,7 @@ public class SpellEnhancementAltarScreen extends HandledScreen<SpellEnhancementA
         int leftPanelW = 140;
         int leftPanelH = 115;
         
-        context.fill(leftPanelX, leftPanelY, leftPanelX + leftPanelW, leftPanelY + leftPanelH, COLOR_PANEL);
-        drawBorder(context, leftPanelX, leftPanelY, leftPanelW, leftPanelH, COLOR_BORDER_INNER, 1);
+        ManabornGuiStyle.drawPanel(context, leftPanelX, leftPanelY, leftPanelW, leftPanelH);
         
         // Рисуем список заклинаний
         int spellY = leftPanelY + 4;
@@ -201,9 +191,10 @@ public class SpellEnhancementAltarScreen extends HandledScreen<SpellEnhancementA
             SpellType spell = learnedSpells.get(i + scrollOffset);
             int itemY = spellY + i * spellHeight;
             
-            // Подсветка выбранного
+            // Подсветка выбранного — мягкая, с акцентной полоской слева
             if (spell == selectedSpell) {
-                context.fill(leftPanelX + 2, itemY, leftPanelX + leftPanelW - 2, itemY + spellHeight - 1, COLOR_SELECTED);
+                context.fill(leftPanelX + 2, itemY, leftPanelX + leftPanelW - 2, itemY + spellHeight - 1, 0x4D8B5CF6);
+                context.fill(leftPanelX + 2, itemY, leftPanelX + 4, itemY + spellHeight - 1, 0xFFBFA8FF);
             }
             
             // Название заклинания
@@ -236,21 +227,31 @@ public class SpellEnhancementAltarScreen extends HandledScreen<SpellEnhancementA
         int rightPanelW = 152;
         int rightPanelH = 100;
         
-        context.fill(rightPanelX, rightPanelY, rightPanelX + rightPanelW, rightPanelY + rightPanelH, COLOR_PANEL);
-        drawBorder(context, rightPanelX, rightPanelY, rightPanelW, rightPanelH, COLOR_BORDER_INNER, 1);
+        ManabornGuiStyle.drawPanel(context, rightPanelX, rightPanelY, rightPanelW, rightPanelH);
+        
+        // Уникальное созвездие выбранного заклинания (с прокачкой появляются новые звёзды)
+        if (selectedSpell != null) {
+            int constellationLevel = Math.max(1, ClientSpellLevelsState.getSpellLevel(selectedSpell));
+            long seed = selectedSpell.getId().hashCode();
+            ManabornGuiStyle.drawSpellConstellation(context,
+                    rightPanelX + 2, rightPanelY + 2, rightPanelW - 4, rightPanelH - 4,
+                    seed, 2 + constellationLevel, 0xBFA8FF);
+        }
+        
+        // Разделитель между списком и деталями с самоцветом посередине
+        int dividerX = x + 154;
+        for (int dy = y + 30; dy < y + 126; dy += 3) {
+            context.fill(dividerX, dy, dividerX + 1, dy + 1, ManabornGuiStyle.withAlpha(0x9B8BD8, 50));
+        }
+        context.fill(dividerX - 1, y + 76, dividerX + 2, y + 79, ManabornGuiStyle.withAlpha(0xBFA8FF, 160));
         
         // === СЛОТ ДЛЯ РЕСУРСОВ ===
         int slotX = x + 245;
         int slotY = y + 95;
-        int slotSize = 16;
         
-        // Золотая рамка вокруг слота
-        int slotGlow = (int)(Math.sin(glowPulse * 0.15) * 30 + 225);
-        int slotBorderColor = 0xFF000000 | (slotGlow << 16) | (slotGlow << 8);
-        context.fill(slotX - 2, slotY - 2, slotX + slotSize + 2, slotY - 1, slotBorderColor);
-        context.fill(slotX - 2, slotY + slotSize + 1, slotX + slotSize + 2, slotY + slotSize + 2, slotBorderColor);
-        context.fill(slotX - 2, slotY - 1, slotX - 1, slotY + slotSize + 1, slotBorderColor);
-        context.fill(slotX + slotSize + 1, slotY - 1, slotX + slotSize + 2, slotY + slotSize + 1, slotBorderColor);
+        boolean slotFilled = false;
+        try { slotFilled = handler.getSlot(0).hasStack(); } catch (Exception ignored) {}
+        ManabornGuiStyle.drawSlot(context, slotX, slotY, 16, 0xFFCF5E, slotFilled);
         
         // === ИНВЕНТАРЬ ИГРОКА ===
         int invX = x + 72;
@@ -258,16 +259,14 @@ public class SpellEnhancementAltarScreen extends HandledScreen<SpellEnhancementA
         int invWidth = 9 * 18;
         int invHeight = 4 * 18 + 4;
         
-        context.fill(invX - 4, invY - 4, invX + invWidth + 4, invY + invHeight, 0x80000000);
-        drawBorder(context, invX - 4, invY - 4, invWidth + 8, invHeight + 4, COLOR_BORDER_INNER, 1);
+        ManabornGuiStyle.drawPanel(context, invX - 4, invY - 4, invWidth + 8, invHeight + 8);
+        ManabornGuiStyle.drawInventoryGrid(context, invX, invY);
     }
 
     @Override
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
-        // Заголовок
-        String title = "✧ Алтарь Улучшения Заклинаний ✧";
-        int titleWidth = this.textRenderer.getWidth(title);
-        context.drawText(this.textRenderer, title, (GUI_WIDTH - titleWidth) / 2, 8, COLOR_TITLE, true);
+        // Заголовок в едином стиле
+        ManabornGuiStyle.drawTitle(context, this.textRenderer, "Алтарь Улучшения Заклинаний", GUI_WIDTH, 8);
         
         // Подзаголовок списка
         context.drawText(this.textRenderer, "Заклинания:", 12, 18, COLOR_TEXT, false);

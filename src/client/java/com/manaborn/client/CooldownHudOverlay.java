@@ -1,15 +1,29 @@
 package com.manaborn.client;
 
+import com.manaborn.client.state.ClientSpellLevelsState;
+import com.manaborn.client.ui.ManabornGuiStyle;
 import com.manaborn.items.MagicStaffItem;
+import com.manaborn.spells.LeveledSpell;
+import com.manaborn.spells.Spell;
 import com.manaborn.spells.SpellManager;
+import com.manaborn.spells.SpellRegistry;
 import com.manaborn.spells.SpellType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
+import net.minecraft.util.Util;
+import net.minecraft.util.math.MathHelper;
 
+/**
+ * Виджет кулдауна выбранного заклинания.
+ *
+ * Расположен в правом нижнем углу НАД числом маны (не пересекается
+ * ни с хотбаром, ни с полоской маны). Сохранена фишка: оформление
+ * меняется под школу магии выбранного заклинания (цвет, иконка стихии).
+ */
 public final class CooldownHudOverlay {
+
     public static void render(DrawContext ctx, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.player == null || client.options.hudHidden) return;
@@ -26,88 +40,55 @@ public final class CooldownHudOverlay {
         SpellType spell = SpellManager.getSelectedSpell(staff);
         if (spell == null) return;
 
-        // Считаем оставшееся время кулдауна
+        // Оставшееся время и общий кулдаун (зависит от уровня заклинания)
         int ticks = SpellManager.getCooldownRemainingTicks(staff, client.world, spell);
-        float seconds = ticks / 20.0f;
+        int level = ClientSpellLevelsState.getSpellLevel(spell);
+        Spell impl = SpellRegistry.getSpell(spell);
+        int total = (impl instanceof LeveledSpell leveled)
+                ? leveled.getCooldown(level)
+                : (impl != null ? impl.getCooldown() : 0);
 
-        // Позиция: правый нижний угол, ПОД маной
+        boolean ready = ticks <= 0;
+        float progress = total > 0
+                ? MathHelper.clamp(1.0f - ticks / (float) total, 0.0f, 1.0f)
+                : 1.0f;
+
+        // Позиция: над числом маны (текст маны занимает sh-31..sh-23),
+        // правый край совпадает с правым краем полоски маны
         int sw = ctx.getScaledWindowWidth();
         int sh = ctx.getScaledWindowHeight();
-        int boxWidth = 80;
-        int boxHeight = 20;
-        int x = sw - boxWidth - 12; // отступ как у маны
-        int y = sh - 39 + 18 + 6;   // чуть ниже строки маны
+        int w = 96;
+        int h = 22;
+        int x = sw - 14 - w;
+        int y = sh - 31 - h - 3;
 
-        // Всегда рисуем, даже если 0 — показываем READY
-        drawStyledBox(ctx, x, y, boxWidth, boxHeight, spell);
-        String label = (ticks > 0) ? String.format("%.1fs", seconds) : "READY";
-        int color = 0xFFFFFFFF;
-        ctx.drawText(client.textRenderer, Text.literal(label), x + 8, y + 6, color, true);
-    }
+        int accent = ManabornGuiStyle.elementRgb(spell);
 
-    // Рисуем стиль под тип заклинания, переиспользуя цвета из SpellHudOverlay
-    private static void drawStyledBox(DrawContext ctx, int x, int y, int w, int h, SpellType spell) {
-        // Базовый фон
-        int bg = 0xC0000000;
-        ctx.fill(x, y, x + w, y + h, bg);
+        // Карточка в стиле выбранной школы магии
+        ManabornGuiStyle.drawCard(ctx, x, y, w, h, accent, ready);
 
-        switch (spell) {
-            case FIREBALL, INNER_HEAT, HEAT_WEAPON -> {
-                // огненная окантовка
-                ctx.fill(x - 1, y - 1, x + w + 1, y, 0xCCFF8800);
-                ctx.fill(x - 1, y + h, x + w + 1, y + h + 1, 0xCCFF8800);
-                ctx.fill(x - 1, y, x, y + h, 0xCCFF8800);
-                ctx.fill(x + w, y, x + w + 1, y + h, 0xCCFF8800);
-            }
-            case ICE_SHARD, ICE_WALL, FROST_COFFIN -> {
-                // ледяная окантовка
-                ctx.fill(x - 1, y - 1, x + w + 1, y, 0xCC00CCFF);
-                ctx.fill(x - 1, y + h, x + w + 1, y + h + 1, 0xCC00CCFF);
-                ctx.fill(x - 1, y, x, y + h, 0xCC00CCFF);
-                ctx.fill(x + w, y, x + w + 1, y + h, 0xCC00CCFF);
-            }
-            case FIRE_WALL -> {
-                // золотая окантовка
-                ctx.fill(x - 1, y - 1, x + w + 1, y, 0xCCFFAA00);
-                ctx.fill(x - 1, y + h, x + w + 1, y + h + 1, 0xCCFFAA00);
-                ctx.fill(x - 1, y, x, y + h, 0xCCFFAA00);
-                ctx.fill(x + w, y, x + w + 1, y + h, 0xCCFFAA00);
-            }
-            case FROST_AURA -> {
-                // холодный циан
-                ctx.fill(x - 1, y - 1, x + w + 1, y, 0xCC00FFFF);
-                ctx.fill(x - 1, y + h, x + w + 1, y + h + 1, 0xCC00FFFF);
-                ctx.fill(x - 1, y, x, y + h, 0xCC00FFFF);
-                ctx.fill(x + w, y, x + w + 1, y + h, 0xCC00FFFF);
-            }
-            case ABSORBING_BARRIER, WEAKNESS_CURSE -> {
-                // темная фиолетовая окантовка
-                ctx.fill(x - 1, y - 1, x + w + 1, y, 0xCC5C3B89);
-                ctx.fill(x - 1, y + h, x + w + 1, y + h + 1, 0xCC5C3B89);
-                ctx.fill(x - 1, y, x, y + h, 0xCC5C3B89);
-                ctx.fill(x + w, y, x + w + 1, y + h, 0xCC5C3B89);
-            }
-            case SOUND_STRIKE, BATTLE_HYMN, CLARIFYING_TONE -> {
-                // жёлто-белая окантовка (звуковая магия)
-                ctx.fill(x - 1, y - 1, x + w + 1, y, 0xCCFFFF00);
-                ctx.fill(x - 1, y + h, x + w + 1, y + h + 1, 0xCCFFFF00);
-                ctx.fill(x - 1, y, x, y + h, 0xCCFFFFFF);
-                ctx.fill(x + w, y, x + w + 1, y + h, 0xCCFFFFFF);
-            }
-            case SILENCE_ZONE -> {
-                // жёлто-белая окантовка (магия звука)
-                ctx.fill(x - 1, y - 1, x + w + 1, y, 0xCCFFFF00);
-                ctx.fill(x - 1, y + h, x + w + 1, y + h + 1, 0xCCFFFF00);
-                ctx.fill(x - 1, y, x, y + h, 0xCCFFFFFF);
-                ctx.fill(x + w, y, x + w + 1, y + h, 0xCCFFFFFF);
-            }
-            case TRANSLOCATION -> {
-                // энтропия: бело-серая окантовка
-                ctx.fill(x - 1, y - 1, x + w + 1, y, 0xCCFFFFFF);
-                ctx.fill(x - 1, y + h, x + w + 1, y + h + 1, 0xCCBBBBBB);
-                ctx.fill(x - 1, y, x, y + h, 0xCC888888);
-                ctx.fill(x + w, y, x + w + 1, y + h, 0xCC888888);
-            }
+        // Иконка стихии слева
+        ManabornGuiStyle.drawSpellElementIcon(ctx, client.textRenderer, spell, x + 11, y + h / 2 - 1, ready);
+
+        // Подпись: время или «Готово»
+        String label = ready
+                ? "Готово"
+                : String.format(java.util.Locale.ROOT, "%.1f", ticks / 20.0f) + " с";
+        int labelColor = ready
+                ? 0xFF000000 | ManabornGuiStyle.brightenRgb(accent, 0.35f)
+                : ManabornGuiStyle.COLOR_TEXT;
+        ctx.drawText(client.textRenderer, label, x + 23, y + 4, labelColor, true);
+
+        // Полоска восстановления кулдауна
+        ManabornGuiStyle.drawProgressBar(ctx, x + 23, y + 15, w - 32, 3, progress, accent);
+
+        // Мягкий пульс рамки, когда заклинание готово
+        if (ready) {
+            long t = Util.getMeasuringTimeMs();
+            float pulse = 0.5f + 0.5f * MathHelper.sin(t * 0.004f);
+            ManabornGuiStyle.drawBorder(ctx, x, y, w, h,
+                    ManabornGuiStyle.withAlpha(ManabornGuiStyle.brightenRgb(accent, 0.3f),
+                            40 + (int) (60 * pulse)), 1);
         }
     }
 }

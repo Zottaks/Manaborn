@@ -62,6 +62,20 @@ public class MagicStaffClientHandler {
             SpellMenuMode config = SpellMenuMode.getInstance();
             boolean isRadialMenuOpen = client.currentScreen instanceof com.manaborn.client.ui.RadialSpellMenuScreen;
 
+            // === Shift+ПКМ: режим удержания (Hold) ===
+            // Меню открыто через Shift+ПКМ — при отпускании Shift выбираем наведённое и закрываем
+            if (RadialMenuHandler.holdMenuOpen) {
+                if (client.currentScreen instanceof com.manaborn.client.ui.RadialSpellMenuScreen menu) {
+                    if (!isShiftDown) {
+                        menu.confirmSelection();
+                        RadialMenuHandler.holdMenuOpen = false;
+                    }
+                } else {
+                    // Меню уже закрыто другим способом (ЛКМ / ПКМ / ESC)
+                    RadialMenuHandler.holdMenuOpen = false;
+                }
+            }
+
             if (config.isPressMode) {
                 // === РЕЖИМ: НАЖАТИЕ (Press) ===
                 // Открываем по нажатию Shift + клавиша, меню остается открытым

@@ -39,6 +39,9 @@ public class ManabornClient implements ClientModInitializer {
         // Регистрируем клавиши управления
         KeyBindings.register();
 
+        // Регистрируем открытие радиального меню по Shift + ПКМ
+        RadialMenuHandler.register();
+
         // Регистрируем рендерер для ледяного осколка (КРИТИЧНО для предотвращения
         // краша!)
         // EntityRendererRegistry deprecated, но это всё ещё официальный способ для
@@ -48,6 +51,10 @@ public class ManabornClient implements ClientModInitializer {
         registerDustWispRenderer();
         registerMageMerchantModelLayer();
         registerMageMerchantRenderer();
+
+        // Квадрат прогресса создания пыли на верхней грани магнита маны
+        net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry.register(
+                ManabornMod.MANA_MAGNET_ENTITY, ManaMagnetProgressRenderer::new);
 
         // Регистрируем HUD элемент для отображения маны перед чатом
         HudElementRegistry.attachElementBefore(
@@ -181,6 +188,10 @@ public class ManabornClient implements ClientModInitializer {
         HandledScreens.register(ManabornMod.ETHER_CONVERTER_SH, com.manaborn.client.ui.EtherConverterScreen::new);
         HandledScreens.register(ManabornMod.MAGIC_CRAFTING_TABLE_SH, com.manaborn.client.ui.MagicCraftingTableScreen::new);
         HandledScreens.register(ManabornMod.SPELL_ENHANCEMENT_ALTAR_SH, SpellEnhancementAltarScreen::new);
+
+        // Книга рецептов: открытие экрана по ПКМ (прокси из main-кода)
+        com.manaborn.items.RecipeBookItem.clientOpener = () -> MinecraftClient.getInstance()
+                .setScreen(new com.manaborn.client.ui.RecipeBookScreen());
 
         // Регистрируем обработчик радиального меню для магического посоха
         MagicStaffClientHandler.register();

@@ -2,12 +2,12 @@
   "type": "minecraft:crafting_shaped",
   "category": "redstone",
   "pattern": [
-    "LDL",
+    "TDT",
     "DWD",
-    "LVL"
+    "TVT"
   ],
   "key": {
-    "L": "minecraft:lapis_lazuli",
+    "T": "minecraft:deepslate_tiles",
     "D": "manaborn:magic_dust",
     "W": "minecraft:lodestone",
     "V": "manaborn:mana_vessel"

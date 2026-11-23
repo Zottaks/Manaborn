@@ -103,7 +103,7 @@ public class MagicCraftingTableScreenHandler extends ScreenHandler {
                 // Жестко заданные рецепты для магического верстака
                 // Шаблоны (индексы: r*3+c):
                 // mana_wand:      [2:'A', 4:'S', 6:'S'] с остальными пустыми
-                // ether_scepter:  [2:'E', 4:'S', 6:'S'] с остальными пустыми
+                // ether_scepter:  [2:'E', 4:'G', 6:'G'] с остальными пустыми (G = золотой слиток)
 
                 ItemStack s0 = this.craftingInventory.getStack(0);
                 ItemStack s1 = this.craftingInventory.getStack(1);
@@ -119,6 +119,8 @@ public class MagicCraftingTableScreenHandler extends ScreenHandler {
 
                 boolean isStickCenter = !s4.isEmpty() && s4.getItem() == net.minecraft.item.Items.STICK;
                 boolean isStickDownLeft = !s6.isEmpty() && s6.getItem() == net.minecraft.item.Items.STICK;
+                boolean isGoldCenter = !s4.isEmpty() && s4.getItem() == net.minecraft.item.Items.GOLD_INGOT;
+                boolean isGoldDownLeft = !s6.isEmpty() && s6.getItem() == net.minecraft.item.Items.GOLD_INGOT;
 
                 // manaborn items
                 var dustItem = ManabornMod.MAGIC_DUST;
@@ -126,11 +128,12 @@ public class MagicCraftingTableScreenHandler extends ScreenHandler {
                 var wandItem = ManabornMod.MANA_WAND;
                 var scepterItem = ManabornMod.ETHER_SCEPTER;
 
-                if (othersEmpty && isStickCenter && isStickDownLeft) {
-                    // Check top-right slot for catalyst
-                    if (!s2.isEmpty() && s2.getItem() == dustItem) {
+                if (othersEmpty) {
+                    // Посох маны: 2 палки + магическая пыль
+                    if (isStickCenter && isStickDownLeft && !s2.isEmpty() && s2.getItem() == dustItem) {
                         result = new ItemStack(wandItem);
-                    } else if (!s2.isEmpty() && s2.getItem() == etherItem) {
+                    // Эфирный скипетр: 2 золотых слитка + эфир
+                    } else if (isGoldCenter && isGoldDownLeft && !s2.isEmpty() && s2.getItem() == etherItem) {
                         result = new ItemStack(scepterItem);
                     }
                 }

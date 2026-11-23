@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:book",
+    "manaborn:magic_dust",
+    "minecraft:lapis_lazuli"
+  ],
+  "result": {
+    "id": "manaborn:awakening_book",
+    "count": 1
+  }
+}

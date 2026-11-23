@@ -75,8 +75,16 @@ public class MagicStaffItem extends Item {
     public ActionResult use(World world, PlayerEntity user, Hand hand) {
         ItemStack stack = user.getStackInHand(hand);
 
-        // Если выбрана Стена Льда или Транслокация — начинаем удержание ПКМ (зарядка)
         SpellType selected = SpellManager.getSelectedSpell(stack);
+
+        // Shift + ПКМ — открытие радиального меню выбора заклинания (обрабатывается на клиенте).
+        // На сервере каст при sneak блокируем, чтобы открытие меню не сопровождалось кастом.
+        // Исключение — Транслокация: её самокаст выполняется именно через Shift + взгляд вниз.
+        if (user.isSneaking() && selected != SpellType.TRANSLOCATION) {
+            return ActionResult.CONSUME;
+        }
+
+        // Если выбрана Стена Льда или Транслокация — начинаем удержание ПКМ (зарядка)
         if (selected == SpellType.ICE_WALL || selected == SpellType.TRANSLOCATION) {
             if (!world.isClient() && selected == SpellType.TRANSLOCATION && user instanceof ServerPlayerEntity serverPlayer) {
                 handleTranslocationClick(serverPlayer, world);

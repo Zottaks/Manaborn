@@ -182,11 +182,13 @@ public class SpellLevelManager {
     }
     
     /**
-     * Очистить данные игрока (при выходе)
-     * В dev режиме - ничего не делаем, данные глобальные
+     * Очистить данные игрока.
+     * В dev режиме хранилище глобальное — сбрасываем все уровни до базовых
+     * (вызывается из /manaborn reset_spells).
      */
     public static void clearPlayer(UUID playerId) {
-        // Не очищаем глобальные данные
+        globalSpellLevels.clear();
+        saveToDisk();
     }
     
     /**

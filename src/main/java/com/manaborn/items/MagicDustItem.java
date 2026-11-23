@@ -42,10 +42,10 @@ public class MagicDustItem extends Item {
     }
     
     /**
-     * Добавляем эффект зачарования (блеск)
+     * Эффект зачарования отключён — пыль не должна блестеть
      */
     @Override
     public boolean hasGlint(ItemStack stack) {
-        return true; // Магическая пыль светится
+        return false;
     }
 }

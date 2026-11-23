@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "manaborn:manazite",
+    "manaborn:manazite",
+    "manaborn:manazite",
+    "minecraft:lapis_lazuli",
+    "minecraft:lapis_lazuli",
+    "minecraft:glass"
+  ],
+  "result": {
+    "id": "manaborn:manazite_catalyst",
+    "count": 1
+  }
+}

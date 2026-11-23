@@ -4,12 +4,12 @@
   "pattern": [
     "DDD",
     "DAD",
-    "LCL"
+    "ECE"
   ],
   "key": {
     "D": "manaborn:magic_dust",
     "A": "minecraft:anvil",
-    "L": "minecraft:lapis_lazuli",
+    "E": "minecraft:cobbled_deepslate",
     "C": "minecraft:diamond"
   },
   "result": {

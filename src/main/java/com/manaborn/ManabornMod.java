@@ -43,6 +43,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.EquippableComponent;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.item.equipment.EquipmentAsset;
+import net.minecraft.item.equipment.EquipmentAssetKeys;
 import net.minecraft.text.Text;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
@@ -89,6 +91,9 @@ public class ManabornMod implements ModInitializer {
 	public static Item MANA_POTION;
 	public static Item MAGIC_DUST;
 	public static Block MAGIC_ORE;
+	public static Block MANAZITE_ORE;
+	public static Item MANAZITE;
+	public static Item MANAZITE_CATALYST;
 	public static Block FROST_COFFIN_BLOCK;
 	public static Item FIREBALL_SPELL_BOOK;
 	public static Item ICE_SHARD_SPELL_BOOK;
@@ -105,6 +110,8 @@ public class ManabornMod implements ModInitializer {
 	public static Item SILENCE_ZONE_SPELL_BOOK;
 	public static Item CLARIFYING_TONE_SPELL_BOOK;
 	public static Item TRANSLOCATION_SPELL_BOOK;
+	public static Item AWAKENING_BOOK;
+	public static Item RECIPE_BOOK;
 	public static EntityType<IceShardEntity> ICE_SHARD_ENTITY;
 	public static Block LEARNING_ALTAR;
 	public static BlockEntityType<LearningAltarBlockEntity> LEARNING_ALTAR_BE;
@@ -156,6 +163,9 @@ public class ManabornMod implements ModInitializer {
 			if (player != null) {
 				PassiveManager.loadOrInit(player);
 				PassiveManager.sendSync(player);
+				// Синхронизируем ману и личный максимум (0 до пробуждения)
+				com.manaborn.mana.ManaManager.ensureInitialized(player);
+				com.manaborn.mana.ManaManager.sendSync(player);
 			}
 		});
 
@@ -320,12 +330,15 @@ public class ManabornMod implements ModInitializer {
 
 		// Регистрация Manoscope (магические очки для обнаружения пыли)
 		RegistryKey<Item> scopeKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "manoscope"));
+		RegistryKey<EquipmentAsset> scopeAssetKey = RegistryKey.of(EquipmentAssetKeys.REGISTRY_KEY, Identifier.of(MOD_ID, "manoscope"));
 		MANOSCOPE = Registry.register(Registries.ITEM, scopeKey,
 				new ManoscopeItem(new Item.Settings()
 						.maxCount(1)
 						.registryKey(scopeKey)
 						.component(DataComponentTypes.EQUIPPABLE,
-								EquippableComponent.builder(EquipmentSlot.HEAD).build())));
+								EquippableComponent.builder(EquipmentSlot.HEAD)
+										.model(scopeAssetKey)
+										.build())));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(MANOSCOPE));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> entries.add(MANOSCOPE));
 		System.out.println(" [DEBUG] Manoscope зарегистрирован с ID: " + scopeKey.getValue());
@@ -481,6 +494,22 @@ public class ManabornMod implements ModInitializer {
 				new Item.Settings().maxCount(1).registryKey(translocationBookKey), SpellType.TRANSLOCATION));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(TRANSLOCATION_SPELL_BOOK));
 		System.out.println(" [DEBUG] Translocation Spell Book зарегистрирована с ID: " + translocationBookKey.getValue());
+
+		// Регистрация Книги Пробуждения
+		RegistryKey<Item> awakeningBookKey = RegistryKey.of(Registries.ITEM.getKey(),
+				Identifier.of(MOD_ID, "awakening_book"));
+		AWAKENING_BOOK = Registry.register(Registries.ITEM, awakeningBookKey, new com.manaborn.items.AwakeningBookItem(
+				new Item.Settings().maxCount(1).registryKey(awakeningBookKey)));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(AWAKENING_BOOK));
+		System.out.println(" [DEBUG] Awakening Book зарегистрирована с ID: " + awakeningBookKey.getValue());
+
+		// Регистрация Книги Рецептов
+		RegistryKey<Item> recipeBookKey = RegistryKey.of(Registries.ITEM.getKey(),
+				Identifier.of(MOD_ID, "recipe_book"));
+		RECIPE_BOOK = Registry.register(Registries.ITEM, recipeBookKey, new com.manaborn.items.RecipeBookItem(
+				new Item.Settings().maxCount(1).registryKey(recipeBookKey)));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(RECIPE_BOOK));
+		System.out.println(" [DEBUG] Recipe Book зарегистрирована с ID: " + recipeBookKey.getValue());
 
 		// Регистрация Learning Altar блока
 		RegistryKey<Block> altarBlockKey = RegistryKey.of(Registries.BLOCK.getKey(),
@@ -665,7 +694,6 @@ public class ManabornMod implements ModInitializer {
 						.strength(3.0f, 3.0f) // Прочность как у железной руды
 						.requiresTool() // Требуется кирка
 						.sounds(BlockSoundGroup.STONE)
-						.luminance(state -> 7) // Небольшое свечение (уровень 7)
 						.registryKey(oreBlockKey)));
 
 		// Регистрация предмета блока
@@ -674,6 +702,34 @@ public class ManabornMod implements ModInitializer {
 				new MagicOreBlockItem((MagicOreBlock) MAGIC_ORE, new Item.Settings().registryKey(oreItemKey)));
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.BUILDING_BLOCKS).register(entries -> entries.add(MAGIC_ORE));
 		System.out.println(" [DEBUG] Magic Ore зарегистрирована с ID: " + oreBlockKey.getValue());
+
+		// Регистрация Маназитовой руды
+		RegistryKey<Block> manaziteOreKey = RegistryKey.of(Registries.BLOCK.getKey(), Identifier.of(MOD_ID, "manazite_ore"));
+		MANAZITE_ORE = Registry.register(
+				Registries.BLOCK,
+				manaziteOreKey,
+				new Block(AbstractBlock.Settings.create()
+						.strength(3.0f, 3.0f)
+						.requiresTool()
+						.sounds(BlockSoundGroup.STONE)
+						.registryKey(manaziteOreKey)));
+		RegistryKey<Item> manaziteOreItemKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "manazite_ore"));
+		Registry.register(Registries.ITEM, manaziteOreItemKey,
+				new BlockItem(MANAZITE_ORE, new Item.Settings().registryKey(manaziteOreItemKey)));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.NATURAL).register(entries -> entries.add(MANAZITE_ORE));
+
+		// Регистрация Маназита (кристалл, выпадает из руды)
+		RegistryKey<Item> manaziteKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "manazite"));
+		MANAZITE = Registry.register(Registries.ITEM, manaziteKey,
+				new Item(new Item.Settings().registryKey(manaziteKey)));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(entries -> entries.add(MANAZITE));
+
+		// Регистрация Маназитного катализатора
+		RegistryKey<Item> catalystKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "manazite_catalyst"));
+		MANAZITE_CATALYST = Registry.register(Registries.ITEM, catalystKey,
+				new com.manaborn.items.ManaziteCatalystItem(new Item.Settings().maxCount(16).registryKey(catalystKey)));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(MANAZITE_CATALYST));
+		System.out.println(" [DEBUG] Manazite Ore + Catalyst зарегистрированы");
 
 		// Регистрация Frost Coffin блока (прозрачная ледяная колонна без коллизии)
 		RegistryKey<Block> frostCoffinBlockKey = RegistryKey.of(Registries.BLOCK.getKey(),
@@ -848,11 +904,13 @@ public class ManabornMod implements ModInitializer {
 		// Загрузка изученных заклинаний при старте сервера
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
 			LearnedSpellsManager.loadFromDisk();
+			com.manaborn.mana.AwakeningManager.loadFromDisk();
 		});
 
 		// Сохранение изученных заклинаний при остановке сервера
 		ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
 			LearnedSpellsManager.saveToDisk();
+			com.manaborn.mana.AwakeningManager.saveToDisk();
 		});
 
 		System.out.println("✨ Manaborn loaded — awaken your inner magic!");

@@ -154,6 +154,15 @@ public class LearningAltarBlockEntity extends BlockEntity implements Inventory, 
             return;
         if (learning)
             return;
+        // Без пробуждения магии (Фолиант магии) изучать заклинания нельзя
+        if (!com.manaborn.mana.AwakeningManager.isAwakened(player.getUuid())) {
+            player.sendMessage(
+                    net.minecraft.text.Text.literal("Вам пока не понятна концепция магии. Чтобы изучать заклинания, сначала прочтите Фолиант магии.")
+                            .formatted(net.minecraft.util.Formatting.GRAY),
+                    false);
+            world.playSound(null, pos, SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.BLOCKS, 0.8f, 1.0f);
+            return;
+        }
         ItemStack wand = items.get(0);
         ItemStack book = items.get(1);
         if (wand.isEmpty() || book.isEmpty())

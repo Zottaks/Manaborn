@@ -4,12 +4,12 @@
 	"pattern": [
 		"DDD",
 		"DHD",
-		"LLL"
+		"TTT"
 	],
 	"key": {
 		"D": "manaborn:magic_dust",
 		"H": "minecraft:hopper",
-		"L": "minecraft:lapis_lazuli"
+		"T": "minecraft:deepslate_tiles"
 	},
 	"result": {
 		"id": "manaborn:mana_converter",
