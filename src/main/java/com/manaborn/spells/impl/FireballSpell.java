@@ -49,31 +49,11 @@ public class FireballSpell implements LeveledSpell {
             default -> 2.0; // level 3 (original)
         };
 
-        // Create small fireball with player's direction
+        // Create custom fireball projectile (3D огненная сфера, свой рендерер)
         Vec3d direction = user.getRotationVector();
-        SmallFireballEntity fireball = new SmallFireballEntity(world, user, direction) {
-            @Override
-            public void tick() {
-                super.tick();
-                spawnTrail(this, level);
-            }
-
-            @Override
-            public void onCollision(net.minecraft.util.hit.HitResult hitResult) {
-                super.onCollision(hitResult);
-                if (!world.isClient()) {
-                    // Create real explosion at impact point
-                    world.createExplosion(
-                            this,
-                            this.getX(),
-                            this.getY(),
-                            this.getZ(),
-                            explosionPower,
-                            World.ExplosionSourceType.NONE);
-                    spawnImpact(world, this.getX(), this.getY(), this.getZ(), explosionPower, level);
-                }
-            }
-        };
+        com.manaborn.entities.FireballProjectileEntity fireball =
+                new com.manaborn.entities.FireballProjectileEntity(world, user, direction,
+                        explosionPower, level);
 
         // Спавним снаряд впереди и чуть ниже линии взгляда, чтобы партиклы не закрывали обзор
         fireball.setPos(
@@ -144,7 +124,7 @@ public class FireballSpell implements LeveledSpell {
     /**
      * След снаряда в полёте: пламя + дым, с уровнем — искры и обжигающий ореол.
      */
-    private static void spawnTrail(SmallFireballEntity fireball, int level) {
+    public static void spawnTrail(SmallFireballEntity fireball, int level) {
         if (!(fireball.getEntityWorld() instanceof ServerWorld sw)) return;
         // Первые тики снаряд ещё рядом с лицом игрока — не спамим партиклами в обзор
         if (fireball.age < 3) return;
@@ -153,14 +133,22 @@ public class FireballSpell implements LeveledSpell {
         double y = fireball.getY();
         double z = fireball.getZ();
 
-        // Основное пламя (густеет с уровнем)
+        // Основное пламя (лёгкое, чтобы не скрывать сферу)
         sw.spawnParticles(ParticleTypes.FLAME,
-                x, y, z, 1 + level,
-                0.06, 0.06, 0.06,
-                0.005);
+                x, y, z, 1,
+                0.05, 0.05, 0.05,
+                0.004);
 
-        // Дымный хвост каждые 2 тика
-        if (fireball.age % 2 == 0) {
+        // Тлеющие оранжевые угли-пылинки (свечение магмы)
+        if (fireball.age % 3 == 0) {
+            sw.spawnParticles(new net.minecraft.particle.DustParticleEffect(0xFF7A1A, 0.9f),
+                    x, y, z, 1,
+                    0.04, 0.04, 0.04,
+                    0.0);
+        }
+
+        // Дымный хвост, редкий
+        if (fireball.age % 5 == 0) {
             sw.spawnParticles(ParticleTypes.SMOKE,
                     x, y, z, 1,
                     0.05, 0.05, 0.05,
@@ -168,7 +156,7 @@ public class FireballSpell implements LeveledSpell {
         }
 
         // Со 2 уровня — летящие искры
-        if (level >= 2 && fireball.age % 3 == 0) {
+        if (level >= 2 && fireball.age % 5 == 0) {
             sw.spawnParticles(ParticleTypes.LAVA,
                     x, y, z, 1,
                     0.08, 0.08, 0.08,
@@ -176,7 +164,7 @@ public class FireballSpell implements LeveledSpell {
         }
 
         // С 3 уровня — бело-горячий ореол (частица вспышки редко, мягко)
-        if (level >= 3 && fireball.age % 5 == 0) {
+        if (level >= 3 && fireball.age % 8 == 0) {
             sw.spawnParticles(ParticleTypes.SMALL_FLAME,
                     x, y, z, 2,
                     0.12, 0.12, 0.12,
@@ -187,7 +175,7 @@ public class FireballSpell implements LeveledSpell {
     /**
      * Взрыв: кольцо пламени по земле, веер искр, столб дыма, вспышка.
      */
-    private static void spawnImpact(World world, double x, double y, double z, float power, int level) {
+    public static void spawnImpact(World world, double x, double y, double z, float power, int level) {
         if (!(world instanceof ServerWorld sw)) return;
 
         // Кольцо пламени, разлетающееся от эпицентра
@@ -215,13 +203,11 @@ public class FireballSpell implements LeveledSpell {
                 0.2 * power, 0.25, 0.2 * power,
                 0.02);
 
-        // Яркая вспышка в эпицентре (только со 2 уровня)
-        if (level >= 2) {
-            sw.spawnParticles(net.minecraft.particle.TintedParticleEffect.create(ParticleTypes.FLASH, 0xCCFFFFFF),
-                    x, y + 0.2, z, 1,
-                    0.0, 0.0, 0.0,
-                    0.0);
-        }
+        // Яркая вспышка в эпицентре
+        sw.spawnParticles(net.minecraft.particle.TintedParticleEffect.create(ParticleTypes.FLASH, 0xCCFFFFFF),
+                x, y + 0.2, z, 1,
+                0.0, 0.0, 0.0,
+                0.0);
 
         // Догорающие угли, оседающие вокруг
         sw.spawnParticles(ParticleTypes.SMALL_FLAME,

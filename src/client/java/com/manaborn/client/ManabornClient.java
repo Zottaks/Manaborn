@@ -48,6 +48,7 @@ public class ManabornClient implements ClientModInitializer {
         // Fabric 1.21.10
         // Новый API появится в будущих версиях Fabric API
         registerIceShardRenderer();
+        registerFireballProjectileRenderer();
         registerDustWispRenderer();
         registerMageMerchantModelLayer();
         registerMageMerchantRenderer();
@@ -188,6 +189,13 @@ public class ManabornClient implements ClientModInitializer {
         HandledScreens.register(ManabornMod.ETHER_CONVERTER_SH, com.manaborn.client.ui.EtherConverterScreen::new);
         HandledScreens.register(ManabornMod.MAGIC_CRAFTING_TABLE_SH, com.manaborn.client.ui.MagicCraftingTableScreen::new);
         HandledScreens.register(ManabornMod.SPELL_ENHANCEMENT_ALTAR_SH, SpellEnhancementAltarScreen::new);
+        // MerchantScreen жёстко привязан к MerchantScreenHandler в дженериках,
+        // поэтому регистрируем через raw-тип: рантайм-объект всё равно MageMerchantScreenHandler
+        @SuppressWarnings({"unchecked", "rawtypes"})
+        Runnable mageScreenReg = () -> HandledScreens.register(
+                (net.minecraft.screen.ScreenHandlerType) ManabornMod.MAGE_MERCHANT_SH,
+                (HandledScreens.Provider) (h, inv, t) -> new com.manaborn.client.ui.MageMerchantScreen((net.minecraft.screen.MerchantScreenHandler) h, inv, t));
+        mageScreenReg.run();
 
         // Книга рецептов: открытие экрана по ПКМ (прокси из main-кода)
         com.manaborn.items.RecipeBookItem.clientOpener = () -> MinecraftClient.getInstance()
@@ -211,7 +219,17 @@ public class ManabornClient implements ClientModInitializer {
      */
     @SuppressWarnings("deprecation")
     private void registerIceShardRenderer() {
-        EntityRendererRegistry.register(ManabornMod.ICE_SHARD_ENTITY, FlyingItemEntityRenderer::new);
+        EntityRendererRegistry.register(ManabornMod.ICE_SHARD_ENTITY,
+                com.manaborn.client.render.IceShardEntityRenderer::new);
+    }
+
+    /**
+     * Регистрирует рендерер для снаряда огненной сферы (3D огненный шар)
+     */
+    @SuppressWarnings("deprecation")
+    private void registerFireballProjectileRenderer() {
+        EntityRendererRegistry.register(ManabornMod.FIREBALL_PROJECTILE_ENTITY,
+                com.manaborn.client.render.FireballProjectileRenderer::new);
     }
 
     /**

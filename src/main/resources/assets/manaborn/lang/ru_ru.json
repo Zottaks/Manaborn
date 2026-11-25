@@ -40,10 +40,11 @@
   "container.manaborn.spell_enhancement_altar": "Улучшение Заклинаний",
   "advancement.manaborn.magic_staff.title": "Магическая сила!",
   "advancement.manaborn.magic_staff.description": "Получите волшебную палочку",
-  
   "category.manaborn.general": "Manaborn",
   "key.manaborn.open_spell_menu": "Открыть меню заклинаний (+ Shift)",
   "key.manaborn.toggle_spell_menu_mode": "Переключить режим меню (нажатие/удержание)",
   "entity.manaborn.mage_merchant": "Маг-торговец",
-  "item.manaborn.mage_merchant_spawn_egg": "Яйцо призыва маг-торговца"
+  "item.manaborn.mage_merchant_spawn_egg": "Яйцо призыва маг-торговца",
+  "item.manaborn.ice_shard": "Ледяной осколок",
+  "item.manaborn.fire_orb": "Огненная сфера"
 }

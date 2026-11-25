@@ -112,7 +112,10 @@ public class ManabornMod implements ModInitializer {
 	public static Item TRANSLOCATION_SPELL_BOOK;
 	public static Item AWAKENING_BOOK;
 	public static Item RECIPE_BOOK;
+	public static Item ICE_SHARD_ITEM;
+	public static Item FIRE_ORB_ITEM;
 	public static EntityType<IceShardEntity> ICE_SHARD_ENTITY;
+	public static EntityType<com.manaborn.entities.FireballProjectileEntity> FIREBALL_PROJECTILE_ENTITY;
 	public static Block LEARNING_ALTAR;
 	public static BlockEntityType<LearningAltarBlockEntity> LEARNING_ALTAR_BE;
 	public static ScreenHandlerType<LearningAltarScreenHandler> LEARNING_ALTAR_SH;
@@ -124,6 +127,7 @@ public class ManabornMod implements ModInitializer {
 	public static EntityType<DustWispEntity> DUST_WISP_ENTITY;
 	public static EntityType<MageMerchantEntity> MAGE_MERCHANT_ENTITY;
 	public static Item MAGE_MERCHANT_SPAWN_EGG;
+	public static ScreenHandlerType<com.manaborn.screen.MageMerchantScreenHandler> MAGE_MERCHANT_SH;
 	public static Block MANA_MAGNET;
 	public static BlockEntityType<com.manaborn.blocks.entity.ManaMagnetBlockEntity> MANA_MAGNET_ENTITY;
 	public static Item ETHER;
@@ -281,6 +285,31 @@ public class ManabornMod implements ModInitializer {
 						.dimensions(0.5f, 0.5f)
 						.build(iceShardKey));
 
+		// Регистрация предмета ледяного осколка (3D визуал снаряда; скрытый, не в вкладках)
+		RegistryKey<Item> iceShardItemKey = RegistryKey.of(Registries.ITEM.getKey(),
+				Identifier.of(MOD_ID, "ice_shard"));
+		ICE_SHARD_ITEM = Registry.register(Registries.ITEM, iceShardItemKey,
+				new Item(new Item.Settings().maxCount(1).registryKey(iceShardItemKey)));
+		System.out.println(" [DEBUG] Ice Shard item зарегистрирован с ID: " + iceShardItemKey.getValue());
+
+		// Регистрация сущности огненной сферы (3D снаряд файрбола)
+		RegistryKey<EntityType<?>> fireballKey = RegistryKey.of(Registries.ENTITY_TYPE.getKey(),
+				Identifier.of(MOD_ID, "fireball_projectile"));
+		FIREBALL_PROJECTILE_ENTITY = Registry.register(
+				Registries.ENTITY_TYPE,
+				fireballKey,
+				EntityType.Builder.<com.manaborn.entities.FireballProjectileEntity>create(
+						com.manaborn.entities.FireballProjectileEntity::new, SpawnGroup.MISC)
+						.dimensions(0.3125f, 0.3125f)
+						.build(fireballKey));
+
+		// Регистрация предмета огненной сферы (3D визуал снаряда; скрытый, не в вкладках)
+		RegistryKey<Item> fireOrbKey = RegistryKey.of(Registries.ITEM.getKey(),
+				Identifier.of(MOD_ID, "fire_orb"));
+		FIRE_ORB_ITEM = Registry.register(Registries.ITEM, fireOrbKey,
+				new Item(new Item.Settings().maxCount(1).registryKey(fireOrbKey)));
+		System.out.println(" [DEBUG] Fireball projectile + Fire Orb item зарегистрированы");
+
 		// Регистрация сущности пылинки (невидимая метка для магической пыли)
 		RegistryKey<EntityType<?>> wispKey = RegistryKey.of(Registries.ENTITY_TYPE.getKey(),
 				Identifier.of(MOD_ID, "dust_wisp"));
@@ -313,6 +342,12 @@ public class ManabornMod implements ModInitializer {
 		// Регистрируем атрибуты для маг-торговца (КРИТИЧНО - без этого сущность не спавнится!)
 		FabricDefaultAttributeRegistry.register(MAGE_MERCHANT_ENTITY, MageMerchantEntity.createMobAttributes());
 		System.out.println(" [DEBUG] Mage Merchant зарегистрирован с ID: " + mageMerchantKey.getValue());
+
+		// ScreenHandler для торговли с магом (свой GUI)
+		MAGE_MERCHANT_SH = Registry.register(
+				Registries.SCREEN_HANDLER,
+				Identifier.of(MOD_ID, "mage_merchant"),
+				new ScreenHandlerType<>((syncId, inv) -> new com.manaborn.screen.MageMerchantScreenHandler(syncId, inv), FeatureFlags.VANILLA_FEATURES));
 
 		// Регистрация Mana Wand
 		RegistryKey<Item> wandKey = RegistryKey.of(Registries.ITEM.getKey(), Identifier.of(MOD_ID, "mana_wand"));
@@ -760,6 +795,7 @@ public class ManabornMod implements ModInitializer {
 			com.manaborn.spells.SpellManager.tickFrostCoffins(server.getPlayerManager().getPlayerList());
 			com.manaborn.spells.impl.BattleHymnSpell.tickBattleHymns(server.getPlayerManager().getPlayerList());
 			DustWispManager.tick(server.getPlayerManager().getPlayerList());
+			IceShardEntity.tickFrostEffects(server);
 			
 			// Тик зон тишины
 			for (var world : server.getWorlds()) {

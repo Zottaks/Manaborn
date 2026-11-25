@@ -29,6 +29,8 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
+import net.minecraft.text.Text;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOfferList;
 import net.minecraft.village.TradedItem;
@@ -222,6 +224,20 @@ public class MageMerchantEntity extends MerchantEntity {
                 merchantXp,
                 0.05f
         );
+    }
+
+    /**
+     * Открываем торговлю через наш кастомный ScreenHandler,
+     * чтобы клиент рисовал фирменный интерфейс мага.
+     */
+    @Override
+    public void sendOffers(PlayerEntity player, Text name, int levelProgression) {
+        java.util.OptionalInt optional = player.openHandledScreen(new SimpleNamedScreenHandlerFactory(
+                (syncId, inv, p) -> new com.manaborn.screen.MageMerchantScreenHandler(syncId, inv, this), name));
+        if (optional.isPresent() && !this.getOffers().isEmpty()) {
+            player.sendTradeOffers(optional.getAsInt(), this.getOffers(), levelProgression,
+                    this.getExperience(), this.isLeveledMerchant(), this.canRefreshTrades());
+        }
     }
 
     @Override

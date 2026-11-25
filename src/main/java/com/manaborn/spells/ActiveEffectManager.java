@@ -455,6 +455,21 @@ public class ActiveEffectManager {
                 holdVariant, durationTicks));
 
         world.playSound(null, base, SoundEvents.BLOCK_GLASS_PLACE, SoundCategory.PLAYERS, 0.7f, 1.2f);
+
+        // Эффект образования: кольцо инея у основания и всполох снежинок вверх
+        double cx = base.getX() + 0.5;
+        double cz = base.getZ() + 0.5;
+        for (int i = 0; i < 20; i++) {
+            double angle = (Math.PI * 2 * i) / 20;
+            double rx = Math.cos(angle) * 0.9;
+            double rz = Math.sin(angle) * 0.9;
+            world.spawnParticles(ParticleTypes.SNOWFLAKE, cx + rx, base.getY() + 0.15, cz + rz,
+                    1, 0.0, 0.02, 0.0, 0.0);
+        }
+        world.spawnParticles(ParticleTypes.SNOWFLAKE, cx, base.getY() + 0.5, cz, 14, 0.35, 0.9, 0.35, 0.02);
+        world.spawnParticles(new net.minecraft.particle.DustParticleEffect(0xBFE8FF, 1.0f),
+                cx, base.getY() + 1.0, cz, 8, 0.4, 0.8, 0.4, 0.0);
+        world.playSound(null, base, SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE, SoundCategory.PLAYERS, 0.6f, 1.4f);
     }
 
     public static void tickFrostCoffins(List<ServerPlayerEntity> players) {
@@ -520,13 +535,20 @@ public class ActiveEffectManager {
                 data.manaDrainCounter = 0;
             }
 
-            // Particles: white end rods around the coffin.
-            if (data.ticksRemaining % 3 == 0) {
+            // Частицы: морозный иней и редкие ледяные блёстки вокруг гроба.
+            if (data.ticksRemaining % 4 == 0) {
                 double cx = target.getX();
                 double cy = target.getY() + target.getHeight() * 0.5;
                 double cz = target.getZ();
-                data.world.spawnParticles(ParticleTypes.END_ROD, cx, cy, cz, 6, 0.8, 0.8, 0.8, 0.01);
-                data.world.spawnParticles(ParticleTypes.SNOWFLAKE, cx, cy, cz, 4, 0.6, 0.8, 0.6, 0.03);
+                // Медленно оседающий иней
+                data.world.spawnParticles(ParticleTypes.SNOWFLAKE, cx, cy + 0.4, cz, 3, 0.55, 0.7, 0.55, 0.012);
+                // Ледяная пыльца — холодное голубое свечение
+                data.world.spawnParticles(new net.minecraft.particle.DustParticleEffect(0xBFE8FF, 0.8f),
+                        cx, cy, cz, 2, 0.5, 0.6, 0.5, 0.0);
+                // Редкая блёстка — как свет на грани льда
+                if (data.ticksRemaining % 12 == 0) {
+                    data.world.spawnParticles(ParticleTypes.END_ROD, cx, cy, cz, 1, 0.6, 0.7, 0.6, 0.008);
+                }
             }
 
             // Crumbling in last 2 seconds: remaining blocks crack on their own.
